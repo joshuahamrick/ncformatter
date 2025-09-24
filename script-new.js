@@ -130,8 +130,8 @@ class DocumentProcessor {
                     const uint8Array = new Uint8Array(arrayBuffer);
                     const base64String = btoa(String.fromCharCode(...uint8Array));
                     
-                    // Call Python serverless function
-                    const response = await fetch('/.netlify/functions/process-word', {
+                    // Call Vercel Python serverless function
+                    const response = await fetch('/api/process-word', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

@@ -9,9 +9,12 @@ class WordFormatter {
     initializeElements() {
         this.fileInput = document.getElementById('fileInput');
         this.dropZone = document.getElementById('dropZone');
-        this.resultDiv = document.getElementById('resultContent');
-        this.downloadBtn = document.getElementById('downloadBtn');
+        this.resultsSection = document.getElementById('resultsSection');
+        this.formattedPreview = document.getElementById('formattedPreview');
+        this.htmlCode = document.getElementById('htmlCode');
+        this.copyButton = document.getElementById('copyButton');
         this.processingDiv = document.getElementById('processing');
+        this.tabButtons = document.querySelectorAll('.tab-btn');
     }
 
     setupEventListeners() {
@@ -19,7 +22,12 @@ class WordFormatter {
         this.dropZone.addEventListener('dragover', (e) => this.handleDragOver(e));
         this.dropZone.addEventListener('dragleave', (e) => this.handleDragLeave(e));
         this.dropZone.addEventListener('drop', (e) => this.handleDrop(e));
-        this.downloadBtn.addEventListener('click', () => this.downloadResult());
+        this.copyButton.addEventListener('click', () => this.copyToClipboard());
+        
+        // Tab switching
+        this.tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+        });
     }
 
     handleFileSelect(event) {
@@ -83,8 +91,7 @@ class WordFormatter {
 
     showProcessing() {
         this.processingDiv.style.display = 'block';
-        this.resultDiv.innerHTML = '';
-        this.downloadBtn.style.display = 'none';
+        this.resultsSection.classList.add('hidden');
     }
 
     hideProcessing() {
@@ -92,22 +99,48 @@ class WordFormatter {
     }
 
     displayResult(formattedText) {
-        this.resultDiv.innerHTML = formattedText;
-        this.downloadBtn.style.display = 'inline-block';
+        // Show the results section
+        this.resultsSection.classList.remove('hidden');
+        
+        // Set the preview content
+        this.formattedPreview.innerHTML = formattedText;
+        
+        // Set the HTML code content
+        this.htmlCode.textContent = formattedText;
+        
+        // Show the results section
+        this.resultsSection.scrollIntoView({ behavior: 'smooth' });
     }
 
-    downloadResult() {
-        const resultText = this.resultDiv.innerHTML;
-        const blob = new Blob([resultText], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
+    switchTab(tabName) {
+        // Remove active class from all tabs and content
+        this.tabButtons.forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
         
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'formatted_document.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Add active class to selected tab and content
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(`${tabName}Tab`).classList.add('active');
+    }
+
+    copyToClipboard() {
+        const htmlContent = this.htmlCode.textContent;
+        navigator.clipboard.writeText(htmlContent).then(() => {
+            // Show feedback
+            const originalText = this.copyButton.innerHTML;
+            this.copyButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20,6 9,17 4,12"/>
+                </svg>
+                Copied!
+            `;
+            
+            setTimeout(() => {
+                this.copyButton.innerHTML = originalText;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy to clipboard');
+        });
     }
 }
 

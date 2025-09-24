@@ -1,0 +1,327 @@
+<div>{[tagHeader]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<div><b>Trial Period Plan</b></div>
+<div>Account: {[loanNumberLast4]}</div>
+<div>Property: {[M567]}</div>
+<br>
+{If('{[M931]}' IN ('1', '2', '3', '4', '5'))}
+<div><b><i>This is not an attempt to collect a debt. This is a legally required notice. We are sending this notice to you because you are behind on your mortgage payment. We want to notify you of possible ways to avoid losing your home. We have a right to invoke foreclosure based on the terms of your mortgage contract. Please read this letter carefully.</i></b></div>
+{End If}
+<br>
+<div>Dear Valued Customer(s),</div>
+<br>
+<div>Based on a careful review of your mortgage account, we’re offering you an opportunity to enter into a Trial Period Plan for a mortgage modification. This is the first step toward qualifying for a modification to bring your mortgage current and allow you to make a principal and interest payment that is equivalent or almost equivalent to your existing contractual principal and interest payment. If you satisfy all of the terms of the offer, successfully complete the trial period plan by making the required payments and return a signed loan modification agreement, we’ll sign the loan modification agreement and your mortgage will be permanently modified.</div>
+<br>
+<div>To prevent foreclosure proceedings, you must contact us or send your first trial period plan payment by {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}. You may contact us by phone at {[plsMatrix.CSPhoneNumber]} ext. 1495 or in writing to let us know if you accept. If you don’t contact us or send your first trial period plan payment by {DateAdd({[L001]}|14|MM/dd/yyyy)}, foreclosure proceedings may begin or continue.</div>
+<br>
+<div>To successfully complete the trial period plan, you must make the Trial Period Plan payments below:</div>
+<br>
+<div style="width: 50%; border: 2px solid rgba(0, 0, 0, 1); border-radius: 10px; text-align: center; margin: auto">
+ <div><b><u>Trial Period Plan</u></b></div>
+ <br>
+ <div>1st payment: {Money({[T045]})} by {Date({[T042]}|MM/dd/yyyy)}</div>
+ <div>2nd payment: {Money({[T045]})} by {DateAdd({[T042]}|+1|MM/dd/yyyy|Month)}</div>
+ <div>3rd payment: {Money({[T045]})} by {DateAdd({[T043]}|-30|MM/dd/yyyy|Day)}</div>
+ <br>
+</div>
+<br><br>
+<div>*If you submit your first trial period plan payment {DateAdd({[L001]}|14|MM/dd/yyyy)}, follow this schedule for your second and third trial period plan payments only.</div>
+<br>
+<div><b>We must receive each trial period plan payment in the month in which it is due.</b> If we don’t receive a trial period payment by the last day of the month in which it is due, this offer is revoked and we may refer your mortgage to foreclosure. If your mortgage has already been referred to foreclosure, foreclosure-related expenses may have been incurred, foreclosure proceedings may continue and a foreclosure sale may occur.</div>
+<br>
+<div>Please send your trial period payments to:</div>
+<div style="margin-left: 30px">{[plsMatrix.CompanyLongName]}</div>
+<div style="margin-left: 30px">{[plsMatrix.LockBoxAddr1]}</div>
+<div style="margin-left: 30px">{[plsMatrix.LockBoxAddr2]}</div>
+<br>
+<div><b>If you cannot afford the trial period plan payments described above but want to remain in your home, or if you have decided to leave your home, please contact us immediately to discuss additional foreclosure prevention options that may be available.</b></div>
+<br>
+<div>Your modified terms will take effect only after:</div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You’ve signed and submitted your loan modification agreement (which we’ll send you upon completion of the trial period plan),</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>We’ve signed the loan modification agreement and returned a copy to you upon completion of the trial period plan, AND</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>The modification effective date set forth in the loan modification agreement has occurred.</td>
+</tr></tbody></table></div>
+<br>
+<div>The table below compares your current mortgage terms to the <b>estimated</b> modified terms.</div>
+<br>
+<div><table width="70%" style="border-collapse: collapse"><tbody><tr>
+  <td></td>
+  <td><b>Current terms</b></td>
+  <td><b>Modified terms</b></td>
+  </tr><tr>
+  <td><b>Payment*</b></td>
+  <td>{Money({[T090]})}</td>
+  <td>{Money({[T091]})}</td>
+  </tr><tr>
+  <td><b>Interest rate</b></td>
+  <td>{[T020]}%</td>
+  <td>{[T021]}%</td>
+  </tr><tr>
+  <td><b>Term</b></td>
+  <td>{[M026]} - {[M035]}</td>
+  <td>{[T097]}</td>
+  </tr><tr>
+  <td><b>Maturity date</b></td>
+  <td>{[T016]}</td>
+  <td>{[T017]}</td>
+  </tr><tr>
+  <td><b>Deferred principal**</b></td>
+  <td>{Math({[M966]}+{[M967]}+{[M968]}+{[M969]}+{[M970]}+{[M971]}+{[M972]}+{[M922]}|Money)}</td>
+  <td>{Money({[T054]})}</td>
+</tr></tbody></table></div>
+<br>
+<br>
+<div>*Payment includes principal, interest and escrow payment, if applicable. For more info on the estimated modification payment amount, review the FAQ.</div>
+<div>**For more info on deferred principal, review the FAQ.</div>
+<br>
+{If('{[M944]}' LIKE 'F%' OR '{[M944]}' LIKE 'H%')}
+<div>If you feel that you cannot afford the trial period payments reflected above and you otherwise qualify, we may be able to offer you a Flex Modification with a lower monthly principal and interest payment than what we estimate you would receive for the proposed modification described above. However, note that the Flex Modification would extend the term of your mortgage loan to 40 years from the date the modification takes</div>
+<br>
+{End If}
+<div>What else do you need to know?</div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>The terms of your existing note and mortgage remain in effect until the mortgage is permanently modified. However, while you are making your monthly trial period plan payments and otherwise remain in compliance with this trial period plan, foreclosure proceedings will not start or continue.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>There are no modification processing fees for this trial period plan or for modifying your mortgage. If your mortgage is modified, we will waive all unpaid late charges.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>There are no penalties for paying more than the amount due or for paying off the mortgage early.</td>
+</tr></tbody></table></div>
+<br><br>
+<div>Disclaimer: This agreement applies only to loan number {[loanNumberLast4]}. This agreement does not apply to any other loan, including any another mortgage loan(s) with {[plsMatrix.CompanyLongName]}. This agreement, at our option and without further notice, may become null and void if any other lien on the subject property is referred to foreclosure or if {[plsMatrix.CompanyLongName]} becomes aware of an active foreclosure petition.</div>
+<br>
+
+<hr>
+
+<div style="text-align: center"><img src="https://images.newcoursecc.com/00000305/FAQ.png" style="width: 713.4px; height: 48.4027px"></div>
+<div><b>What is a trial period plan?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>A trial period plan is a temporary payment relief period that allows you to demonstrate that you can consistently manage the estimated modified mortgage payment.</td>
+</tr></tbody></table></div>
+<div><b>How does the modification work?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>A loan modification changes some of the terms of your mortgage, such as monthly payment, interest rate, and maturity date, which may make your payment more affordable.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You will repay the new interest-bearing mortgage balance in equal monthly payments over the modified term.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>To permanently modify your mortgage, you first need to successfully complete the trial period plan. Your modified mortgage payment will be based on the interest-bearing unpaid principal balance as of the end of the trial period and may be moderately different than the trial period plan payment, which is an estimate of your modified mortgage payment.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Once you make all of your trial period plan payments on time and meet all of the terms in this trial period plan, you must sign and return the loan modification agreement. Once we determine you have complied with the trial period plan requirements, we will sign the loan modification agreement and send a copy back to you for your records.</td>
+</tr></tbody></table></div>
+{If('{[M944]}' LIKE 'F%' OR '{[M944]}' LIKE 'H%')}
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deferred principal is a portion of the unpaid mortgage balance for which repayment is delayed. If your modified terms include deferred principal your due date for this amount would be the earliest of 1) the date you sell or transfer the property; 2) the date you refinance the modified mortgage; 3) the date you pay off the interest-bearing unpaid principal balance of the modified mortgage; or 4) the new maturity date of the modified mortgage. Interest is not charged on any deferred principal.</td>
+</tr></tbody></table></div>
+{End If}
+<br>
+<div><b>How will a trial period plan and loan modification impact my credit?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>A trial period plan and loan modification may result in your credit score being adversely affected. Credit reporting agencies generally consider the entry into a trial period plan and loan modification as an increased credit risk. Please note, however, that continued delinquency, including a foreclosure, would have a more negative impact to your credit score. We will continue to report the delinquency status of your loan to credit reporting agencies as well as your entry into a trial period plan in accordance with the applicable laws.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>The status of the mortgage loan will be reported to the credit bureaus in accordance with the Fair Credit Reporting Act, including as amended by the Coronavirus Aid, Relief, and Economic Security Act ("CARES Act"), for borrowers affected by the COVID-19 emergency.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>When your loan modification is completed, you will be considered current on your mortgage.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>For information on your credit score, go to: https://consumerfinance.gov/consumer-tools/credit-reports-and-scores/</td>
+</tr></tbody></table></div>
+<div><b>What if I need further assistance?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td colspan="2">Please contact us anytime at {[plsMatrix.CSPhoneNumber]}, especially if you experience another event that may prevent you from making your mortgage payment.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td colspan="2">For a list of HUD-approved housing counseling agencies that can provide free foreclosure prevention and debt management information, and may be able to provide translation or other language assistance, contact one of the following federal government agencies:</td>
+  </tr><tr>
+  <td></td>
+  <td width="6%" valign="top" style="text-align: center">o</td>
+  <td>The U.S. Department of Housing and Urban Development (HUD) at (800) 569-4287 or</td>
+  </tr><tr>
+  <td></td>
+  <td width="6%" valign="top" style="text-align: center">o</td>
+  <td>hud.gov/counseling</td>
+  </tr><tr>
+  <td></td>
+  <td width="6%" valign="top" style="text-align: center">o</td>
+  <td>The Consumer Financial Protection Bureau (CFPB) at (855) 411-2372 or consumerfinance.gov/mortgagehelp</td>
+</tr></tbody></table></div>
+<div><b>Why do I need to contact you within 14 days?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>It is important to contact us within 14 days of the date of this letter. If your mortgage has already been, or is about to be, referred to foreclosure, contacting us will stop the foreclosure process. You can also stop the foreclosure process by sending the first trial period plan payment within 14 days of the date of this letter, which is earlier than the due date for the first trial period plan payment.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>If your mortgage has already been referred to foreclosure, a foreclosure sale may occur if you do not contact us or send the first trial period plan payment within 14 days of the date of this letter.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You may also incur additional expenses related to foreclosure if you do not contact us or send the first trial period plan payment within 14 days of the date of this letter.</td>
+</tr></tbody></table></div>
+<div><b>Can I still receive a modification if I do not contact you or send the first trial period plan payment within 14 days?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Yes, except in the limited circumstances where a foreclosure sale occurs before the due date of the first trial period plan payment. However, you must make each of the trial period plan payments on time and then sign the final modification agreement as outlined in the requirements above.</td>
+</tr></tbody></table></div>
+<div><b>What if I acquired an ownership interest in the property, such as through death, divorce, or legal separation?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You should contact us as soon as possible. We are here to help you adjust to these events and provide you with information on where to send the mortgage payments. Please contact us to obtain a list of documentation that is needed to confirm your identity and ownership interest in the property, and to discuss next steps.</td>
+</tr></tbody></table></div>
+<br><br>
+<div><b>Will a modification have an effect on my Private Mortgage Insurance?</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>If applicable, the Private Mortgage Insurance (PMI) cancellation date, termination date or final termination shall be recalculated to reflect the modified terms and definitions of your loan. The new cancellation and termination dates may be later than originally disclosed.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>The premium of your Private Mortgage Insurance may change due to the modification. If applicable, your monthly Private Mortgage Insurance payment will be recalculated to reflect the new payment.</td>
+</tr></tbody></table></div>
+<br><br><br>
+<div><b>Additional Trial Modification Period Plan Information and Legal Notices</b></div>
+<br>
+<div><b>We will not refer your loan to foreclosure or proceed to foreclosure sale during the trial period plan if you are complying with the terms of the trial period plan.</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Any pending foreclosure action or proceeding that has been suspended may be resumed if you do not follow the terms of the plan or do not qualify for a permanent modification.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>We will hold the trial period plan payments in an account until sufficient funds are in the account to pay your oldest past due monthly payment. Unless required by applicable law, there will be no interest paid on the funds in the account and any funds in the account at the end of the trial period plan will be deducted from the amount that will be added to your principal balance.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Our acceptance of your payments during the trial period plan does not waive our right to require immediate payment in full of all amounts you owe on your mortgage, including the right to resume or continue foreclosure action, if you fail to comply with the terms of the plan. Entering a trial period plan does not mean that your mortgage will be considered current, unless your payments under the plan completely resolve all past due amounts.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>Your current loan documents remain in effect; however, you are permitted to make the trial period plan payment instead of the current monthly payment required under your mortgage documents:</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>All the terms of your current mortgage documents remain in effect during the trial period plan. Nothing in the trial period plan shall be understood to be a satisfaction or release in whole or in part of your obligations contained in the mortgage documents.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>If your loan requires a title endorsement, a similar title insurance policy, and/ or subordination agreement(s):</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You agree to fully cooperate with obtaining any title endorsement(s), or similar title insurance product(s), and/or subordination agreement(s) that are necessary or required to ensure that the modified mortgage loan is in first lien position and/or is fully enforceable upon modification. If, under any circumstance and not withstanding anything else to the contrary in this Agreement, the Lender does not receive such title endorsement(s), title insurance product(s) and/or subordination agreement(s), then the terms of this Agreement will not become effective on the Modification Effective Date and the Agreement will be null and void.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>If you previously received a Chapter 7 bankruptcy discharge subsequent to the execution of the loan documents, but did not reaffirm the mortgage debt under applicable law:</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Based on this representation, Lender agrees that you will not have personal liability on the debt pursuant to this Trial Period Plan.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>If your loan is in active Bankruptcy:</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>A final modification approval will be subject to approval from the bankruptcy court.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>The Trial Period Plan notice will be rescinded if an error is detected after issuance of the trial period plan.</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>We reserve the right to revoke this offer or terminate the trial period plan following your acceptance if we learn of information that would make you ineligible for the trial period plan or loan modification. In this event, we may exercise any of the rights and remedies provided by the loan documents and applicable law.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Your mortgage will not be modified if you sold or transferred any interest in the property in violation of your mortgage loan documents.</td>
+  </tr><tr>
+</tr></tbody></table></div>
+
+<hr>
+
+<div style="color: rgba(255, 255, 255, 1); background-color: rgba(0, 0, 0, 1); text-align: center; padding: 5pt"><b>PLEASE READ THIS AGREEMENT CAREFULLY BEFORE YOU SIGN AND RETURN TO {[plsMatrix.CompanyLongName]}</b></div>
+<br>
+<div>Loan Number: {[loanNumberLast4]}</div>
+<div style="text-align: center">
+<div><b>Trial Modification Period Plan</b></div>
+<div>1st Payment: {Money({[T045]})} by {[T042]}</div>
+<div>2nd Payment: {Money({[T045]})} by {DateAdd({[T042]}|+1|MM/dd/yyyy|Month)}</div>
+<div>3rd Payment: {Money({[T045]})} by {DateAdd({[T043]}|-30|MM/dd/yyyy|Day)}</div>
+</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">1.</td>
+  <td>I (We) understand that in order to qualify for a permanent modification, I(We) must make the trial period payments in a timely manner as specified - instead of my (our) normal monthly mortgage payments. By signing this agreement and entering into a trial period plan, any previous automated clearing house (ACH) drafts will be canceled. I(We) understand that a new ACH draft authorization form must be submitted to restart the drafting of my loan payments.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">2.</td>
+  <td>I (We) understand that if each payment is not received by {[plsMatrix.CompanyLongName]} in the month in which it is due, I will no longer be eligible for a loan modification and my loan will not be modified.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">3.</td>
+  <td>I (We) understand that {[plsMatrix.CompanyLongName]} has the right to extend my(our) Trial Modification Period Plan if my (our) last trial period payment is made in the last half of the month it is due.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">4.</td>
+  <td>I (We) understand that my (our) credit score may be affected by accepting a Trial Modification Period Plan or modification. The impact of a loan modification on a credit score depends on the overall composition of the consumer’s credit profile as well as how the new of a loan modification credit obligation is reported.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">5.</td>
+  <td>I (We) understand that a Flood Certification will be ordered and if the new certification reveals the property to be in a Special Flood Hazard Area, I (We) will be required to obtain my (our) own flood policy prior to finalizing the modification. If I (We) do not obtain my (our) own flood policy, the modification offer will become null and void. I (We) also understand that the modified principal balance could affect the required existing coverage amount. Adequate flood coverage will be required prior to finalizing the modification. Flood Insurance will be escrowed.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">6.</td>
+  <td>I (We) have read the Additional Trial Modification Period Plan Information and Legal Notices and agree to the terms and conditions.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">7.</td>
+  <td>I (We) understand that my Trial Modification Period Plan may also be extended for a maximum of two (2) months if additional time is needed to obtain any required title endorsement, similar title policy, and/or subordination I (We) also understand that if {[plsMatrix.CompanyLongName]} is unable to obtain any required title endorsement, similar title policy, and/or subordination agreement, then the modification offer is null and void.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">8.</td>
+  <td>In the event that we are able to approve you for a foreclosure alternative prior to your trustee sale, a court with jurisdiction over the foreclosure proceeding (if any) or public official charged with carrying out the sale may choose not to halt the scheduled sale. In these instances, this agreement will be revoked.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">9.</td>
+  <td>I (We) understand that, upon completion of the trial period plan, a current statement of assessments is required if the property is subject to payment of a community association such as a Homeowner's Association, Condominium Association, or Planned Unit Development. This statement must be provided prior to {[plsMatrix.CompanyLongName]} offering a final modification agreement and payment of outstanding or delinquent assessments may be required.</td>
+  </tr><tr>
+</tr></tbody></table></div>
+<br><br><br>
+<div>
+  {If('{[M559]}' &lt;&gt; '')}
+    <table style="border-collapse: collapse" width="100%">
+      <tbody><tr>
+        <td style="border-top: 1px solid rgba(0, 0, 0, 1)" width="20%">{[M558]}</td>
+        <td style="border-top: 1px solid rgba(0, 0, 0, 1); text-align: right" width="20%">Date</td>
+        <td width="20%"> </td><td style="border-top: 1px solid rgba(0, 0, 0, 1)" width="20%">{[M559]}</td>
+        <td style="border-top: 1px solid rgba(0, 0, 0, 1); text-align: right" width="20%">Date</td>
+      </tr></tbody>
+    </table>  
+  {Else}
+    <table style="border-collapse: collapse" width="40%">
+      <tbody><tr>
+        <td style="border-top: 1px solid rgba(0, 0, 0, 1)" width="20%">{[M558]}</td>
+        <td style="border-top: 1px solid rgba(0, 0, 0, 1); text-align: right" width="20%">Date</td>
+      </tr></tbody>
+    </table>
+  {End If}
+</div>
+<br><br>
+<div><b>Please respond on or before {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)} by:</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Mailing the signed agreement to {[plsMatrix.CompanyReturnAddr1]}, {[plsMatrix.CompanyReturnAddr2]} <b>or</b></td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Faxing the signed agreement to {[plsMatrix.LossMitFax]}, or</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Emailing the signed agreement to {[plsMatrix.SPOCContactEmail]}</td>
+  </tr><tr>
+</tr></tbody></table></div>
+{If('{[M930]}' = 'A' OR '{[Z022]}' NOT IN ('', '00-00-00') OR '{[M949]}' = 'Y')}
+<div>Borrowers who are in an active bankruptcy case or who has previously been discharged of personal liability by a federal bankruptcy court, this letter is being provided in compliance with other federal or state laws and/or investor guidelines related to the matters contained in this letter. This is not an attempt to collect a debt outside of the bankruptcy proceedings, nor will {[plsMatrix.CompanyLongName]} take any action to violate the Bankruptcy Stay or proceed in any matter not approved by the court. Please consult your bankruptcy attorney if you have any questions.</div>
+{End If}
+{If('{[M471]}' IN ('1', '2', '3', '4', '5'))}
+<br>
+<div>Borrowers whose mortgage has been referred to Foreclosure or who have received a Breach notice indicating your right to cure by a certain date, this letter is being provided in compliance with other federal or state laws and/or investor guidelines related to the matters contained in this letter.</div>
+{End If}

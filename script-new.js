@@ -153,12 +153,19 @@ class DocumentProcessor {
                     }
                     
                     const result = await response.json();
-                    console.log('Python processing successful:', result);
+                    console.log('Python processing result:', result);
                     
                     if (result.success) {
                         resolve(result.formattedHtml);
                     } else {
-                        throw new Error(result.error || 'Unknown error');
+                        // Show the actual error from Python
+                        const errorMsg = result.error || 'Unknown error';
+                        console.error('Python processing error:', errorMsg);
+                        resolve(`<div style="color: red; padding: 20px; border: 1px solid red; border-radius: 4px;">
+                            <h3>Error Processing Document:</h3>
+                            <p>${errorMsg}</p>
+                            <p><em>This error occurred in the Python backend. Check the Vercel function logs for more details.</em></p>
+                        </div>`);
                     }
                     
                 } catch (error) {

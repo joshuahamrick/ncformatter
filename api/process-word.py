@@ -2,9 +2,17 @@ from http.server import BaseHTTPRequestHandler
 import json
 import base64
 import io
-from docx import Document
-from docx.shared import Inches, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+import traceback
+
+# Try to import docx, but handle if it's not available
+try:
+    from docx import Document
+    from docx.shared import Inches, Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+
 import re
 
 class handler(BaseHTTPRequestHandler):
@@ -22,12 +30,11 @@ class handler(BaseHTTPRequestHandler):
             file_name = data.get('fileName', 'document.docx')
             
             if not file_data:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                response = json.dumps({'error': 'No file data provided'})
-                self.wfile.write(response.encode('utf-8'))
+                self.send_error_response(400, 'No file data provided')
+                return
+            
+            if not DOCX_AVAILABLE:
+                self.send_error_response(500, 'python-docx library not available')
                 return
             
             # Decode base64 file data
@@ -36,7 +43,7 @@ class handler(BaseHTTPRequestHandler):
             # Process the Word document
             result = process_word_document(file_bytes, file_name)
             
-            # Send response
+            # Send success response
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -48,14 +55,19 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(response.encode('utf-8'))
             
         except Exception as e:
-            # Send error response
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            response = json.dumps({'error': str(e)})
-            self.wfile.write(response.encode('utf-8'))
+            # Send detailed error response
+            error_msg = f"Error: {str(e)}\nTraceback: {traceback.format_exc()}"
+            self.send_error_response(500, error_msg)
+    
+    def send_error_response(self, status_code, message):
+        """Send error response with proper headers"""
+        self.send_response(status_code)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        
+        response = json.dumps({'error': message, 'success': False})
+        self.wfile.write(response.encode('utf-8'))
     
     def do_OPTIONS(self):
         """Handle CORS preflight requests"""
@@ -68,37 +80,44 @@ class handler(BaseHTTPRequestHandler):
 def process_word_document(file_bytes, file_name):
     """Process Word document and extract all formatting information"""
     
-    # Load the document
-    doc = Document(io.BytesIO(file_bytes))
-    
-    # Extract document structure with full formatting
-    paragraphs = []
-    tables = []
-    
-    for element in doc.element.body:
-        if element.tag.endswith('p'):  # Paragraph
-            para = element
+    try:
+        # Load the document
+        doc = Document(io.BytesIO(file_bytes))
+        
+        # Extract document structure with full formatting
+        paragraphs = []
+        tables = []
+        
+        # Process paragraphs
+        for para in doc.paragraphs:
             paragraph_data = extract_paragraph_formatting(para)
             paragraphs.append(paragraph_data)
-            
-        elif element.tag.endswith('tbl'):  # Table
-            table = element
+        
+        # Process tables
+        for table in doc.tables:
             table_data = extract_table_formatting(table)
             tables.append(table_data)
-    
-    # Detect document type and apply specific processing
-    document_type = detect_document_type(paragraphs)
-    
-    # Generate the formatted HTML
-    formatted_html = generate_formatted_html(paragraphs, tables, document_type)
-    
-    return {
-        'success': True,
-        'formattedHtml': formatted_html,
-        'documentType': document_type,
-        'paragraphs': paragraphs,
-        'tables': tables
-    }
+        
+        # Detect document type and apply specific processing
+        document_type = detect_document_type(paragraphs)
+        
+        # Generate the formatted HTML
+        formatted_html = generate_formatted_html(paragraphs, tables, document_type)
+        
+        return {
+            'success': True,
+            'formattedHtml': formatted_html,
+            'documentType': document_type,
+            'paragraphs': paragraphs,
+            'tables': tables
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f'Error processing document: {str(e)}',
+            'formattedHtml': f'<div>Error processing document: {str(e)}</div>'
+        }
 
 def extract_paragraph_formatting(paragraph):
     """Extract all formatting information from a paragraph"""

@@ -338,9 +338,16 @@ def create_proper_header(text):
 <br>
 <br>'''
     
-    # Replace the messy header section with clean structure
-    header_pattern = r'\{\[H002\]\}[^}]*\{\[H003\]\}[^}]*\{\[H004\]\}[^}]*\{\[tagHeader\]\}[^}]*\{\[L001E8\]\}[^}]*\{\[mailingAddress\]\}'
-    text = re.sub(header_pattern, header_html, text, flags=re.DOTALL)
+    # Look for the header pattern more flexibly
+    if '{[H002]}' in text and '{[L001E8]}' in text:
+        # Find the section from H002 to the end of mailing address
+        header_start = text.find('{[H002]}')
+        if header_start != -1:
+            # Find where the header section ends (before "Notice of Intention")
+            notice_start = text.find('Notice of Intention to Foreclose Mortgage')
+            if notice_start != -1:
+                # Replace the messy header section
+                text = text[:header_start] + header_html + text[notice_start:]
     
     return text
 
@@ -355,9 +362,14 @@ def create_re_table_structure(text):
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table></div>'''
     
-    # Replace borrower info section with RE table
-    borrower_pattern = r'Borrower Name:[^}]*\{\[M558\]\}[^}]*\{\[M559\]\}[^}]*Mailing Address:[^}]*\{\[M561\]\}[^}]*\{\[M562\]\}[^}]*\{\[M563\]\}[^}]*\{\[M564\]\}[^}]*\{\[M565\]\}[^}]*\{\[M566\]\}'
-    text = re.sub(borrower_pattern, re_table_html, text, flags=re.DOTALL)
+    # Find the borrower info section and replace it
+    borrower_start = text.find('Borrower Name:')
+    if borrower_start != -1:
+        # Find where this section ends (before "Dear")
+        dear_start = text.find('Dear {[M558]}')
+        if dear_start != -1:
+            # Replace the borrower info section with RE table
+            text = text[:borrower_start] + re_table_html + text[dear_start:]
     
     return text
 
@@ -374,9 +386,16 @@ def create_borrower_table(text):
 
 def format_salutation(text):
     """Format the salutation section"""
-    # Clean up the multiple Dear options and use the first one
-    salutation_pattern = r'Dear \{\[M558\]\} \(Mortgagor Name\) and \{\[M559\]\} \(Second Mortgagor\),[^}]*\(or if[^}]*\)'
-    text = re.sub(salutation_pattern, '<div>Dear {[Salutation]},</div>', text, flags=re.DOTALL)
+    # Find the first "Dear" and replace all the multiple options with a clean salutation
+    dear_start = text.find('Dear {[M558]}')
+    if dear_start != -1:
+        # Find where all the Dear options end (before "Notice is hereby")
+        notice_start = text.find('Notice is hereby given')
+        if notice_start != -1:
+            # Replace all the Dear options with a clean salutation
+            salutation_html = '<div>Dear {[Salutation]},</div>'
+            text = text[:dear_start] + salutation_html + text[notice_start:]
+    
     return text
 
 def wrap_money_fields(text):
@@ -406,9 +425,14 @@ def create_payment_info_tables(text):
   <td>{Money({[M013E6]})}</td>
 </tr></tbody></table></div>'''
     
-    # Replace payment info section with table
-    payment_pattern = r'Number of Payments Due:[^}]*\{\[M590\]\}[^}]*Net Payment Amount[^}]*\{\[M591E6\]\}[^}]*Unpaid Late Charges:[^}]*\{\[M015E6\]\}[^}]*NSF & Other Fees:[^}]*\{\[M593E6\]\}[^}]*\{\[C004E6\]\}[^}]*Unapplied/Suspense Funds:[^}]*\{\[M013E6\]\}'
-    text = re.sub(payment_pattern, payment_table_html, text, flags=re.DOTALL)
+    # Find the payment info section
+    payment_start = text.find('Number of Payments Due:')
+    if payment_start != -1:
+        # Find where this section ends (before "If you do not cure")
+        cure_start = text.find('If you do not cure the default')
+        if cure_start != -1:
+            # Replace the payment info section with table
+            text = text[:payment_start] + payment_table_html + text[cure_start:]
     
     return text
 

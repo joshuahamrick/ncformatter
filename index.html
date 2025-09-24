@@ -49,15 +49,47 @@
             </div>
 
             <!-- Results Section -->
-            <div id="result" class="results-section">
-                <h3>Formatted Output:</h3>
-                <div id="resultContent" class="result-content"></div>
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <div class="output-container">
+                    <div class="tabs">
+                        <button class="tab-btn" data-tab="preview">Preview</button>
+                        <button class="tab-btn active" data-tab="html">HTML Code</button>
+                    </div>
+                    
+                    <div id="previewTab" class="tab-content">
+                        <div id="formattedPreview" class="formatted-preview"></div>
+                    </div>
+                    
+                    <div id="htmlTab" class="tab-content active">
+                        <div class="html-header">
+                            <button id="copyButton" class="copy-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                                Copy HTML
+                            </button>
+                        </div>
+                        <pre id="htmlCode" class="html-code"></pre>
+                    </div>
+                </div>
             </div>
 
-            <!-- Download Button -->
-            <button id="downloadBtn" class="download-btn" style="display: none;">
-                Download HTML
-            </button>
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message" style="display: none;">
+                <div class="error-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                </div>
+                <div class="error-content">
+                    <h3>Error Processing Document</h3>
+                    <p id="errorText"></p>
+                    <button class="retry-btn" onclick="resetUpload()">Try Again</button>
+                </div>
+            </div>
         </main>
     </div>
 

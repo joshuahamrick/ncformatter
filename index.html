@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Document Formatter</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-content">
+            <img src="newcourse-logo-black.png" alt="NewCourse Logo" class="logo">
+        </div>
+    </div>
+    
+    <div class="container">
+        <header class="header">
+            <h1>Template HTML Formatter</h1>
+            <p>Drag and drop your Word document to convert it to formatted HTML</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Upload Area -->
+            <div class="upload-section">
+                <div id="dropZone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7,10 12,15 17,10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </div>
+                        <h3>Drop your Word document here</h3>
+                        <p>Or click to browse files</p>
+                        <input type="file" id="fileInput" accept=".doc,.docx" hidden>
+                        <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
+                            Browse Files
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing Status -->
+            <div id="processing" class="processing-status" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing document...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="result" class="results-section">
+                <h3>Formatted Output:</h3>
+                <div id="resultContent" class="result-content"></div>
+            </div>
+
+            <!-- Download Button -->
+            <button id="downloadBtn" class="download-btn" style="display: none;">
+                Download HTML
+            </button>
+        </main>
+    </div>
+
+    <!-- New Python-powered formatter -->
+    <script src="script-new.js"></script>
+</body>
+</html>

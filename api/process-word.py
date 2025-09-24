@@ -361,16 +361,14 @@ def create_proper_header(text):
 <br>
 <br>'''
     
-    # Look for the header pattern more flexibly
-    if '{[H002]}' in text and '{[L001E8]}' in text:
-        # Find the section from H002 to the end of mailing address
-        header_start = text.find('{[H002]}')
-        if header_start != -1:
-            # Find where the header section ends (before "Notice of Intention")
-            notice_start = text.find('Notice of Intention to Foreclose Mortgage')
-            if notice_start != -1:
-                # Replace the messy header section
-                text = text[:header_start] + header_html + text[notice_start:]
+    # Look for the header pattern - find where the current header starts
+    header_start = text.find('{[tagHeader]}')
+    if header_start != -1:
+        # Find where the header section ends (before "Notice of Intention")
+        notice_start = text.find('Notice of Intention to Foreclose Mortgage')
+        if notice_start != -1:
+            # Replace the messy header section with proper structure
+            text = text[:header_start] + header_html + text[notice_start:]
     
     return text
 
@@ -385,21 +383,25 @@ def create_re_table_structure(text):
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table></div>'''
     
-    # Find the borrower info section and replace it
-    borrower_start = text.find('Borrower Name:')
-    if borrower_start != -1:
-        # Find where this section ends (before "Dear")
-        dear_start = text.find('Dear {[M558]}')
-        if dear_start != -1:
-            # Replace the borrower info section with RE table
-            text = text[:borrower_start] + re_table_html + text[dear_start:]
+    # Find where to insert the RE table - after the document title
+    title_end = text.find('Notice of Intention to Foreclose Mortgage</b></div>')
+    if title_end != -1:
+        # Insert RE table after the title
+        insert_point = title_end + len('Notice of Intention to Foreclose Mortgage</b></div>')
+        text = text[:insert_point] + '<br>' + re_table_html + '<br>' + text[insert_point:]
     
     return text
 
 def format_document_title(text):
     """Format the main document title"""
-    text = re.sub(r'<div>Notice of Intention to Foreclose Mortgage</div>', 
+    # Fix the title that's currently embedded in the header div
+    text = re.sub(r'Notice of Intention to Foreclose Mortgage</b></div>', 
+                  'Notice of Intention to Foreclose Mortgage</b></div>', text)
+    
+    # Also handle the case where it's in a regular div
+    text = re.sub(r'<div[^>]*>Notice of Intention to Foreclose Mortgage</div>', 
                   '<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>', text)
+    
     return text
 
 def create_borrower_table(text):
@@ -474,6 +476,11 @@ def create_payment_info_tables(text):
 
 def clean_and_format_html(text):
     """Clean up and add proper spacing"""
+    # Remove duplicate payment information that appears after the table
+    # Look for the pattern where payment info is repeated as individual lines
+    duplicate_pattern = r'<div><u><b>Number of Payments Due:</b></u><u><b> </b></u><b>{[M590]}</b><b> </b></div>.*?<div><u><b>Unapplied/Suspense Funds: </b></u><b>\$</b><b>\{Money\} </b></div>'
+    text = re.sub(duplicate_pattern, '', text, flags=re.DOTALL)
+    
     # Add <br> between divs for proper spacing
     text = re.sub(r'</div>\s*<div>', '</div>\n<br>\n<div>', text)
     

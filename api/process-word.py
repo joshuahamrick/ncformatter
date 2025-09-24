@@ -291,23 +291,29 @@ def apply_universal_formatting_rules(html_text):
     # 1. Fix field names - convert to standard format
     html_text = fix_field_names(html_text)
     
-    # 2. Create header structure if L001 + M558-M566 sequence exists
-    html_text = create_header_structure(html_text)
+    # 2. Create proper header structure
+    html_text = create_proper_header(html_text)
     
-    # 3. Create RE table structure
-    html_text = create_re_table(html_text)
+    # 3. Create RE table structure  
+    html_text = create_re_table_structure(html_text)
     
-    # 4. Wrap money fields in Money() function
+    # 4. Format the main document title
+    html_text = format_document_title(html_text)
+    
+    # 5. Create borrower information table
+    html_text = create_borrower_table(html_text)
+    
+    # 6. Format salutation
+    html_text = format_salutation(html_text)
+    
+    # 7. Wrap money fields in Money() function
     html_text = wrap_money_fields(html_text)
     
-    # 5. Create payment tables
-    html_text = create_payment_tables(html_text)
+    # 8. Create payment information tables
+    html_text = create_payment_info_tables(html_text)
     
-    # 6. Format headers (center and bold)
-    html_text = format_headers(html_text)
-    
-    # 7. Add proper spacing and structure
-    html_text = add_proper_spacing(html_text)
+    # 9. Clean up and add proper spacing
+    html_text = clean_and_format_html(html_text)
     
     return html_text
 
@@ -318,28 +324,59 @@ def fix_field_names(text):
     text = re.sub(r'\{([A-Z0-9]+E[0-9]+)\}', r'{\[\1\]}', text)  # {FIELDE1} -> {[FIELDE1]}
     return text
 
-def create_header_structure(text):
-    """Create proper header structure"""
-    # Look for L001 + M558-M566 pattern and create header
-    header_pattern = r'\{\[L001E8\]\}[^}]*\{\[M558\]\}[^}]*\{\[M559\]\}[^}]*\{\[M560\]\}[^}]*\{\[M561\]\}[^}]*\{\[M562\]\}[^}]*\{\[M563\]\}[^}]*\{\[M564\]\}[^}]*\{\[M565\]\}[^}]*\{\[M566\]\}'
+def create_proper_header(text):
+    """Create proper header structure with company info and date"""
+    # Create header section
+    header_html = '''<div>{[tagHeader]}</div>
+<br>
+<div style="text-align: right">{[L001E8]}</div>
+<br>
+<div>{[mailingAddress]}</div>
+<br>
+<br>
+<br>
+<br>
+<br>'''
     
-    if re.search(header_pattern, text, re.DOTALL):
-        text = re.sub(header_pattern, 
-            '<div>{[tagHeader]}</div>\n<br>\n<div style="text-align: right">{[L001E8]}</div>\n<br>\n<div>{[mailingAddress]}</div>', 
-            text, flags=re.DOTALL)
+    # Replace the messy header section with clean structure
+    header_pattern = r'\{\[H002\]\}[^}]*\{\[H003\]\}[^}]*\{\[H004\]\}[^}]*\{\[tagHeader\]\}[^}]*\{\[L001E8\]\}[^}]*\{\[mailingAddress\]\}'
+    text = re.sub(header_pattern, header_html, text, flags=re.DOTALL)
     
     return text
 
-def create_re_table(text):
+def create_re_table_structure(text):
     """Create RE table structure"""
-    # Look for "Notice of Intention to Foreclose Mortgage" + borrower info
-    re_pattern = r'Notice of Intention to Foreclose Mortgage[^}]*Borrower Name:[^}]*\{\[M558\]\}[^}]*\{\[M559\]\}[^}]*Mailing Address:[^}]*\{\[M561\]\}[^}]*\{\[M562\]\}[^}]*\{\[M563\]\}[^}]*\{\[M564\]\}[^}]*\{\[M565\]\}[^}]*\{\[M566\]\}'
+    # Create RE table
+    re_table_html = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%">RE: Loan No:</td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table></div>'''
     
-    if re.search(re_pattern, text, re.DOTALL):
-        text = re.sub(re_pattern,
-            '<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td width="20%">RE: Loan No:</td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td width="20%" valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table></div>',
-            text, flags=re.DOTALL)
+    # Replace borrower info section with RE table
+    borrower_pattern = r'Borrower Name:[^}]*\{\[M558\]\}[^}]*\{\[M559\]\}[^}]*Mailing Address:[^}]*\{\[M561\]\}[^}]*\{\[M562\]\}[^}]*\{\[M563\]\}[^}]*\{\[M564\]\}[^}]*\{\[M565\]\}[^}]*\{\[M566\]\}'
+    text = re.sub(borrower_pattern, re_table_html, text, flags=re.DOTALL)
     
+    return text
+
+def format_document_title(text):
+    """Format the main document title"""
+    text = re.sub(r'<div>Notice of Intention to Foreclose Mortgage</div>', 
+                  '<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>', text)
+    return text
+
+def create_borrower_table(text):
+    """Create borrower information table"""
+    # This would create a table for borrower info if needed
+    return text
+
+def format_salutation(text):
+    """Format the salutation section"""
+    # Clean up the multiple Dear options and use the first one
+    salutation_pattern = r'Dear \{\[M558\]\} \(Mortgagor Name\) and \{\[M559\]\} \(Second Mortgagor\),[^}]*\(or if[^}]*\)'
+    text = re.sub(salutation_pattern, '<div>Dear {[Salutation]},</div>', text, flags=re.DOTALL)
     return text
 
 def wrap_money_fields(text):
@@ -349,32 +386,43 @@ def wrap_money_fields(text):
     text = re.sub(r'\{\[([A-Z0-9]+E6)\]\}', r'{Money({\[\1\]})}', text)
     return text
 
-def create_payment_tables(text):
+def create_payment_info_tables(text):
     """Create payment information tables"""
-    # Look for payment information and create tables
+    # Create payment breakdown table
+    payment_table_html = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%">Number of Payments Due:</td>
+  <td>{[M590]}</td>
+  </tr><tr>
+  <td width="50%">Net Payment Amount:</td>
+  <td>{Money({[M591E6]})}</td>
+  </tr><tr>
+  <td width="50%">Unpaid Late Charges:</td>
+  <td>{Money({[M015E6]})}</td>
+  </tr><tr>
+  <td width="50%">NSF & Other Fees:</td>
+  <td>{Money({[M593E6]})} + {Money({[C004E6]})}</td>
+  </tr><tr>
+  <td width="50%">Unapplied/Suspense Funds:</td>
+  <td>{Money({[M013E6]})}</td>
+</tr></tbody></table></div>'''
+    
+    # Replace payment info section with table
     payment_pattern = r'Number of Payments Due:[^}]*\{\[M590\]\}[^}]*Net Payment Amount[^}]*\{\[M591E6\]\}[^}]*Unpaid Late Charges:[^}]*\{\[M015E6\]\}[^}]*NSF & Other Fees:[^}]*\{\[M593E6\]\}[^}]*\{\[C004E6\]\}[^}]*Unapplied/Suspense Funds:[^}]*\{\[M013E6\]\}'
-    
-    if re.search(payment_pattern, text, re.DOTALL):
-        text = re.sub(payment_pattern,
-            '<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td width="50%">Number of Payments Due:</td>\n  <td>{[M590]}</td>\n  </tr><tr>\n  <td width="50%">Net Payment Amount:</td>\n  <td>{Money({[M591E6]})}</td>\n  </tr><tr>\n  <td width="50%">Unpaid Late Charges:</td>\n  <td>{Money({[M015E6]})}</td>\n  </tr><tr>\n  <td width="50%">NSF & Other Fees:</td>\n  <td>{Money({[M593E6]})} + {Money({[C004E6]})}</td>\n  </tr><tr>\n  <td width="50%">Unapplied/Suspense Funds:</td>\n  <td>{Money({[M013E6]})}</td>\n</tr></tbody></table></div>',
-            text, flags=re.DOTALL)
+    text = re.sub(payment_pattern, payment_table_html, text, flags=re.DOTALL)
     
     return text
 
-def format_headers(text):
-    """Format headers (center and bold)"""
-    # Format "Notice of Intention to Foreclose Mortgage"
-    text = re.sub(r'<div>Notice of Intention to Foreclose Mortgage</div>', 
-                  '<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>', text)
-    
-    return text
-
-def add_proper_spacing(text):
-    """Add proper spacing and structure"""
+def clean_and_format_html(text):
+    """Clean up and add proper spacing"""
     # Add <br> between divs for proper spacing
     text = re.sub(r'</div>\s*<div>', '</div>\n<br>\n<div>', text)
     
     # Clean up multiple line breaks
     text = re.sub(r'\n{3,}', '\n\n', text)
+    
+    # Remove excessive whitespace and comments
+    text = re.sub(r'\([^)]*\)\s*', '', text)  # Remove comments in parentheses
+    text = re.sub(r'\s+', ' ', text)  # Collapse multiple spaces
+    text = re.sub(r' \n', '\n', text)  # Remove spaces before newlines
     
     return text

@@ -319,9 +319,32 @@ def apply_universal_formatting_rules(html_text):
 
 def fix_field_names(text):
     """Convert field names to standard format"""
+    # Fix broken field names like {[M558]} that got split into {[M558]}
+    text = re.sub(r'\{<b>([A-Z]\d+[A-Z]?E?\d*)\}</b>', r'{[\1]}', text)
+    text = re.sub(r'\{<b>([A-Z]\d+[A-Z]?)\}</b>', r'{[\1]}', text)
+    
+    # Fix field names that got split across tags
+    text = re.sub(r'\{<b>([A-Z]\d+[A-Z]?E?\d*)</b><b>\}', r'{[\1]}', text)
+    
+    # Fix specific broken patterns we see in the output
+    text = re.sub(r'<b>\{</b><b>\[M558\]\}</b>', '{[M558]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M559\]\}</b>', '{[M559]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M594\]\}</b>', '{[M594]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M561\]\}</b>', '{[M561]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M562\]\}</b>', '{[M562]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M563\]\}</b>', '{[M563]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M564\]\}</b>', '{[M564]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M565\]\}</b>', '{[M565]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M566\]\}</b>', '{[M566]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M567\]\}</b>', '{[M567]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M583\]\}</b>', '{[M583]}', text)
+    text = re.sub(r'<b>\{</b><b>\[M568\]\}</b>', '{[M568]}', text)
+    
     # Convert various field formats to standard {[field]} format
+    text = re.sub(r'\{Insert\(([^}]+)\)\}', r'{[tagHeader]}', text)
     text = re.sub(r'\{([A-Z0-9]+)\}', r'{\[\1\]}', text)  # {FIELD} -> {[FIELD]}
     text = re.sub(r'\{([A-Z0-9]+E[0-9]+)\}', r'{\[\1\]}', text)  # {FIELDE1} -> {[FIELDE1]}
+    
     return text
 
 def create_proper_header(text):
@@ -396,6 +419,10 @@ def format_salutation(text):
             salutation_html = '<div>Dear {[Salutation]},</div>'
             text = text[:dear_start] + salutation_html + text[notice_start:]
     
+    # Also handle cases where Dear appears multiple times in sequence
+    # Remove all the duplicate Dear lines
+    text = re.sub(r'<div[^>]*>Dear[^<]*</div>\s*<br>\s*<div[^>]*></div>\s*<br>\s*', '', text)
+    
     return text
 
 def wrap_money_fields(text):
@@ -425,9 +452,18 @@ def create_payment_info_tables(text):
   <td>{Money({[M013E6]})}</td>
 </tr></tbody></table></div>'''
     
-    # Find the payment info section
+    # Find the payment info section - look for the table that's embedded in text
+    table_start = text.find('<div><table width="100%" style="border-collapse: collapse"><tbody><tr>')
+    if table_start != -1:
+        # Find where this embedded table ends
+        table_end = text.find('</table></div>', table_start) + len('</table></div>')
+        if table_end != -1:
+            # Replace the embedded table with proper formatting
+            text = text[:table_start] + payment_table_html + text[table_end:]
+    
+    # Also handle the case where payment info is in regular text
     payment_start = text.find('Number of Payments Due:')
-    if payment_start != -1:
+    if payment_start != -1 and table_start == -1:
         # Find where this section ends (before "If you do not cure")
         cure_start = text.find('If you do not cure the default')
         if cure_start != -1:

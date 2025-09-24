@@ -126,12 +126,18 @@ class DocumentProcessor {
                 console.log('ArrayBuffer size:', arrayBuffer.byteLength);
                 
                 try {
-                    // Convert ArrayBuffer to base64
+                    // Convert ArrayBuffer to base64 (chunked to avoid call stack overflow)
                     const uint8Array = new Uint8Array(arrayBuffer);
-                    const base64String = btoa(String.fromCharCode(...uint8Array));
+                    let base64String = '';
+                    const chunkSize = 8192; // Process in chunks
+                    
+                    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                        const chunk = uint8Array.slice(i, i + chunkSize);
+                        base64String += btoa(String.fromCharCode(...chunk));
+                    }
                     
                     // Call Vercel Python serverless function
-                    const response = await fetch('/api/process-word', {
+                    const response = await fetch('/api/process-word.py', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

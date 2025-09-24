@@ -1,9 +1,10 @@
-// Word Document Formatter - New Version with Python Backend
+// Word Document Formatter - Python Backend Version
 
 class WordFormatter {
     constructor() {
         this.initializeElements();
         this.setupEventListeners();
+        console.log('WordFormatter initialized');
     }
 
     initializeElements() {
@@ -16,7 +17,6 @@ class WordFormatter {
         this.processingDiv = document.getElementById('processing');
         this.tabButtons = document.querySelectorAll('.tab-btn');
         
-        // Check if elements exist
         console.log('Elements found:', {
             fileInput: !!this.fileInput,
             dropZone: !!this.dropZone,
@@ -49,62 +49,50 @@ class WordFormatter {
     }
 
     handleFileSelect(event) {
-        const files = event.target.files;
-        if (files.length > 0) {
-            this.processFile(files[0]);
+        const file = event.target.files[0];
+        if (file && this.isWordDocument(file)) {
+            this.processFile(file);
         }
     }
 
     handleDragOver(event) {
         event.preventDefault();
-        this.dropZone.classList.add('dragover');
+        this.dropZone.classList.add('drag-over');
     }
 
     handleDragLeave(event) {
         event.preventDefault();
-        this.dropZone.classList.remove('dragover');
+        this.dropZone.classList.remove('drag-over');
     }
 
     handleDrop(event) {
         event.preventDefault();
-        this.dropZone.classList.remove('dragover');
+        this.dropZone.classList.remove('drag-over');
         
         const files = event.dataTransfer.files;
-        if (files.length > 0) {
+        if (files.length > 0 && this.isWordDocument(files[0])) {
             this.processFile(files[0]);
         }
     }
 
-    async processFile(file) {
-        if (!this.isValidWordDocument(file)) {
-            alert('Please select a valid Word document (.doc or .docx file).');
-            return;
-        }
+    isWordDocument(file) {
+        return file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+               file.type === 'application/msword' ||
+               file.name.toLowerCase().endsWith('.docx') ||
+               file.name.toLowerCase().endsWith('.doc');
+    }
 
-        this.showProcessing();
+    async processFile(file) {
+        console.log('Processing file:', file.name);
         
         try {
-            const formattedText = await DocumentProcessor.extractTextFromWord(file);
+            this.showProcessing();
+            const formattedText = await WordFormatter.extractTextFromWord(file);
             this.displayResult(formattedText);
         } catch (error) {
             console.error('Error processing file:', error);
-            this.resultDiv.innerHTML = `<p style="color: red;">Error processing document: ${error.message}</p>`;
-        } finally {
-            this.hideProcessing();
+            this.showError('Failed to process document: ' + error.message);
         }
-    }
-
-    isValidWordDocument(file) {
-        const validTypes = [
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/msword',
-            'application/vnd.ms-word'
-        ];
-        
-        const validExtensions = ['.doc', '.docx'];
-        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-        
-        return validTypes.includes(file.type) || validExtensions.includes(fileExtension);
     }
 
     showProcessing() {
@@ -112,7 +100,7 @@ class WordFormatter {
             this.processingDiv.style.display = 'block';
         }
         if (this.resultsSection) {
-            this.resultsSection.classList.add('hidden');
+            this.resultsSection.style.display = 'none';
         }
     }
 
@@ -125,31 +113,29 @@ class WordFormatter {
     displayResult(formattedText) {
         console.log('Displaying result:', formattedText.substring(0, 100) + '...');
         
-        // Show the results section by setting display style (override !important)
-        if (this.resultsSection) {
-            this.resultsSection.classList.remove('hidden');
-            this.resultsSection.style.display = 'block';
-            console.log('Results section should now be visible');
-        }
+        // Hide processing
+        this.hideProcessing();
         
         // Set the preview content
         if (this.formattedPreview) {
             this.formattedPreview.innerHTML = formattedText;
-            console.log('Preview content set');
         }
         
         // Set the HTML code content
         if (this.htmlCode) {
             this.htmlCode.textContent = formattedText;
-            console.log('HTML code content set');
         }
         
-        // Scroll to results section
+        // Show results section
         if (this.resultsSection) {
-            setTimeout(() => {
-                this.resultsSection.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+            this.resultsSection.style.display = 'block';
+            this.resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
+    }
+
+    showError(message) {
+        this.hideProcessing();
+        alert('Error: ' + message);
     }
 
     switchTab(tabName) {
@@ -189,12 +175,8 @@ class WordFormatter {
             alert('Failed to copy to clipboard');
         });
     }
-}
 
-// Document Processor with Python Backend
-class DocumentProcessor {
     static async extractTextFromWord(file) {
-        // Use Python serverless function to extract text with full formatting
         console.log('extractTextFromWord called with:', file.name, 'Size:', file.size);
         
         return new Promise((resolve, reject) => {
@@ -206,7 +188,7 @@ class DocumentProcessor {
                 console.log('DataURL length:', dataURL.length);
                 
                 try {
-                    // Extract base64 string from data URL (remove "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,")
+                    // Extract base64 string from data URL
                     const base64String = dataURL.split(',')[1];
                     
                     // Call Vercel Python serverless function
@@ -231,27 +213,20 @@ class DocumentProcessor {
                     if (result.success) {
                         resolve(result.formattedHtml);
                     } else {
-                        // Show the actual error from Python
                         const errorMsg = result.error || 'Unknown error';
                         console.error('Python processing error:', errorMsg);
                         resolve(`<div style="color: red; padding: 20px; border: 1px solid red; border-radius: 4px;">
                             <h3>Error Processing Document:</h3>
                             <p>${errorMsg}</p>
-                            <p><em>This error occurred in the Python backend. Check the Vercel function logs for more details.</em></p>
                         </div>`);
                     }
                     
                 } catch (error) {
                     console.error('Error calling Python function:', error);
-                    
-                    // Fallback to basic text extraction for testing
-                    const fallbackContent = "Error processing document. Using fallback content for testing.\n\n" +
-                        "Dear {[Salutation]},\n\n" +
-                        "This is fallback content while the Python processing is being set up.\n\n" +
-                        "Sincerely,\n" +
-                        "Test Department";
-                    
-                    resolve(fallbackContent);
+                    resolve(`<div style="color: red; padding: 20px; border: 1px solid red; border-radius: 4px;">
+                        <h3>Error Processing Document:</h3>
+                        <p>Failed to process document: ${error.message}</p>
+                    </div>`);
                 }
             };
             
@@ -265,7 +240,7 @@ class DocumentProcessor {
     }
 }
 
-// Initialize the formatter when the page loads
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new WordFormatter();
 });

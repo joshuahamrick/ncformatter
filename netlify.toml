@@ -1,8 +1,12 @@
 [build]
   functions = "netlify/functions"
+  publish = "."
+  command = "echo 'No build required for static site'"
 
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["python-docx"]
 
 [[redirects]]
   from = "/api/*"

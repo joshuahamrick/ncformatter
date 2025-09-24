@@ -125,24 +125,30 @@ class WordFormatter {
     displayResult(formattedText) {
         console.log('Displaying result:', formattedText.substring(0, 100) + '...');
         
-        // Show the results section
+        // Show the results section by setting display style (override !important)
         if (this.resultsSection) {
             this.resultsSection.classList.remove('hidden');
+            this.resultsSection.style.display = 'block';
+            console.log('Results section should now be visible');
         }
         
         // Set the preview content
         if (this.formattedPreview) {
             this.formattedPreview.innerHTML = formattedText;
+            console.log('Preview content set');
         }
         
         // Set the HTML code content
         if (this.htmlCode) {
             this.htmlCode.textContent = formattedText;
+            console.log('HTML code content set');
         }
         
-        // Show the results section
+        // Scroll to results section
         if (this.resultsSection) {
-            this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+            setTimeout(() => {
+                this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
         }
     }
 

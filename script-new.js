@@ -15,14 +15,32 @@ class WordFormatter {
         this.copyButton = document.getElementById('copyButton');
         this.processingDiv = document.getElementById('processing');
         this.tabButtons = document.querySelectorAll('.tab-btn');
+        
+        // Check if elements exist
+        console.log('Elements found:', {
+            fileInput: !!this.fileInput,
+            dropZone: !!this.dropZone,
+            resultsSection: !!this.resultsSection,
+            formattedPreview: !!this.formattedPreview,
+            htmlCode: !!this.htmlCode,
+            copyButton: !!this.copyButton,
+            processingDiv: !!this.processingDiv,
+            tabButtons: this.tabButtons.length
+        });
     }
 
     setupEventListeners() {
-        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
-        this.dropZone.addEventListener('dragover', (e) => this.handleDragOver(e));
-        this.dropZone.addEventListener('dragleave', (e) => this.handleDragLeave(e));
-        this.dropZone.addEventListener('drop', (e) => this.handleDrop(e));
-        this.copyButton.addEventListener('click', () => this.copyToClipboard());
+        if (this.fileInput) {
+            this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        }
+        if (this.dropZone) {
+            this.dropZone.addEventListener('dragover', (e) => this.handleDragOver(e));
+            this.dropZone.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+            this.dropZone.addEventListener('drop', (e) => this.handleDrop(e));
+        }
+        if (this.copyButton) {
+            this.copyButton.addEventListener('click', () => this.copyToClipboard());
+        }
         
         // Tab switching
         this.tabButtons.forEach(btn => {
@@ -90,26 +108,42 @@ class WordFormatter {
     }
 
     showProcessing() {
-        this.processingDiv.style.display = 'block';
-        this.resultsSection.classList.add('hidden');
+        if (this.processingDiv) {
+            this.processingDiv.style.display = 'block';
+        }
+        if (this.resultsSection) {
+            this.resultsSection.classList.add('hidden');
+        }
     }
 
     hideProcessing() {
-        this.processingDiv.style.display = 'none';
+        if (this.processingDiv) {
+            this.processingDiv.style.display = 'none';
+        }
     }
 
     displayResult(formattedText) {
+        console.log('Displaying result:', formattedText.substring(0, 100) + '...');
+        
         // Show the results section
-        this.resultsSection.classList.remove('hidden');
+        if (this.resultsSection) {
+            this.resultsSection.classList.remove('hidden');
+        }
         
         // Set the preview content
-        this.formattedPreview.innerHTML = formattedText;
+        if (this.formattedPreview) {
+            this.formattedPreview.innerHTML = formattedText;
+        }
         
         // Set the HTML code content
-        this.htmlCode.textContent = formattedText;
+        if (this.htmlCode) {
+            this.htmlCode.textContent = formattedText;
+        }
         
         // Show the results section
-        this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        if (this.resultsSection) {
+            this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
     }
 
     switchTab(tabName) {
@@ -123,20 +157,27 @@ class WordFormatter {
     }
 
     copyToClipboard() {
+        if (!this.htmlCode) {
+            console.error('HTML code element not found');
+            return;
+        }
+        
         const htmlContent = this.htmlCode.textContent;
         navigator.clipboard.writeText(htmlContent).then(() => {
             // Show feedback
-            const originalText = this.copyButton.innerHTML;
-            this.copyButton.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20,6 9,17 4,12"/>
-                </svg>
-                Copied!
-            `;
-            
-            setTimeout(() => {
-                this.copyButton.innerHTML = originalText;
-            }, 2000);
+            if (this.copyButton) {
+                const originalText = this.copyButton.innerHTML;
+                this.copyButton.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                    Copied!
+                `;
+                
+                setTimeout(() => {
+                    this.copyButton.innerHTML = originalText;
+                }, 2000);
+            }
         }).catch(err => {
             console.error('Failed to copy: ', err);
             alert('Failed to copy to clipboard');

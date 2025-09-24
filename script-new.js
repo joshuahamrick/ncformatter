@@ -122,19 +122,12 @@ class DocumentProcessor {
             
             reader.onload = async function(event) {
                 console.log('FileReader onload triggered');
-                const arrayBuffer = event.target.result;
-                console.log('ArrayBuffer size:', arrayBuffer.byteLength);
+                const dataURL = event.target.result;
+                console.log('DataURL length:', dataURL.length);
                 
                 try {
-                    // Convert ArrayBuffer to base64 (chunked to avoid call stack overflow)
-                    const uint8Array = new Uint8Array(arrayBuffer);
-                    let base64String = '';
-                    const chunkSize = 8192; // Process in chunks
-                    
-                    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-                        const chunk = uint8Array.slice(i, i + chunkSize);
-                        base64String += btoa(String.fromCharCode(...chunk));
-                    }
+                    // Extract base64 string from data URL (remove "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,")
+                    const base64String = dataURL.split(',')[1];
                     
                     // Call Vercel Python serverless function
                     const response = await fetch('/api/process-word.py', {
@@ -187,7 +180,7 @@ class DocumentProcessor {
                 reject(new Error('Failed to read file'));
             };
             
-            reader.readAsArrayBuffer(file);
+            reader.readAsDataURL(file);
         });
     }
 }

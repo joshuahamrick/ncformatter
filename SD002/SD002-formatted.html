@@ -1,0 +1,57 @@
+<div>{[tagHeader]}
+    <br>
+    <div>{[L001]}</div>
+    <br>
+    <div>{[mailingAddress]}</div>
+    <br><br><br><br><br>
+      
+      
+    <div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+      <td width="20%">Loan Number:</td>
+      <td>{[M594]}</td>
+      </tr><tr>
+      <td width="20%" valign="top">Property Address:</td>
+      <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+    </tr></tbody></table></div>
+    <br>
+    <div>THIS DOCUMENT IS AN ATTEMPT TO COLLECT A DEBT, AND ANY INFORMATION OBTAINED WILL BE USED FOR THAT PURPOSE. IF YOU ARE IN BANKRUPTCY OR HAVE BEEN DISCHARGED IN BANKRUPTCY, THIS LETTER IS FOR INFORMATIONAL PURPOSES ONLY AND DOES NOT CONSTITUTE A DEMAND FOR PAYMENT IN VIOLATION OF THE AUTOMATIC STAY OR THE DISCHARGE INJUNCTION OR AN ATTEMPT TO RECOVER ALL OR ANY PORTION OF THE DEBT FROM YOU PERSONALLY.</div>
+    <br>
+    <div style="text-align: center">Notice of Breach</div>
+    <br>
+    <div>Dear {[Salutation]},</div>
+    <br>
+    <div>You are hereby notified that:</div>
+    <br>
+    <div>1. You are now in default under the Note and Mortgage, Deed of Trust, or Security Deed held by {[plsMatrix.CompanyLongName]} secured by property located at: {[M567]},{If('{[M583]}'&lt;&gt;'')} {[M583]},{End If} {[M568]} (the Property).</div>
+    <br>
+    <div>2. The nature of your default is the failure to make the monthly mortgage payment(s) due for {[M026]} and all subsequent payments. Late charges and other charges have also accrued in the amount of {Money({[M015]})}. The total amount past due now required to cure this default is {Money({[C001]})}.</div>
+    <br>
+    <div>Interest, late charges, and other charges that may vary from day to day will continue to accrue, and therefore, the total amount past due may be greater after the date of this notice. Interest, late charges, and other charges that will continue to accrue as of the date of this notice are required to be paid but will not affect the total amount past due required to cure the default. As stated above, the total amount past due required to cure the default is {Money({[C001]})}. Payment must be made by Electronic Funds Transfer (ACH), check, cashier's check, certified check, or money order and made payable to {[plsMatrix.CompanyLongName]} at the address stated below. However, if any check or other instrument received as payment under the Note or Security Instrument is returned unpaid (i.e. insufficient funds), any or all subsequent payments due under the Note and Security Instrument may be required to be made by certified funds. Please include your loan number on any payment or correspondence. Payment shall be sent to:</div>
+    <br>
+    <div style="text-align: center">{Compress({[plsMatrix.CompanyLongName]}|Attention: Default Cash|{[plsMatrix.LossPreventionAddress1]}, {[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]})}</div>
+    <br>
+    <div>3. The default must be cured on or before {DateAdd({[L001]}|+33|MM/dd/yyyy|Day)} by tendering payment in the amount of {Money({[C001]})}.</div>
+    <br>
+    <div>4. Failure to cure the default on or before {DateAdd({[L001]}|+33|MM/dd/yyyy|Day)} by, may result in acceleration of the sums secured by the Security Instrument, and sale of the Property.</div>
+    <br>
+    <div>5. Any payment received that is less than the cure amount may be applied to the loan or held in suspense and is not to be construed as a cure to the default or a waiver of our rights.</div>
+    <br>
+    <div>6. You have the right to reinstate your loan after acceleration and the right to bring a court action to deny the existence of a Default or to assert any other defense to acceleration and sale. In addition, you may have other rights provided for by State or Federal Law, or by the contract documents.</div>
+    <br>
+    <div>7. If the default is not cured on or before {DateAdd({[L001]}|+33|MM/dd/yyyy|Day)} by, the Holder at its option may require immediate payment in full of all sums secured by the Security Instrument without further demand and may foreclose the Security Instrument.</div>
+    <br>
+    <div>8. The Holder shall be entitled to collect all expenses incurred in pursuing the remedies provided by the Security Instrument, including, but not limited to, reasonable attorneys' fees and costs of title evidence, as allowed by the Security Instrument and applicable law. Attorneys' fees shall include those awarded by an appellate court and any attorneys' fees incurred in a bankruptcy proceeding.</div>
+    <br>
+    <div>9. This letter and the information contained herein are required to be provided to you pursuant to the requirements of the loan agreement and applicable regulations. The issuance of this letter in no way affects any loss mitigation application which may be pending and does not affect or impair access to any loss mitigations that may be available to you.</div>
+    <br>
+    <div>10. If you disagree with the assertion that your loan is in default, or if you disagree with the calculations of the amount required to cure the default as stated in this letter, you may contact:</div>
+    <br>
+    <div style="text-align: center">{Compress({[plsMatrix.CompanyLongName]}|Attention: Loan Servicing|{[plsMatrix.LossPreventionAddress1]}, {[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]}|Phone No.: {[plsMatrix.LossPreventionPhoneNumberTollFree]})}</div>
+    <br><br>
+    <div>11. If you are unable to bring your account current, the Holder offers consumer assistance programs which may help resolve your default. If you would like to learn more about these programs, please contact us at 1-866-558-8850. HUD also sponsors housing counseling agencies throughout the country that can provide you with free advice on foreclosure alternatives, budgeting, and assistance understanding this notice. If you would like to contact HUD-approved counselor, please call 1-800-569-4287 or visit http://www.hud.gov/offices/hsg/sfh/hcc/hcs.cfm.</div>
+    <br><br>
+    <div>Sincerely,</div>
+    <br>
+    <div>Loan Servicing</div>
+    <div>{[plsMatrix.CompanyLongName]}</div>
+    <div>{[L003]}/{[L005]}</div></div>

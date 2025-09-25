@@ -377,38 +377,65 @@ def process_text_with_formatting(runs):
     return formatted_text
 
 def apply_universal_formatting_rules(html_text):
-    """Apply universal formatting rules to any document"""
+    """Apply universal formatting rules to any document - SIMPLIFIED VERSION"""
     
     try:
-        # 1. Fix field names first (clean up descriptive text)
-        html_text = fix_field_names(html_text)
+        # SIMPLE FIELD CLEANUP - Direct string replacements that we know work
+        html_text = simple_field_cleanup(html_text)
         
-        # 2. Wrap money fields
-        html_text = wrap_money_fields(html_text)
-        
-        # 3. Fix the header structure completely
-        html_text = fix_header_structure_completely(html_text)
-        
-        # 4. Add document title and RE table
-        html_text = add_document_title_and_re_table(html_text)
-        
-        # 5. Fix salutation section
-        html_text = fix_salutation_section(html_text)
-        
-        # 6. Fix payment information
-        html_text = fix_payment_information(html_text)
-        
-        # 7. Add plsMatrix prefixes where needed
-        html_text = add_pls_matrix_prefixes(html_text)
-        
-        # 8. Clean excessive formatting
-        html_text = clean_excessive_formatting(html_text)
+        # Add debug message
+        if '(Company Address Line 1)' in html_text:
+            html_text = '<div style="color: red;">❌ Simple field cleanup did NOT work</div>' + html_text
+        else:
+            html_text = '<div style="color: green;">✓ Simple field cleanup worked!</div>' + html_text
         
     except Exception as e:
         # If any step fails, return the original text with error info
-        html_text = f'<div style="color: red;">Universal formatting error: {str(e)}</div>' + html_text
+        html_text = f'<div style="color: red;">Simple formatting error: {str(e)}</div>' + html_text
     
     return html_text
+
+def simple_field_cleanup(text):
+    """Simple, direct field cleanup using string replacements"""
+    
+    # Direct string replacements for the most common patterns
+    replacements = [
+        ('{[tagHeader]}(Company Address Line 1)', '{[tagHeader]}'),
+        ('{[tagHeader]}(Company Address Line 2)', '{[tagHeader]}'),
+        ('{[tagHeader]}(Company Address Line 3)', '{[tagHeader]}'),
+        ('{[L001]} (System Date)', '{[L001]}'),
+        ('{[M558]}(New Bill Line 1/ Mortgagor Name)', '{[M558]}'),
+        ('{[M559]} (New Bill Line 2/Second Mortgagor)', '{[M559]}'),
+        ('{[M560]} (New Bill Line 3/Third Mortgagor)', '{[M560]}'),
+        ('{[M561]} (Additional Mailing Address)', '{[M561]}'),
+        ('{[M562]} (Mailing Street Address)', '{[M562]}'),
+        ('{[M594]}(Loan Number – No Dash)', '{[M594]}'),
+        ('{[M567]} (Property Line 1/Street Address)', '{[M567]}'),
+        ('{[M583]}(New Property Unit Number)', '{[M583]}'),
+        ('{[M568]} (New Property Line 2/City State and Zip Code)', '{[M568]}'),
+        ('{[M590]}(Delinquent Payment Count)', '{[M590]}'),
+        ('{[U027]} (Late Fee Date)', '{[U027]}'),
+        ('{[L008E8]} (Last Day This Month)', '{[L008E8]}'),
+        ('{[L011E8]} (Today Plus 30 Days)', '{[L011E8]}'),
+        ('{[M956]} (Foreign Address Indicator = 1)', '{[M956]}'),
+        ('{[M928]} (Foreign Country Code)', '{[M928]}'),
+        ('{[M929]} (Foreign Postal Code)', '{[M929]}'),
+        ('{[U026]}(Late Charge Fee)', '{[U026]}'),
+        ('{[M591E6]}(Delinquent Balance)', '{[M591E6]}'),
+        ('{[C001E6]}(Total Amount Due', '{[C001E6]}'),
+        ('{[M585E6]}(Mtgr Rec Corp Adv Bal', '{[M585E6]}'),
+        ('{[M029E6]}(Total Monthly Payment', '{[M029E6]}'),
+        ('{[M013E6]}(Suspense Balance', '{[M013E6]}'),
+        ('{[M015E6]}(Accrued Late Charge Bal)', '{[M015E6]}'),
+        ('{[M593E6]}(NSF Balance', '{[M593E6]}'),
+        ('{[C004E6]}(Other Fees)', '{[C004E6]}')
+    ]
+    
+    # Apply all replacements
+    for old_text, new_text in replacements:
+        text = text.replace(old_text, new_text)
+    
+    return text
 
 def fix_header_structure_completely(text):
     """Completely replace the messy header with clean structure"""

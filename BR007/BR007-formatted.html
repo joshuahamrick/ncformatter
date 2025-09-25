@@ -1,0 +1,89 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<br>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+
+
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%">Loan Number:</td>
+  <td>{[M594]}</td>
+  </tr></tbody></table></div>
+<br>
+<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>
+<br>
+<table><tbody><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Notice is hereby given that you are in default in payment of the principal and interest due on the indebtedness represented by the above-described promissory note (the “Note”). According to its terms and conditions and in performance of the covenant contained in the certain Deed of Trust (the “Deed of Trust”) securing payment of the Note to promptly pay when due the principal of and the interest on the indebtedness evidenced by the Note.</div>
+<br>
+<div>As of {[L001]}, your loan is delinquent and due for {[M026]}, in the past due amount of {Math({[C001]} + {[M585]} - {[M013]}|Money)}.</div>
+<br>
+<div>This amount is only valid until {[L008]}.</div>
+<br>
+<div>Prior to beginning foreclosure, we are required under the terms of your loan to notify you of your default. As of today, your loan is in default and is due for {[M026]} The amount past due as of the date of this letter is {Math({[C001]} + {[M585]} - {[M013]}|Money)}, which consists of the following:</div>
+<br>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%">Next Payment Due Date:</td>
+      <td>{[M026]}</td>
+  </tr><tr>
+  <td width="50%">Number of Payments Due as of the Date of This Notice:</td>
+      <td>{[M590]}</td>
+  </tr><tr>
+  <td width="50%">Total Monthly Payments Due:</td>
+      <td>{Money({[M591]})}</td>
+  </tr><tr>
+  <td width="50%">Late Charges:</td>
+      <td>{Money({[M015]})}</td>
+  </tr><tr>
+  <td width="50%">Other Charges: Uncollected NSF Fees:</td>
+      <td>{Money({[M593]})}</td>
+  </tr><tr>
+  <td width="50%">Other Fees:</td>
+      <td>{Money({[C004]})}</td>
+  </tr><tr>
+  <td width="50%">Corporate Advance Balance:</td>
+      <td>{Money({[M585]})}</td>
+  </tr><tr>
+  <td width="50%">Partial Payment (Unapplied) Balance:</td>
+      <td>{Money({[M013]})}</td>
+</tr></tbody></table>
+<br>
+<div>TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</div>
+<br>
+<div>You can cure this default by making a payment of {Math({[C001]} + {[M585]} - {[M013]}|Money)} by {[L008]}. Please note any additional monthly payments, late charges and other charges that may become due under the Note, Security Instrument and applicable law after the date of this notice must also be paid.</div>
+<br>
+<div>Unless we receive full payment of all past-due amounts by the above date, we will accelerate the entire sum of both principal and interest due and payable, and invoke any remedies provided for in the Note and Deed of Trust, including but not limited to the foreclosure sale of the property. This could result in loss of your property. This means your mortgaged property will be sold to pay off the mortgage debt. If we refer your case to our attorneys, but you cure the default before they begin legal proceedings against you, you will still have to pay the reasonable attorney’s fees, actually incurred. However, if legal proceedings are started against you, you will have to pay the reasonable attorney’s fees within allowable fees and costs. Any attorney’s fees will be added to whatever you owe us, which may also include our reasonable costs. If you cure the default within the thirty-day period stated above, you will not be required to pay attorney’s fees.</div>
+<br>
+<div>If you have not cured the default within the thirty-day period and foreclosure proceedings have begun, you still have the right to cure the default and prevent the sale at any time up to one hour before the foreclosure sale. You may do so by paying the total amount of the unpaid monthly payments plus any late or other charges then due, as well as the reasonable attorney’s fees and costs connected with the foreclosure sale [and perform any other requirements under the mortgage]. A notice of the date of the foreclosure sale will be sent to you before the sale. Of course, the amount needed to cure the default will increase the longer you wait.</div>
+<br>
+<div><b>You may find out at any time exactly what the required payment will be by calling us at the following number: {[plsMatrix.CSPhoneNumber]} and select option #2 or {[plsMatrix.SPOCContactEmail]}. This payment must be in cash, cashier’s check, certified check or money order and made payable to us at {[plsMatrix.PayoffAddr1]}, {[plsMatrix.PayoffAddr2]}.</b></div>
+<br>
+<div>You should realize that a foreclosure sale will end your ownership of the mortgaged property and your right to remain in it. If you continue to live in the property after the foreclosure sale, a lawsuit could be started to evict you.</div>
+<br>
+<div>Please consider the following:</div>
+<br>
+<div>You should contact a HUD Counselor at HUD’s National Servicing Center at (877) 622-8525/TDD (800) 877-8339 or the Homeownership Preservation Foundation (888-995-HOPE) to speak with counselors who can provide assistance and may be able to help you avoid foreclosure.</div>
+<br>
+<div><table width="80%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>There may be homeownership assistance options available, and you can reach a {[plsMatrix.CompanyShortName]} Loss Mitigation Specialist at {[plsMatrix.CSPhoneNumber]} and select option #2 to discuss these options.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center"></td>
+  <td><u>http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams</u></td>
+</tr></tbody></table></div>
+<br>
+<div>If you pay the past due amount, and any additional monthly payments, late charges or fees that may become due between the date of this notice and the date when you make your payment, your account will be considered up-to-date, and you can continue to make your regular monthly payments.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Default Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

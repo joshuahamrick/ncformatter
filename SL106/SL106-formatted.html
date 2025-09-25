@@ -1,0 +1,57 @@
+{Font(Calibri|10pt)}
+<div>{[tagHeader]}</div>
+<br>
+<div style="text-align: right">{[L001]}</div>
+<br>
+<div>{[mailingAddress]}</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%">RE: Loan No:</td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table></div>
+<br>
+<div style="text-align: center">For homeowners who require any translation assistance or Language Access Services, please contact us at {[plsMatrix.CSPhoneNumber]}. A translation of this letter into a language other than English may be obtained.</div>
+<div style="text-align: center">Si necesita asistencia con la traduccion o servicios de acceso al idioma, llamenos al {[plsMatrix.CSPhoneNumber]}.</div>
+<div style="text-align: center">Se puede obtener una traduccion de esta carta.</div>
+<br>
+<div>Dear Mortgager(s),</div>
+<br>
+<div>This notice is to inform you that your loan has reached the maturity date as of {[U072]}. Enclosed is a payoff statement good through {[U032]}.</div>
+<br>
+<div>Your loan may include a non-interest-bearing balance which might have been completed because of modification or deferment.  The non-interest balance also becomes due upon the maturity date of your loan, the date that interest bearing portion of your balance is paid off, or when underlying property is sold or transferred.  If your loan has a deferred balance the amount is represented below and included in the total payoff letter</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%">Maturity date:</td>
+  <td>{[U072]}</td>
+  </tr><tr>
+  <td width="50%">Non-Interest Balance:</td>
+  <td>{Money({[U234]})}</td>
+</tr></tbody></table></div>
+<br>
+<b><div style="text-align: center">CONCERNED ABOUT YOUR NON-INTEREST-BEARING BALANCE? PLEASE ACT NOW</div></b>
+<br>
+<div>If you have questions or are concerned that you will be unable to pay off your non-interest-bearing balance on the above date, please contact us immediately at {[plsMatrix.LoanCounselingPh]} so that we can explore what options may be available to help you.</div>
+<br>
+<div>If you wish to pay your loan in full, <b>Please remit these funds to:</b></div>
+<br>
+<div style="text-align: center">{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|&nbsp;|Attn: {[plsMatrix.CashMgmtDep]})}</div>
+<br>
+<b><div style="text-align: center">These funds must be certified (cashier's check or bank wire).</div></b>
+<br>
+<div>{[plsMatrix.SeeReverse]}</div>
+
+<hr>
+
+<div>Please refer to your loan documents for specific information on your loan and retain this notice for your records.</div>
+<br>
+<div>If you have any questions regarding this notice, please contact our Loan Counseling Department at {[plsMatrix.LoanCounselingPh]} between the hours of {[plsMatrix.LossMitHrs]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Loan Counceling Departament</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+<br>
+<div>{[L003]} {[L004]} {[L005]}</div>

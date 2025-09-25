@@ -449,7 +449,8 @@ def format_document_title_universal(text):
     
     for pattern in title_patterns:
         # Find and replace with universal centered format
-        text = re.sub(rf'<div[^>]*>{pattern}[^<]*</div>', 
+        escaped_pattern = re.escape(pattern)
+        text = re.sub(rf'<div[^>]*>{escaped_pattern}[^<]*</div>', 
                      f'<div style="text-align: center"><b>{pattern}</b></div>', text)
     
     return text
@@ -552,7 +553,7 @@ def clean_excessive_formatting(text):
     text = re.sub(r'<div style="text-align: justify">', '<div>', text)
     
     # Remove excessive <b> tags that wrap every line
-    text = re.sub(r'<b>\{[^}]+\}</b>', r'{\1}', text)
+    text = re.sub(r'<b>(\{[^}]+\})</b>', r'\1', text)
     
     # Clean up empty divs
     text = re.sub(r'<div><b></b></div>', '', text)

@@ -922,11 +922,44 @@ def transform_to_target_format(text):
     for old_pattern, new_pattern in payment_transformations:
         text = text.replace(old_pattern, new_pattern)
     
-    # STEP 4: Clean up any remaining formatting issues
-    text = re.sub(r'<br>\s*<br>\s*<br>\s*<br>\s*<br>\s*<br>\s*<br>', '<br><br><br><br><br>', text)
-    text = re.sub(r'<b>\s*</b>', '', text)
-    text = re.sub(r'<u>\s*</u>', '', text)
-    text = re.sub(r'\s+', ' ', text)
+        # STEP 4: Clean up any remaining formatting issues
+        text = re.sub(r'<br>\s*<br>\s*<br>\s*<br>\s*<br>\s*<br>\s*<br>', '<br><br><br><br><br>', text)
+        text = re.sub(r'<b>\s*</b>', '', text)
+        text = re.sub(r'<u>\s*</u>', '', text)
+        text = re.sub(r'\s+', ' ', text)
+        
+        # STEP 5: Apply comprehensive spacing transformation
+        text = apply_comprehensive_spacing(text)
+    
+    return text
+
+def apply_comprehensive_spacing(text):
+    """Apply comprehensive spacing transformation to fix wall of text issue"""
+    
+    # Replace all instances of " <br> " with "\n<br>\n" for proper line breaks
+    text = text.replace(' <br> ', '\n<br>\n')
+    text = text.replace('<br> ', '<br>\n')
+    text = text.replace(' <br>', '\n<br>')
+    
+    # Replace all instances of " </div>" with "\n</div>"
+    text = text.replace(' </div>', '\n</div>')
+    
+    # Replace all instances of "<div>" with "<div>" (keep as is, but ensure proper spacing after)
+    text = text.replace(' <div>', '\n<div>')
+    
+    # Fix table spacing
+    text = text.replace('<table', '\n<table')
+    text = text.replace('</table>', '</table>\n')
+    text = text.replace('<tbody>', '<tbody>\n')
+    text = text.replace('</tbody>', '\n</tbody>')
+    text = text.replace('<tr>', '  <tr>\n')
+    text = text.replace('</tr>', '\n  </tr>')
+    text = text.replace('<td', '    <td')
+    text = text.replace('</td>', '</td>\n')
+    
+    # Clean up multiple consecutive newlines
+    text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
     
     return text
 

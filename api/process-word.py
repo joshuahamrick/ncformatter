@@ -394,7 +394,10 @@ def apply_universal_formatting_rules(html_text):
     # 5. Fix field names
     html_text = fix_field_names(html_text)
     
-    # 6. Clean excessive formatting
+    # 6. Add plsMatrix prefixes where needed
+    html_text = add_pls_matrix_prefixes(html_text)
+    
+    # 7. Clean excessive formatting
     html_text = clean_excessive_formatting(html_text)
     
     return html_text
@@ -532,6 +535,20 @@ def fix_payment_information(text):
     
     return text
 
+def add_pls_matrix_prefixes(text):
+    """Add plsMatrix. prefixes to specific fields"""
+    # Fields that need plsMatrix prefix
+    pls_matrix_fields = [
+        'CSPhoneNumber', 'SPOCContactEmail', 'PayoffAddr1', 'PayoffAddr2',
+        'CompanyShortName', 'CompanyLongName', 'CashMgmtDept', 'LossMitHrs',
+        'LoanCounselingPh', 'SeeReverse'
+    ]
+    
+    for field in pls_matrix_fields:
+        text = re.sub(r'\{\[' + field + r'\]\}', r'{[plsMatrix.' + field + ']}', text)
+    
+    return text
+
 def fix_field_names(text):
     """Convert field names to standard format"""
     # Fix broken field names like {[M558]} that got split into {[M558]}
@@ -565,6 +582,9 @@ def fix_field_names(text):
     text = re.sub(r'\{Insert\(([^}]+)\)\}', r'{[tagHeader]}', text)
     text = re.sub(r'\{([A-Z0-9]+)\}', r'{\[\1\]}', text)  # {FIELD} -> {[FIELD]}
     text = re.sub(r'\{([A-Z0-9]+E[0-9]+)\}', r'{\[\1\]}', text)  # {FIELDE1} -> {[FIELDE1]}
+    
+    # Clean up field names with descriptive text in parentheses
+    text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\([^)]*\)', r'{[\1]}', text)
     
     return text
 
@@ -863,10 +883,19 @@ def format_salutation(text):
     return text
 
 def wrap_money_fields(text):
-    """Wrap money fields in Money() function"""
-    # Find money fields (fields ending in E6 or containing $)
+    """Wrap money fields in Money() and Math() functions"""
+    # Wrap individual money fields
     text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}', r'{Money({\[\1\]})}', text)
     text = re.sub(r'\{\[([A-Z0-9]+E6)\]\}', r'{Money({\[\1\]})}', text)
+    
+    # Wrap math expressions
+    text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}\s*–\s*\{\[([A-Z0-9]+)\]\}', 
+                  r'{Math({\[\1\]} + {\[\2\]} + {\[\3\]} - {\[\4\]}|Money)}', text)
+    text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}\s*–\s*\{\[([A-Z0-9]+)\]\}', 
+                  r'{Math({\[\1\]} + {\[\2\]} - {\[\3\]}|Money)}', text)
+    text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}', 
+                  r'{Math({\[\1\]} + {\[\2\]}|Money)}', text)
+    
     return text
 
 def create_payment_info_tables(text):

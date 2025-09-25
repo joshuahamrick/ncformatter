@@ -596,11 +596,16 @@ def fix_field_names(text):
     text = re.sub(r'\{([A-Z0-9]+E[0-9]+)\}', r'{\[\1\]}', text)  # {FIELDE1} -> {[FIELDE1]}
     
     # Clean up field names with descriptive text in parentheses - more flexible patterns
+    # Pattern 1: {[M558]}(New Bill Line 1/ Mortgagor Name)
     text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\s*\([^)]*\)', r'{[\1]}', text)
     text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\([^)]*\)', r'{[\1]}', text)
     
-    # Handle patterns like {[tagHeader]}(Company Address Line 1)
+    # Pattern 2: {[tagHeader]}(Company Address Line 1)
+    text = re.sub(r'\{\[([A-Za-z0-9]+)\}\]\s*\([^)]*\)', r'{[\1]}', text)
     text = re.sub(r'\{\[([A-Za-z0-9]+)\}\]\([^)]*\)', r'{[\1]}', text)
+    
+    # Pattern 3: {[L001]} (System Date) - with space before parentheses
+    text = re.sub(r'\{\[([A-Za-z0-9]+)\}\]\s+\([^)]*\)', r'{[\1]}', text)
     
     # Debug output to see if function is working
     if 'tagHeader' in text:
@@ -905,14 +910,21 @@ def format_salutation(text):
 def wrap_money_fields(text):
     """Wrap money fields in Money() and Math() functions"""
     # Wrap individual money fields with E6 suffix (with or without descriptive text)
+    text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}\s*\([^)]*\)', r'{Money({\[\1\]})}', text)
     text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}\([^)]*\)', r'{Money({\[\1\]})}', text)
     text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}', r'{Money({\[\1\]})}', text)
     
     # Wrap E6 fields without $ signs but with descriptive text
+    text = re.sub(r'\{\[([A-Z0-9]+E6)\]\}\s*\([^)]*\)', r'{Money({\[\1\]})}', text)
     text = re.sub(r'\{\[([A-Z0-9]+E6)\]\}\([^)]*\)', r'{Money({\[\1\]})}', text)
     
     # Wrap regular fields that appear to be money (with $ signs and descriptive text)
+    text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\s*\([^)]*\)', r'{Money({\[\1\]})}', text)
     text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\([^)]*\)', r'{Money({\[\1\]})}', text)
+    
+    # Debug output
+    if 'E6' in text:
+        text = '<div style="color: blue;">✓ Money function is running</div>' + text
     
     return text
 

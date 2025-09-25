@@ -680,11 +680,26 @@ def fix_remaining_patterns(text):
         # Clean up remaining conditional logic
         ('<div style="text-align: justify">(<u><b>"OR"</b></u> If <b>{[M956]}</b>)</div>', ''),
         
+        # Clean up business rules references
+        ('<div style="text-align: justify">(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules for Additional Addresses in BKFS) </div>', ''),
+        ('<div style="text-align: justify; font-size: 11pt">(see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS)</div>', ''),
+        
+        # Clean up remaining payment descriptions that are still showing up
+        (' (Delinquent Balance)', ''),
+        (' (Late Charge Fee)', ''),
+        (' (Late Fee Date)', ''),
+        (' (Last Day This Month)', ''),
+        (' (Today Plus 30 Days)', ''),
+        (' (Total Amount Due + Mtgr Rec Corp Adv Bal + Total Monthly Payment - Suspense Balance)', ''),
+        (' (Total Amount Due + Mtgr Rec Corp Adv Bal - Suspense Balance)', ''),
+        
         # Clean up extra spacing and formatting
         ('<b> </b>', ' '),
         ('<b></b>', ''),
         ('<u><b> </b></u>', ' '),
         ('<u><b></b></u>', ''),
+        ('<u> </u>', ' '),
+        ('<u></u>', ''),
     ]
     
     for old_text, new_text in replacements:

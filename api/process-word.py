@@ -857,6 +857,28 @@ def transform_to_target_format(text):
         # Fix Unpaid Late Charges formatting
         ('<u><b>Unpaid Late Charges</b></u><u><b>:</b></u> <b>$</b><b>{Money({[M015]})}</b>', '<u><b>Unpaid Late Charges:</b></u> {Money({[M015]})}'),
         
+        # Fix payment table formatting to match target exactly
+        ('<u><b>Number of Payments Due:</b></u>', '<b><u>Number of Payments Due:</u></b>'),
+        ('<u><b>Net Payment Amount:</b></u>', '<b><u>Net Payment Amount:</u></b>'),
+        ('<u><b>Unpaid Late Charges:</b></u>', '<b><u>Unpaid Late Charges:</u></b>'),
+        ('<u><b>NSF & Other Fees:</b></u>', '<b><u>NSF &amp; Other Fees:</u></b>'),
+        ('<u><b>Unapplied/Suspense Funds:</b></u>', '<b><u>Unapplied/Suspense Funds:</u></b>'),
+        
+        # Fix text differences to match target exactly
+        ('which represents three (3) payments past due', 'which represents the past due amount'),
+        
+        # Fix bullet point table structure
+        ('<div style="text-align: justify">There may be homeownership assistance options available, and you can reach a {[plsMatrix.CompanyShortName]} Loss Mitigation Specialist at {[plsMatrix.CSPhoneNumber]} to discuss these options.</div>', '<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td width="3%" valign="top" style="text-align: center">•</td>\n  <td>There may be homeownership assistance options available, and you can reach a {[plsMatrix.CompanyShortName]} Loss Mitigation Specialist at {[plsMatrix.CSPhoneNumber]} to discuss these options.</td>\n  </tr><tr>\n  <td width="3%" valign="top" style="text-align: center">•</td>\n  <td>Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company. http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams</td>\n</tr></tbody></table></div>'),
+        
+        # Remove the separate Avoid Foreclosure Scams line since it's now in the table
+        ('<div style="text-align: justify">Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company. </div>', ''),
+        
+        # Fix final spacing and formatting
+        ('<b>. </b></div>', '.</div>'),
+        ('<div style="text-align: justify">Sincerely,</div>', '<div>Sincerely,</div>'),
+        ('<div style="text-align: justify">Default Department</div>', '<div>Default Department</div>'),
+        ('<div style="text-align: justify">{[plsMatrix.CompanyLongName]}</div>', '<div>{[plsMatrix.CompanyLongName]}</div>'),
+        
         # Clean up business rules and template text
         ('<div style="text-align: justify">(<u><b>"OR"</b></u> If <b>{[M956]}</b>)</div>', ''),
         ('<div style="text-align: justify">(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules for Additional Addresses in BKFS) </div>', ''),

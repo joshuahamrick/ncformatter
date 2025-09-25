@@ -1007,6 +1007,11 @@ def apply_comprehensive_spacing(text):
     text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
     
+    # FINAL FIX: Remove the break between Number of Payments Due and Net Payment Amount
+    # This must be the last fix after all spacing transformations
+    text = text.replace('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>', 
+                       '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>')
+    
     return text
 
 def fix_header_structure_completely(text):

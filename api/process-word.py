@@ -977,22 +977,17 @@ def apply_comprehensive_spacing(text):
     # Replace all instances of "<div>" with "<div>" (keep as is, but ensure proper spacing after)
     text = text.replace(' <div>', '\n<div>')
     
-    # Fix table spacing to match target format exactly
-    text = text.replace('<table', '<table')
-    text = text.replace('</table>', '</table>')
-    text = text.replace('<tbody>', '<tbody>')
-    text = text.replace('</tbody>', '</tbody>')
-    text = text.replace('<tr>', '<tr>')
-    text = text.replace('</tr>', '</tr>')
-    text = text.replace('<td', '  <td')
-    text = text.replace('</td>', '</td>')
+    # Fix table spacing to match target format exactly with proper line breaks
+    text = text.replace('<table width="100%" style="border-collapse: collapse"><tbody><tr>  <td', '<table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td')
+    text = text.replace('</td> </tr><tr>  <td', '</td>\n  </tr><tr>\n  <td')
+    text = text.replace('</td> </tr><tr>  <td', '</td>\n  </tr><tr>\n  <td')
+    text = text.replace('</td></tbody></table>', '</td>\n</tr></tbody></table>')
+    text = text.replace('</td></tbody></table>', '</td>\n</tr></tbody></table>')
     
-    # Fix specific table formatting issues
-    text = text.replace('</tr>   <tr>', '  </tr><tr>')
-    text = text.replace('</td> \n  </tr>', '</td>\n  </tr>')
-    text = text.replace('</td> \n</td>', '</td>\n    </td>')
-    text = text.replace('   <td', '  <td')
-    text = text.replace('   <tr>', '<tr>')
+    # Fix table structure with proper indentation and line breaks
+    text = text.replace('<table width="100%" style="border-collapse: collapse"><tbody><tr>', '<table width="100%" style="border-collapse: collapse"><tbody><tr>')
+    text = text.replace('</tr><tr>', '\n  </tr><tr>')
+    text = text.replace('</tr></tbody></table>', '\n</tr></tbody></table>')
     
     # Fix extra bold tags in the output
     text = text.replace('<b>{[plsMatrix.CSPhoneNumber]}</b>', '{[plsMatrix.CSPhoneNumber]}')

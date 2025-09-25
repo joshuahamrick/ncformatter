@@ -232,64 +232,32 @@ def generate_formatted_html(paragraphs, tables, document_type):
     
     html_parts = []
     
-    # Group paragraphs into logical sections
-    current_section = []
-    section_type = None
-    
+    # Process each paragraph individually but with smart replacements
     for para in paragraphs:
         if not para['text'].strip():
             continue
             
         text = para['text'].strip()
         
-        # Determine section type based on content
-        if text.startswith('{[H') or text.startswith('{[L') or 'tagHeader' in text:
-            # Header section
-            if current_section and section_type != 'header':
-                html_parts.append(process_section(current_section, section_type))
-                current_section = []
-            section_type = 'header'
-            
-        elif 'Notice of Intention' in text or 'Notice of Default' in text:
-            # Document title section
-            if current_section:
-                html_parts.append(process_section(current_section, section_type))
-                current_section = []
-            section_type = 'title'
-            
-        elif text.startswith('{[M') and ('Borrower' in text or 'Loan' in text or 'Property' in text):
-            # Borrower info section (should become table)
-            if current_section and section_type != 'borrower':
-                html_parts.append(process_section(current_section, section_type))
-                current_section = []
-            section_type = 'borrower'
-            
-        elif text.startswith('Dear'):
-            # Salutation section
-            if current_section:
-                html_parts.append(process_section(current_section, section_type))
-                current_section = []
-            section_type = 'salutation'
-            
-        elif 'Number of Payments' in text or 'Net Payment' in text or 'Unpaid Late' in text:
-            # Payment info section (should become table)
-            if current_section and section_type != 'payment':
-                html_parts.append(process_section(current_section, section_type))
-                current_section = []
-            section_type = 'payment'
-            
-        else:
-            # Regular content
-            if current_section and section_type not in ['content', section_type]:
-                html_parts.append(process_section(current_section, section_type))
-                current_section = []
-            section_type = 'content'
+        # Create the div with proper formatting
+        div_attrs = []
         
-        current_section.append(para)
-    
-    # Process the final section
-    if current_section:
-        html_parts.append(process_section(current_section, section_type))
+        # Add alignment
+        if para['alignment'] != 'left':
+            div_attrs.append(f'text-align: {para["alignment"]}')
+        
+        # Add font size (if consistent across runs)
+        font_sizes = [run['fontSize'] for run in para['runs'] if run['fontSize']]
+        if font_sizes and len(set(font_sizes)) == 1:
+            div_attrs.append(f'font-size: {font_sizes[0]}')
+        
+        # Build the div tag
+        div_style = f' style="{"; ".join(div_attrs)}"' if div_attrs else ''
+        
+        # Process the text with formatting
+        formatted_text = process_text_with_formatting(para['runs'])
+        
+        html_parts.append(f'<div{div_style}>{formatted_text}</div>')
     
     return '\n<br>\n'.join(html_parts)
 
@@ -411,19 +379,158 @@ def process_text_with_formatting(runs):
 def apply_universal_formatting_rules(html_text):
     """Apply universal formatting rules to any document"""
     
-    # 1. Fix field names - convert to standard format
+    # 1. Fix the header structure completely
+    html_text = fix_header_structure_completely(html_text)
+    
+    # 2. Add document title and RE table
+    html_text = add_document_title_and_re_table(html_text)
+    
+    # 3. Fix salutation section
+    html_text = fix_salutation_section(html_text)
+    
+    # 4. Fix payment information
+    html_text = fix_payment_information(html_text)
+    
+    # 5. Fix field names
     html_text = fix_field_names(html_text)
     
-    # 2. Wrap money fields in Money() function
-    html_text = wrap_money_fields(html_text)
-    
-    # 3. Clean excessive formatting
+    # 6. Clean excessive formatting
     html_text = clean_excessive_formatting(html_text)
     
-    # 4. Final cleanup and formatting
-    html_text = clean_and_format_html(html_text)
-    
     return html_text
+
+def fix_header_structure_completely(text):
+    """Completely replace the messy header with clean structure"""
+    # Find the start of the document (first tagHeader)
+    start_match = re.search(r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>', text)
+    if not start_match:
+        return text
+    
+    # Find where the header section ends (before any borrower info or Dear)
+    end_patterns = [
+        r'<div[^>]*>Borrower Name:',
+        r'<div[^>]*>Dear',
+        r'<div[^>]*>Notice is hereby given',
+        r'<div[^>]*>To cure'
+    ]
+    
+    end_pos = None
+    for pattern in end_patterns:
+        end_match = re.search(pattern, text)
+        if end_match:
+            end_pos = end_match.start()
+            break
+    
+    if end_pos:
+        # Replace the entire header section
+        clean_header = '''<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<br>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>'''
+        
+        text = text[:start_match.start()] + clean_header + text[end_pos:]
+    
+    return text
+
+def add_document_title_and_re_table(text):
+    """Add document title and RE table structure"""
+    # Add document title after the header
+    header_end = re.search(r'<br><br><br><br><br>', text)
+    if header_end:
+        insert_pos = header_end.end()
+        
+        title_html = '''<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>
+<br>'''
+        
+        re_table_html = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%"><b>Borrower Name:</b></td>
+  <td>{[M558]}{If('{[M559]}'&lt;&gt;'')} and {[M559]}{End If}</td>
+  </tr><tr>
+  <td width="20%" valign="top"><b>Mailing Address:</b></td>
+  <td>{Compress({[M561]}|{[M562]}|{[M563]}{[M564]}{[M565]}{[M566]})}</td>
+  </tr><tr>
+  <td width="20%"><b>Mortgage Loan No:</b></td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%"><b>Property Address:</b></td>
+  <td>{Compress({[M567]}|{[M583]})}</td>
+</tr></tbody></table></div>
+<br>'''
+        
+        text = text[:insert_pos] + title_html + re_table_html + text[insert_pos:]
+    
+    return text
+
+def fix_salutation_section(text):
+    """Fix the salutation section to show only one clean salutation"""
+    # Find the first Dear and remove all the multiple options
+    dear_start = re.search(r'<div[^>]*>Dear', text)
+    if dear_start:
+        # Find where the salutation section ends
+        end_patterns = [
+            r'<div[^>]*>Notice is hereby given',
+            r'<div[^>]*>To cure',
+            r'<div[^>]*>You are required'
+        ]
+        
+        end_pos = None
+        for pattern in end_patterns:
+            end_match = re.search(pattern, text)
+            if end_match:
+                end_pos = end_match.start()
+                break
+        
+        if end_pos:
+            # Replace all the Dear options with a clean salutation
+            clean_salutation = '<div>Dear {[Salutation]},</div>\n<br>'
+            text = text[:dear_start.start()] + clean_salutation + text[end_pos:]
+    
+    return text
+
+def fix_payment_information(text):
+    """Fix payment information to be in a proper table"""
+    # Find the payment information section
+    payment_start = re.search(r'<div[^>]*>Number of Payments Due:', text)
+    if payment_start:
+        # Find where this section ends
+        end_patterns = [
+            r'<div[^>]*>If you do not cure',
+            r'<div[^>]*>You should realize',
+            r'<div[^>]*>Please consider'
+        ]
+        
+        end_pos = None
+        for pattern in end_patterns:
+            end_match = re.search(pattern, text)
+            if end_match:
+                end_pos = end_match.start()
+                break
+        
+        if end_pos:
+            # Create clean payment table
+            payment_table = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%">Number of Payments Due:</td>
+  <td>{[M590]}</td>
+  </tr><tr>
+  <td width="50%">Net Payment Amount:</td>
+  <td>{Money}</td>
+  </tr><tr>
+  <td width="50%">Unpaid Late Charges:</td>
+  <td>{Money}</td>
+  </tr><tr>
+  <td width="50%">NSF & Other Fees:</td>
+  <td>{Money} + {Money}</td>
+  </tr><tr>
+  <td width="50%">Unapplied/Suspense Funds:</td>
+  <td>{Money}</td>
+</tr></tbody></table></div>
+<br>'''
+            
+            text = text[:payment_start.start()] + payment_table + text[end_pos:]
+    
+    return text
 
 def fix_field_names(text):
     """Convert field names to standard format"""

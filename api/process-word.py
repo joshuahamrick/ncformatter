@@ -379,29 +379,34 @@ def process_text_with_formatting(runs):
 def apply_universal_formatting_rules(html_text):
     """Apply universal formatting rules to any document"""
     
-    # 1. Fix field names first (clean up descriptive text)
-    html_text = fix_field_names(html_text)
-    
-    # 2. Wrap money fields
-    html_text = wrap_money_fields(html_text)
-    
-    # 3. Fix the header structure completely
-    html_text = fix_header_structure_completely(html_text)
-    
-    # 4. Add document title and RE table
-    html_text = add_document_title_and_re_table(html_text)
-    
-    # 5. Fix salutation section
-    html_text = fix_salutation_section(html_text)
-    
-    # 6. Fix payment information
-    html_text = fix_payment_information(html_text)
-    
-    # 7. Add plsMatrix prefixes where needed
-    html_text = add_pls_matrix_prefixes(html_text)
-    
-    # 8. Clean excessive formatting
-    html_text = clean_excessive_formatting(html_text)
+    try:
+        # 1. Fix field names first (clean up descriptive text)
+        html_text = fix_field_names(html_text)
+        
+        # 2. Wrap money fields
+        html_text = wrap_money_fields(html_text)
+        
+        # 3. Fix the header structure completely
+        html_text = fix_header_structure_completely(html_text)
+        
+        # 4. Add document title and RE table
+        html_text = add_document_title_and_re_table(html_text)
+        
+        # 5. Fix salutation section
+        html_text = fix_salutation_section(html_text)
+        
+        # 6. Fix payment information
+        html_text = fix_payment_information(html_text)
+        
+        # 7. Add plsMatrix prefixes where needed
+        html_text = add_pls_matrix_prefixes(html_text)
+        
+        # 8. Clean excessive formatting
+        html_text = clean_excessive_formatting(html_text)
+        
+    except Exception as e:
+        # If any step fails, return the original text with error info
+        html_text = f'<div style="color: red;">Universal formatting error: {str(e)}</div>' + html_text
     
     return html_text
 

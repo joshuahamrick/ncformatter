@@ -386,6 +386,20 @@ def create_clean_header_structure(text):
             # Replace the entire messy header section
             end_pos = notice_start.start()
             text = text[:start_pos] + header_html + text[end_pos:]
+        else:
+            # If no "Notice of Intention" found, look for other document title patterns
+            title_patterns = [
+                r'<div[^>]*>Notice of Default',
+                r'<div[^>]*>Dear',
+                r'<div[^>]*>To cure',
+                r'<div[^>]*>You are required'
+            ]
+            for pattern in title_patterns:
+                match = re.search(pattern, text)
+                if match:
+                    end_pos = match.start()
+                    text = text[:start_pos] + header_html + text[end_pos:]
+                    break
     
     return text
 
@@ -431,17 +445,56 @@ def create_universal_re_table(text):
   <td>{Compress({[M567]}|{[M583]})}</td>
 </tr></tbody></table></div>'''
     
-    # More aggressive approach - find the document title and insert RE table after it
-    title_match = re.search(r'<div[^>]*>Notice of Intention to Foreclose Mortgage[^<]*</div>', text)
+    # Find the document title and insert RE table after it
+    title_patterns = [
+        r'<div[^>]*>Notice of Intention to Foreclose Mortgage[^<]*</div>',
+        r'<div[^>]*>Notice of Default[^<]*</div>',
+        r'<div[^>]*>Notice of Breach[^<]*</div>'
+    ]
+    
+    title_match = None
+    for pattern in title_patterns:
+        title_match = re.search(pattern, text)
+        if title_match:
+            break
+    
     if title_match:
         # Insert RE table right after the title
         insert_pos = title_match.end()
         text = text[:insert_pos] + '<br>' + re_table_html + '<br>' + text[insert_pos:]
         
         # Now remove the scattered borrower info that appears later
-        borrower_start = re.search(r'<div><b>Borrower Name:', text)
+        borrower_patterns = [
+            r'<div><b>Borrower Name:',
+            r'<div>Borrower Name:',
+            r'<div><b>Mortgage Loan No:',
+            r'<div>Mortgage Loan No:',
+            r'<div><b>Property Address:',
+            r'<div>Property Address:'
+        ]
+        
+        borrower_start = None
+        for pattern in borrower_patterns:
+            borrower_start = re.search(pattern, text)
+            if borrower_start:
+                break
+        
         if borrower_start:
-            dear_start = re.search(r'<div>Dear \{[Salutation]\}', text)
+            # Find where this section ends (before "Dear" or main content)
+            dear_patterns = [
+                r'<div>Dear \{[Salutation]\}',
+                r'<div>Dear \{',
+                r'<div>Notice is hereby given',
+                r'<div>To cure',
+                r'<div>You are required'
+            ]
+            
+            dear_start = None
+            for pattern in dear_patterns:
+                dear_start = re.search(pattern, text)
+                if dear_start:
+                    break
+            
             if dear_start:
                 # Remove the scattered borrower info
                 start_pos = borrower_start.start()
@@ -480,10 +533,40 @@ def format_document_title_universal(text):
         r'Notice of Breach'
     ]
     
+    # Check if any title already exists
+    title_exists = False
+    for pattern in title_patterns:
+        if re.search(pattern, text):
+            title_exists = True
+            break
+    
+    # If no title exists, add one based on document content
+    if not title_exists:
+        # Look for foreclosure-related content to determine title
+        if re.search(r'foreclose|foreclosure', text, re.IGNORECASE):
+            title_html = '<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>'
+        elif re.search(r'default.*cure|cure.*default', text, re.IGNORECASE):
+            title_html = '<div style="text-align: center"><b>Notice of Default and Right to Cure</b></div>'
+        else:
+            title_html = '<div style="text-align: center"><b>Notice of Default</b></div>'
+        
+        # Insert title after the RE table or at the beginning of main content
+        re_table_end = re.search(r'</tbody></table></div>', text)
+        if re_table_end:
+            insert_pos = re_table_end.end()
+            text = text[:insert_pos] + '<br>' + title_html + '<br>' + text[insert_pos:]
+        else:
+            # Insert at the beginning of main content
+            main_content_start = re.search(r'<div[^>]*>Dear', text)
+            if main_content_start:
+                insert_pos = main_content_start.start()
+                text = text[:insert_pos] + title_html + '<br>' + text[insert_pos:]
+    
+    # Format existing titles
     for pattern in title_patterns:
         # Find and replace with universal centered format
         escaped_pattern = re.escape(pattern)
-        text = re.sub(rf'<div[^>]*>{escaped_pattern}[^<]*</div>', 
+        text = re.sub(rf'<div[^>]*>{escaped_pattern}[^<]*</div>',
                      f'<div style="text-align: center"><b>{pattern}</b></div>', text)
     
     return text
@@ -508,14 +591,39 @@ def create_borrower_table(text):
 def format_salutation_universal(text):
     """Format salutation following universal pattern"""
     # Find the first "Dear" and replace all multiple options with clean salutation
-    dear_start = re.search(r'<div[^>]*>Dear', text)
+    dear_patterns = [
+        r'<div[^>]*>Dear',
+        r'<div>Dear',
+        r'Dear'
+    ]
+    
+    dear_start = None
+    for pattern in dear_patterns:
+        dear_start = re.search(pattern, text)
+        if dear_start:
+            break
+    
     if dear_start:
-        # Find where all the Dear options end (before "Notice is hereby")
-        notice_start = re.search(r'<div[^>]*>Notice is hereby given', text)
-        if notice_start:
+        # Find where all the Dear options end (before main content)
+        end_patterns = [
+            r'<div[^>]*>Notice is hereby given',
+            r'<div[^>]*>To cure',
+            r'<div[^>]*>You are required',
+            r'<div[^>]*>This notice',
+            r'<div[^>]*>We are writing'
+        ]
+        
+        end_pos = None
+        for pattern in end_patterns:
+            end_match = re.search(pattern, text)
+            if end_match:
+                end_pos = end_match.start()
+                break
+        
+        if end_pos:
             # Replace all the Dear options with a clean salutation
             salutation_html = '<div>Dear {[Salutation]},</div>'
-            text = text[:dear_start.start()] + salutation_html + text[notice_start.start():]
+            text = text[:dear_start.start()] + salutation_html + text[end_pos:]
     
     # Also clean up any remaining broken Dear patterns
     text = re.sub(r'<div[^>]*>Dear[^<]*</div>\s*<br>\s*<div[^>]*></div>\s*<br>\s*', '', text)

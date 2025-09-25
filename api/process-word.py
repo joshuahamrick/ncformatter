@@ -606,13 +606,24 @@ def fix_field_names(text):
     
     # Debug output to see if function is working
     if 'tagHeader' in text:
-        # Test if the regex patterns are actually working
-        test_pattern = r'\{\[([A-Za-z0-9]+)\}\]\([^)]*\)'
-        test_result = re.search(test_pattern, text)
-        if test_result:
-            text = '<div style="color: green;">✓ Field names function found patterns: ' + test_result.group(0) + '</div>' + text
+        # Test multiple patterns to see what's happening
+        patterns_to_test = [
+            (r'\{\[([A-Za-z0-9]+)\}\]\([^)]*\)', 'Pattern 1: {[field]}(desc)'),
+            (r'\{\[([A-Za-z0-9]+)\}\]\s+\([^)]*\)', 'Pattern 2: {[field]} (desc)'),
+            (r'\{\[tagHeader\]\}\(', 'Pattern 3: {[tagHeader]}(literal)'),
+            (r'tagHeader', 'Pattern 4: tagHeader (simple)')
+        ]
+        
+        found_patterns = []
+        for pattern, description in patterns_to_test:
+            test_result = re.search(pattern, text)
+            if test_result:
+                found_patterns.append(f"{description}: {test_result.group(0)}")
+        
+        if found_patterns:
+            text = '<div style="color: green;">✓ Found patterns: ' + '; '.join(found_patterns) + '</div>' + text
         else:
-            text = '<div style="color: orange;">⚠ Field names function running but no patterns found</div>' + text
+            text = '<div style="color: red;">❌ NO PATTERNS FOUND - Text sample: ' + text[:200] + '...</div>' + text
     
     return text
 

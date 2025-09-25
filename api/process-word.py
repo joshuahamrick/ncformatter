@@ -228,16 +228,48 @@ def detect_document_type(paragraphs):
         return 'GENERIC'
 
 def generate_formatted_html(paragraphs, tables, document_type):
-    """Generate the final formatted HTML"""
+    """Generate the final formatted HTML with smart grouping"""
     
     html_parts = []
     
-    # Process each paragraph
+    # Group paragraphs into logical sections
+    current_section = []
+    
     for para in paragraphs:
         if not para['text'].strip():
             continue
             
-        # Create the div with proper formatting
+        text = para['text'].strip()
+        
+        # Check if this paragraph starts a new section
+        if (text.startswith('{[H') or text.startswith('{[L') or 
+            text.startswith('{[M') or text.startswith('{[U') or
+            'Notice of Intention' in text or 'Dear' in text):
+            
+            # Process the current section if it exists
+            if current_section:
+                section_html = process_paragraph_section(current_section)
+                html_parts.append(section_html)
+                current_section = []
+        
+        current_section.append(para)
+    
+    # Process the final section
+    if current_section:
+        section_html = process_paragraph_section(current_section)
+        html_parts.append(section_html)
+    
+    return '\n<br>\n'.join(html_parts)
+
+def process_paragraph_section(paragraphs):
+    """Process a group of related paragraphs"""
+    
+    if not paragraphs:
+        return ''
+    
+    # If it's just one paragraph, process it normally
+    if len(paragraphs) == 1:
+        para = paragraphs[0]
         div_attrs = []
         
         # Add alignment
@@ -255,9 +287,28 @@ def generate_formatted_html(paragraphs, tables, document_type):
         # Process the text with formatting
         formatted_text = process_text_with_formatting(para['runs'])
         
-        html_parts.append(f'<div{div_style}>{formatted_text}</div>')
+        return f'<div{div_style}>{formatted_text}</div>'
     
-    return '\n<br>\n'.join(html_parts)
+    # For multiple paragraphs, create a single div with all content
+    all_text = []
+    div_attrs = []
+    
+    for para in paragraphs:
+        formatted_text = process_text_with_formatting(para['runs'])
+        all_text.append(formatted_text)
+        
+        # Collect alignment and font size info
+        if para['alignment'] != 'left':
+            div_attrs.append(f'text-align: {para["alignment"]}')
+        
+        font_sizes = [run['fontSize'] for run in para['runs'] if run['fontSize']]
+        if font_sizes and len(set(font_sizes)) == 1:
+            div_attrs.append(f'font-size: {font_sizes[0]}')
+    
+    # Build the div tag
+    div_style = f' style="{"; ".join(div_attrs)}"' if div_attrs else ''
+    
+    return f'<div{div_style}>{" ".join(all_text)}</div>'
 
 def process_text_with_formatting(runs):
     """Process text runs and apply formatting tags"""

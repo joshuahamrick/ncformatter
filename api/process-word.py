@@ -291,28 +291,28 @@ def apply_universal_formatting_rules(html_text):
     # 1. Fix field names - convert to standard format
     html_text = fix_field_names(html_text)
     
-    # 2. Create proper header structure
-    html_text = create_proper_header(html_text)
+    # 2. Create clean header structure (universal pattern)
+    html_text = create_clean_header_structure(html_text)
     
-    # 3. Create RE table structure  
-    html_text = create_re_table_structure(html_text)
+    # 3. Create universal RE table structure  
+    html_text = create_universal_re_table(html_text)
     
-    # 4. Format the main document title
-    html_text = format_document_title(html_text)
+    # 4. Format document title (universal pattern)
+    html_text = format_document_title_universal(html_text)
     
-    # 5. Create borrower information table
-    html_text = create_borrower_table(html_text)
-    
-    # 6. Format salutation
-    html_text = format_salutation(html_text)
+    # 5. Format salutation (universal pattern)
+    html_text = format_salutation_universal(html_text)
     
     # 7. Wrap money fields in Money() function
     html_text = wrap_money_fields(html_text)
     
-    # 8. Create payment information tables
+    # 6. Clean excessive formatting
+    html_text = clean_excessive_formatting(html_text)
+    
+    # 7. Create payment information tables
     html_text = create_payment_info_tables(html_text)
     
-    # 9. Clean up and add proper spacing
+    # 8. Final cleanup and formatting
     html_text = clean_and_format_html(html_text)
     
     return html_text
@@ -347,6 +347,26 @@ def fix_field_names(text):
     
     return text
 
+def create_clean_header_structure(text):
+    """Create clean header structure following universal pattern"""
+    # Universal header pattern from analysis
+    header_html = '''<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<br>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>'''
+    
+    # Find the start of the messy header and replace with clean structure
+    # Look for patterns like {[H002]}, {[H003]}, {[L001E8]}, etc.
+    messy_header_pattern = r'<div[^>]*>\{[H0-9]+\}[^<]*</div>'
+    if re.search(messy_header_pattern, text):
+        # Replace the entire messy header section with clean structure
+        text = re.sub(messy_header_pattern + r'.*?(?=<div[^>]*>Notice of Intention)', 
+                     header_html, text, flags=re.DOTALL)
+    
+    return text
+
 def create_proper_header(text):
     """Create proper header structure with company info and date"""
     # Create header section
@@ -372,6 +392,31 @@ def create_proper_header(text):
     
     return text
 
+def create_universal_re_table(text):
+    """Create universal RE table structure based on analysis"""
+    # Universal RE table pattern from BR008 analysis
+    re_table_html = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%"><b>Borrower Name:</b></td>
+  <td>{[M558]}{If('{[M559]}'&lt;&gt;'')} and {[M559]}{End If}</td>
+  </tr><tr>
+  <td width="20%" valign="top"><b>Mailing Address:</b></td>
+  <td>{Compress({[M561]}|{[M562]}|{[M563]}{[M564]}{[M565]}{[M566]})}</td>
+  </tr><tr>
+  <td width="20%"><b>Mortgage Loan No:</b></td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%"><b>Property Address:</b></td>
+  <td>{Compress({[M567]}|{[M583]})}</td>
+</tr></tbody></table></div>'''
+    
+    # Find where to insert the RE table - after the document title
+    title_pattern = r'Notice of Intention to Foreclose Mortgage[^<]*</div>'
+    if re.search(title_pattern, text):
+        # Insert RE table after the title
+        text = re.sub(title_pattern, lambda m: m.group(0) + '<br>' + re_table_html + '<br>', text)
+    
+    return text
+
 def create_re_table_structure(text):
     """Create RE table structure"""
     # Create RE table
@@ -392,6 +437,23 @@ def create_re_table_structure(text):
     
     return text
 
+def format_document_title_universal(text):
+    """Format document title following universal pattern"""
+    # Universal title pattern: centered and bold
+    title_patterns = [
+        r'Notice of Intention to Foreclose Mortgage',
+        r'Notice of Default and Right to Cure',
+        r'Notice of Default and Cure Letter',
+        r'Notice of Breach'
+    ]
+    
+    for pattern in title_patterns:
+        # Find and replace with universal centered format
+        text = re.sub(rf'<div[^>]*>{pattern}[^<]*</div>', 
+                     f'<div style="text-align: center"><b>{pattern}</b></div>', text)
+    
+    return text
+
 def format_document_title(text):
     """Format the main document title"""
     # Fix the title that's currently embedded in the header div
@@ -407,6 +469,15 @@ def format_document_title(text):
 def create_borrower_table(text):
     """Create borrower information table"""
     # This would create a table for borrower info if needed
+    return text
+
+def format_salutation_universal(text):
+    """Format salutation following universal pattern"""
+    # Universal salutation pattern: simple "Dear {[Salutation]},"
+    text = re.sub(r'Dear \{[M0-9]+\} \(.*?\),?\s*\(or if.*?\)', 'Dear {[Salutation]},', text, flags=re.DOTALL)
+    text = re.sub(r'Dear \{[H0-9]+\} \(.*?\),?\s*\(or if.*?\)', 'Dear {[Salutation]},', text, flags=re.DOTALL)
+    text = re.sub(r'Dear \{[A-Z0-9]+\} \(.*?\),?\s*\(or if.*?\)', 'Dear {[Salutation]},', text, flags=re.DOTALL)
+    
     return text
 
 def format_salutation(text):
@@ -471,6 +542,25 @@ def create_payment_info_tables(text):
         if cure_start != -1:
             # Replace the payment info section with table
             text = text[:payment_start] + payment_table_html + text[cure_start:]
+    
+    return text
+
+def clean_excessive_formatting(text):
+    """Remove excessive formatting that doesn't match universal patterns"""
+    # Remove excessive style attributes from every div
+    text = re.sub(r'<div style="text-align: justify"><b>', '<div>', text)
+    text = re.sub(r'<div style="text-align: justify">', '<div>', text)
+    
+    # Remove excessive <b> tags that wrap every line
+    text = re.sub(r'<b>\{[^}]+\}</b>', r'{\1}', text)
+    
+    # Clean up empty divs
+    text = re.sub(r'<div><b></b></div>', '', text)
+    text = re.sub(r'<div style="text-align: justify"></div>', '', text)
+    
+    # Remove duplicate payment information that appears after the table
+    duplicate_pattern = r'<div><u><b>Number of Payments Due:</b></u><u><b> </b></u><b>{[M590]}</b><b> </b></div>.*?<div><u><b>Unapplied/Suspense Funds: </b></u><b>\$</b><b>\{Money\} </b></div>'
+    text = re.sub(duplicate_pattern, '', text, flags=re.DOTALL)
     
     return text
 

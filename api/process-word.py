@@ -228,48 +228,16 @@ def detect_document_type(paragraphs):
         return 'GENERIC'
 
 def generate_formatted_html(paragraphs, tables, document_type):
-    """Generate the final formatted HTML with smart grouping"""
+    """Generate the final formatted HTML"""
     
     html_parts = []
     
-    # Group paragraphs into logical sections
-    current_section = []
-    
+    # Process each paragraph individually but cleanly
     for para in paragraphs:
         if not para['text'].strip():
             continue
             
-        text = para['text'].strip()
-        
-        # Check if this paragraph starts a new section
-        if (text.startswith('{[H') or text.startswith('{[L') or 
-            text.startswith('{[M') or text.startswith('{[U') or
-            'Notice of Intention' in text or 'Dear' in text):
-            
-            # Process the current section if it exists
-            if current_section:
-                section_html = process_paragraph_section(current_section)
-                html_parts.append(section_html)
-                current_section = []
-        
-        current_section.append(para)
-    
-    # Process the final section
-    if current_section:
-        section_html = process_paragraph_section(current_section)
-        html_parts.append(section_html)
-    
-    return '\n<br>\n'.join(html_parts)
-
-def process_paragraph_section(paragraphs):
-    """Process a group of related paragraphs"""
-    
-    if not paragraphs:
-        return ''
-    
-    # If it's just one paragraph, process it normally
-    if len(paragraphs) == 1:
-        para = paragraphs[0]
+        # Create the div with proper formatting
         div_attrs = []
         
         # Add alignment
@@ -287,28 +255,10 @@ def process_paragraph_section(paragraphs):
         # Process the text with formatting
         formatted_text = process_text_with_formatting(para['runs'])
         
-        return f'<div{div_style}>{formatted_text}</div>'
+        html_parts.append(f'<div{div_style}>{formatted_text}</div>')
     
-    # For multiple paragraphs, create a single div with all content
-    all_text = []
-    div_attrs = []
-    
-    for para in paragraphs:
-        formatted_text = process_text_with_formatting(para['runs'])
-        all_text.append(formatted_text)
-        
-        # Collect alignment and font size info
-        if para['alignment'] != 'left':
-            div_attrs.append(f'text-align: {para["alignment"]}')
-        
-        font_sizes = [run['fontSize'] for run in para['runs'] if run['fontSize']]
-        if font_sizes and len(set(font_sizes)) == 1:
-            div_attrs.append(f'font-size: {font_sizes[0]}')
-    
-    # Build the div tag
-    div_style = f' style="{"; ".join(div_attrs)}"' if div_attrs else ''
-    
-    return f'<div{div_style}>{" ".join(all_text)}</div>'
+    return '\n<br>\n'.join(html_parts)
+
 
 def process_text_with_formatting(runs):
     """Process text runs and apply formatting tags"""
@@ -414,15 +364,26 @@ def create_clean_header_structure(text):
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>'''
     
-    # More aggressive approach - find the very beginning and replace everything until "Notice of Intention"
-    # Look for the start of the document (first div with any field)
-    first_div = re.search(r'<div[^>]*>\{[^}]+\}[^<]*</div>', text)
-    if first_div:
+    # Find the start of the messy header and replace everything until "Notice of Intention"
+    # Look for the first occurrence of any header field
+    header_patterns = [
+        r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>',
+        r'<div[^>]*>\{[H0-9]+\}[^<]*</div>',
+        r'<div[^>]*>\{[L0-9]+\}[^<]*</div>'
+    ]
+    
+    start_pos = None
+    for pattern in header_patterns:
+        match = re.search(pattern, text)
+        if match:
+            start_pos = match.start()
+            break
+    
+    if start_pos is not None:
         # Find where the header section ends (before "Notice of Intention")
         notice_start = re.search(r'<div[^>]*>Notice of Intention', text)
         if notice_start:
             # Replace the entire messy header section
-            start_pos = first_div.start()
             end_pos = notice_start.start()
             text = text[:start_pos] + header_html + text[end_pos:]
     
@@ -628,6 +589,11 @@ def create_payment_info_tables(text):
 
 def clean_excessive_formatting(text):
     """Remove excessive formatting that doesn't match universal patterns"""
+    # Remove repeated style attributes (like "text-align: justify; text-align: justify")
+    text = re.sub(r'text-align: justify; text-align: justify', 'text-align: justify', text)
+    text = re.sub(r'(text-align: justify; )+', 'text-align: justify; ', text)
+    text = re.sub(r'(font-size: [^;]+; )+', lambda m: m.group(0).split('; ')[0] + '; ', text)
+    
     # Remove excessive style attributes from every div
     text = re.sub(r'<div style="text-align: justify"><b>', '<div>', text)
     text = re.sub(r'<div style="text-align: justify">', '<div>', text)

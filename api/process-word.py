@@ -1600,6 +1600,11 @@ def clean_excessive_formatting(text):
     text = re.sub(r'<div style="text-align: justify"><b>', '<div>', text)
     text = re.sub(r'<div style="text-align: justify">', '<div>', text)
     
+    # Fix the specific payment table spacing issue - remove break between Number of Payments Due and Net Payment Amount
+    text = re.sub(r'<div><b><u>Number of Payments Due:</u></b> \{[M590]\}</div>\s*<br>\s*<div><b><u>Net Payment Amount:</u></b> \{Money\(\{[M591]\}\)\}</div>', 
+                  '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>', 
+                  text)
+    
     # Remove excessive <b> tags that wrap every line
     text = re.sub(r'<b>(\{[^}]+\})</b>', r'\1', text)
     

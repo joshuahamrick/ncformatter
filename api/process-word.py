@@ -377,10 +377,10 @@ def process_text_with_formatting(runs):
     return formatted_text
 
 def apply_universal_formatting_rules(html_text):
-    """Apply universal formatting rules to any document - SIMPLIFIED VERSION"""
+    """Apply universal formatting rules to any document - ENHANCED VERSION"""
     
     try:
-        # SIMPLE FIELD CLEANUP - Direct string replacements that we know work
+        # STEP 1: FIELD CLEANUP - Direct string replacements that we know work
         html_text = simple_field_cleanup(html_text)
         
         # Add debug message
@@ -389,9 +389,21 @@ def apply_universal_formatting_rules(html_text):
         else:
             html_text = '<div style="color: green;">✓ Simple field cleanup worked!</div>' + html_text
         
+        # STEP 2: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
+        html_text = fix_salutation_section(html_text)
+        
+        # STEP 3: PAYMENT INFORMATION CLEANUP - Clean up remaining payment descriptions
+        html_text = fix_payment_information_cleanup(html_text)
+        
+        # STEP 4: HEADER STRUCTURE - Clean up header organization
+        html_text = fix_header_structure_cleanup(html_text)
+        
+        # STEP 5: DOCUMENT TITLE AND RE TABLE - Add proper structure
+        html_text = add_document_title_and_re_table(html_text)
+        
     except Exception as e:
         # If any step fails, return the original text with error info
-        html_text = f'<div style="color: red;">Simple formatting error: {str(e)}</div>' + html_text
+        html_text = f'<div style="color: red;">Formatting error: {str(e)}</div>' + html_text
     
     return html_text
 
@@ -552,6 +564,117 @@ def simple_field_cleanup(text):
     # Apply all replacements
     for old_text, new_text in replacements:
         text = text.replace(old_text, new_text)
+    
+    return text
+
+def fix_salutation_section(text):
+    """Clean up the salutation section to have a single clean Dear statement"""
+    import re
+    
+    # Find the start of the salutation section (first "Dear" with borrower names)
+    salutation_start = re.search(r'<div[^>]*>Dear <b>\{[^}]+\}</b> \(Mortgagor Name\)', text)
+    if not salutation_start:
+        return text
+    
+    # Find where this section ends (before "Notice is hereby given")
+    notice_start = re.search(r'<div>Notice is hereby given', text)
+    if not notice_start:
+        return text
+    
+    # Replace the entire messy salutation section with a clean one
+    clean_salutation = '''<div>Dear {[Salutation]},</div>
+<br>'''
+    
+    text = text[:salutation_start.start()] + clean_salutation + text[notice_start.start():]
+    
+    return text
+
+def fix_payment_information_cleanup(text):
+    """Clean up remaining payment information descriptions"""
+    
+    # Clean up remaining descriptive text in payment sections
+    replacements = [
+        (' (Delinquent Balance)', ''),
+        (' (Late Charge Fee)', ''),
+        (' (Late Fee Date)', ''),
+        (' (Last Day This Month)', ''),
+        (' (Today Plus 30 Days)', ''),
+        (' (Total Amount Due + Mtgr Rec Corp Adv Bal + Total Monthly Payment - Suspense Balance)', ''),
+        (' (Total Amount Due + Mtgr Rec Corp Adv Bal - Suspense Balance)', ''),
+        (' (Mortgagor Name)', ''),
+        (' (Second Mortgagor)', ''),
+        (' (Mailing City), (State), (5-Digit Zip)', ''),
+        (' (4-Digit Zip)', ''),
+        (' (Foreign Address Indicator = 1)', ''),
+        (' (Foreign Country Code)', ''),
+        (' (Foreign Postal Code)', ''),
+        (' (Loan Number – No Dash)', ''),
+        (' (Property Line 1/Street Address)', ''),
+        (' (New Property Unit Number)', ''),
+        (' (New Property Line 2/City State and Zip Code)', ''),
+        (' (Additional Mailing Address)', ''),
+        (' (Mailing Street Address)', ''),
+        (' (Mailing City), (State), (5-Digit Zip), (4-Digit Zip)', ''),
+        (' (New Bill Line 1/ Mortgagor Name)', ''),
+        (' (New Bill Line 2/Second Mortgagor)', ''),
+        (' (New Bill Line 3/Third Mortgagor)', ''),
+        (' (System Date)', ''),
+        (' (Company Address Line 1)', ''),
+        (' (Company Address Line 2)', ''),
+        (' (Company Address Line 3)', ''),
+        (' (Delinquent Payment Count)', ''),
+        (' (Accrued Late Charge Bal)', ''),
+        (' (NSF Balance + Other Fees)', ''),
+        (' (Suspense Balance)', '')
+    ]
+    
+    for old_text, new_text in replacements:
+        text = text.replace(old_text, new_text)
+    
+    return text
+
+def fix_header_structure_cleanup(text):
+    """Clean up header structure and organization"""
+    import re
+    
+    # Remove the conditional logic line
+    text = re.sub(r'<div><b>\(IF \{[^}]+\} = [^<]+\)</b></div>\s*<br>\s*', '', text)
+    
+    # Clean up any remaining messy header elements
+    text = re.sub(r'<div style="text-align: justify"><b>Send </b><b>via</b><b> First Class and Certified Mail to the </b><b>Mailing </b><b>address</b></div>\s*<br>\s*', '', text)
+    
+    return text
+
+def add_document_title_and_re_table(text):
+    """Add the document title and RE table structure"""
+    import re
+    
+    # Find where to insert the title and RE table (after the header, before the borrower info)
+    borrower_match = re.search(r'<div><b>Borrower Name:</b>', text)
+    if not borrower_match:
+        return text
+    
+    # Create the clean document title and RE table
+    title_and_table = '''<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%"><b>Borrower Name:</b></td>
+  <td>{[M558]}{If('{[M559]}'<>'')} and {[M559]}{End If}</td>
+  </tr><tr>
+  <td width="20%" valign="top"><b>Mailing Address:</b></td>
+  <td>{Compress({[M561]}|{[M562]}|{[M563]}{[M564]}{[M565]}{[M566]})}</td>
+  </tr><tr>
+  <td width="20%"><b>Mortgage Loan No:</b></td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%"><b>Property Address:</b></td>
+  <td>{Compress({[M567]}|{[M583]})}</td>
+</tr></tbody></table>
+<br>
+'''
+    
+    # Insert the title and table before the borrower info
+    text = text[:borrower_match.start()] + title_and_table + text[borrower_match.start():]
     
     return text
 

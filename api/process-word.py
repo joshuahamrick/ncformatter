@@ -609,7 +609,13 @@ def fix_field_names(text):
     
     # Debug output to see if function is working
     if 'tagHeader' in text:
-        text = '<div style="color: green;">✓ Field names function is running</div>' + text
+        # Test if the regex patterns are actually working
+        test_pattern = r'\{\[([A-Za-z0-9]+)\}\]\s*\([^)]*\)'
+        test_result = re.search(test_pattern, text)
+        if test_result:
+            text = '<div style="color: green;">✓ Field names function found patterns: ' + test_result.group(0) + '</div>' + text
+        else:
+            text = '<div style="color: orange;">⚠ Field names function running but no patterns found</div>' + text
     
     return text
 

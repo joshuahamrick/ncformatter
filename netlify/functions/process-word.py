@@ -873,6 +873,9 @@ def transform_to_target_format(text):
         # Fix payment table spacing in the actual output format
         ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<br>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<br>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<br>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'),
         
+        # Fix the specific pattern we're seeing in the output
+        ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'),
+        
         # Fix extra bold tags in field names
         ('<b>{[U027]}</b>', '{[U027]}'),
         ('<b>{[L008]}</b>', '{[L008]}'),
@@ -895,6 +898,10 @@ def transform_to_target_format(text):
         ('<div style="text-align: justify">Sincerely,</div>', '<div>Sincerely,</div>'),
         ('<div style="text-align: justify">Default Department</div>', '<div>Default Department</div>'),
         ('<div style="text-align: justify">{[plsMatrix.CompanyLongName]}</div>', '<div>{[plsMatrix.CompanyLongName]}</div>'),
+        
+        # Fix extra spacing after bullet table and text alignment
+        ('</table></div>\n<br>\n<br>\n', '</table></div>\n<br>\n'),
+        ('<div style="text-align: justify">If you pay the past due amount, and any additional monthly payments, late charges or fees that may become due between the date of this notice and the date when you make your payment, your account will be considered up-to-date, and you can continue to make your regular monthly payments.</div>', '<div>If you pay the past due amount, and any additional monthly payments, late charges or fees that may become due between the date of this notice and the date when you make your payment, your account will be considered up-to-date, and you can continue to make your regular monthly payments.</div>'),
         
         # Add proper spacing and line breaks throughout the document
         ('<div>{Insert(H003 TagHeader)}</div> <br> <div>{[L001]}</div> <br> <div>{[mailingAddress]}</div> <br><br><br><br><br>', '<div>{Insert(H003 TagHeader)}</div>\n<br>\n<div>{[L001]}</div>\n<br>\n<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n'),

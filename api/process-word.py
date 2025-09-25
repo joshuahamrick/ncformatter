@@ -870,6 +870,9 @@ def transform_to_target_format(text):
         ('<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<br>\n', '<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n'),
         ('<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<br>\n', '<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n'),
         
+        # Fix payment table spacing in the actual output format
+        ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<br>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<br>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<br>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'),
+        
         # Fix extra bold tags in field names
         ('<b>{[U027]}</b>', '{[U027]}'),
         ('<b>{[L008]}</b>', '{[L008]}'),
@@ -885,6 +888,7 @@ def transform_to_target_format(text):
         # Remove the separate Avoid Foreclosure Scams line since it's now in the table
         ('<div style="text-align: justify">Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company. </div>', ''),
         ('<div style="text-align: justify">Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company.</div>', ''),
+        ('<div style="text-align: justify">Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company.\n</div>', ''),
         
         # Fix final spacing and formatting
         ('<b>. </b></div>', '.</div>'),
@@ -974,6 +978,13 @@ def apply_comprehensive_spacing(text):
     text = text.replace('</tr>   <tr>', '  </tr><tr>')
     text = text.replace('</td> \n  </tr>', '</td>\n  </tr>')
     text = text.replace('</td> \n</td>', '</td>\n    </td>')
+    text = text.replace('   <td', '  <td')
+    text = text.replace('   <tr>', '<tr>')
+    
+    # Fix extra bold tags in the output
+    text = text.replace('<b>{[plsMatrix.CSPhoneNumber]}</b>', '{[plsMatrix.CSPhoneNumber]}')
+    text = text.replace('<b>{[plsMatrix.SPOCContactEmail]}</b>', '{[plsMatrix.SPOCContactEmail]}')
+    text = text.replace('<b>{[plsMatrix.PayoffAddr1]}, {[plsMatrix.PayoffAddr2]}.</b>', '{[plsMatrix.PayoffAddr1]}, {[plsMatrix.PayoffAddr2]}.')
     
     # Clean up multiple consecutive newlines
     text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)

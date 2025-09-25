@@ -399,7 +399,53 @@ def simple_field_cleanup(text):
     """Simple, direct field cleanup using string replacements"""
     
     # Direct string replacements for the most common patterns
+    # Include HTML wrapper patterns since the text is already in HTML format
     replacements = [
+        # HTML-wrapped patterns (most common)
+        ('<div>{[tagHeader]}(Company Address Line 1)</div>', '<div>{[tagHeader]}</div>'),
+        ('<div>{[tagHeader]}(Company Address Line 2)</div>', '<div>{[tagHeader]}</div>'),
+        ('<div>{[tagHeader]}(Company Address Line 3)</div>', '<div>{[tagHeader]}</div>'),
+        ('<div>{[L001]} (System Date)</div>', '<div>{[L001]}</div>'),
+        ('<div>{[M558]}(New Bill Line 1/ Mortgagor Name)</div>', '<div>{[M558]}</div>'),
+        ('<div>{[M559]} (New Bill Line 2/Second Mortgagor)</div>', '<div>{[M559]}</div>'),
+        ('<div>{[M560]} (New Bill Line 3/Third Mortgagor)</div>', '<div>{[M560]}</div>'),
+        ('<div>{[M561]} (Additional Mailing Address)</div>', '<div>{[M561]}</div>'),
+        ('<div>{[M562]} (Mailing Street Address)</div>', '<div>{[M562]}</div>'),
+        ('<div>{[M594]}(Loan Number – No Dash)</div>', '<div>{[M594]}</div>'),
+        ('<div>{[M567]} (Property Line 1/Street Address)</div>', '<div>{[M567]}</div>'),
+        ('<div>{[M583]}(New Property Unit Number)</div>', '<div>{[M583]}</div>'),
+        ('<div>{[M568]} (New Property Line 2/City State and Zip Code)</div>', '<div>{[M568]}</div>'),
+        ('<div>{[M590]}(Delinquent Payment Count)</div>', '<div>{[M590]}</div>'),
+        ('<div>{[U027]} (Late Fee Date)</div>', '<div>{[U027]}</div>'),
+        ('<div>{[L008E8]} (Last Day This Month)</div>', '<div>{[L008E8]}</div>'),
+        ('<div>{[L011E8]} (Today Plus 30 Days)</div>', '<div>{[L011E8]}</div>'),
+        ('<div>{[M956]} (Foreign Address Indicator = 1)</div>', '<div>{[M956]}</div>'),
+        ('<div>{[M928]} (Foreign Country Code)</div>', '<div>{[M928]}</div>'),
+        ('<div>{[M929]} (Foreign Postal Code)</div>', '<div>{[M929]}</div>'),
+        ('<div>{[U026]}(Late Charge Fee)</div>', '<div>{[U026]}</div>'),
+        ('<div>{[M591E6]}(Delinquent Balance)</div>', '<div>{[M591E6]}</div>'),
+        ('<div>{[C001E6]}(Total Amount Due</div>', '<div>{[C001E6]}</div>'),
+        ('<div>{[M585E6]}(Mtgr Rec Corp Adv Bal</div>', '<div>{[M585E6]}</div>'),
+        ('<div>{[M029E6]}(Total Monthly Payment</div>', '<div>{[M029E6]}</div>'),
+        ('<div>{[M013E6]}(Suspense Balance</div>', '<div>{[M013E6]}</div>'),
+        ('<div>{[M015E6]}(Accrued Late Charge Bal)</div>', '<div>{[M015E6]}</div>'),
+        ('<div>{[M593E6]}(NSF Balance</div>', '<div>{[M593E6]}</div>'),
+        ('<div>{[C004E6]}(Other Fees)</div>', '<div>{[C004E6]}</div>'),
+        
+        # Handle patterns with bold tags and other formatting
+        ('<div><b>Mortgage Loan No:{[M594]}(Loan Number – No Dash)</b></div>', '<div><b>Mortgage Loan No:{[M594]}</b></div>'),
+        ('<div><b>Property Address:{[M567]} (Property Line 1/Street Address)</b></div>', '<div><b>Property Address:{[M567]}</b></div>'),
+        ('<div><b>                                	{[M583]}(New Property Unit Number)</b></div>', '<div><b>                                	{[M583]}</b></div>'),
+        ('<div><b>                            		{[M568]}(New Property Line 2/City State and Zip Code)</b></div>', '<div><b>                            		{[M568]}</b></div>'),
+        
+        # Handle patterns in the payment section
+        ('<div><u><b>Number of Payments Due:</u><u></u>{[M590]}(Delinquent Payment Count)</div>', '<div><u><b>Number of Payments Due:</u><u></u>{[M590]}</div>'),
+        ('<div><u><b>Net Payment Amount</u><u><b>$</u>{[M591E6]}(Delinquent Balance)</div>', '<div><u><b>Net Payment Amount</u><u><b>$</u>{[M591E6]}</div>'),
+        ('<div><u><b>Unpaid Late Charges</u><u><b>:</u><u></u><b>${[M015E6]}(Accrued Late Charge Bal)</b></div>', '<div><u><b>Unpaid Late Charges</u><u><b>:</u><u></u><b>${[M015E6]}</b></div>'),
+        ('<div><u><b>NSF & Other Fees: $</u><b>{[M593E6]}+ <b>{[C004E6]}(NSF Balance + Other Fees)</b></div>', '<div><u><b>NSF & Other Fees: $</u><b>{[M593E6]}+ <b>{[C004E6]}</b></div>'),
+        ('<div><u><b>Unapplied/Suspense Funds:</u><b>${[M013E6]}(Suspense Balance)</b></div>', '<div><u><b>Unapplied/Suspense Funds:</u><b>${[M013E6]}</b></div>'),
+        
+        # Also handle patterns without HTML wrapper (fallback)
         ('{[tagHeader]}(Company Address Line 1)', '{[tagHeader]}'),
         ('{[tagHeader]}(Company Address Line 2)', '{[tagHeader]}'),
         ('{[tagHeader]}(Company Address Line 3)', '{[tagHeader]}'),

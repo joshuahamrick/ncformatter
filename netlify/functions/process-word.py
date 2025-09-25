@@ -864,6 +864,18 @@ def transform_to_target_format(text):
         ('<u><b>NSF & Other Fees:</b></u>', '<b><u>NSF &amp; Other Fees:</u></b>'),
         ('<u><b>Unapplied/Suspense Funds:</b></u>', '<b><u>Unapplied/Suspense Funds:</u></b>'),
         
+        # Fix payment table spacing - remove <br> between payment items to match target
+        ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n'),
+        ('<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<br>\n', '<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n'),
+        ('<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<br>\n', '<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n'),
+        ('<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<br>\n', '<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n'),
+        
+        # Fix extra bold tags in field names
+        ('<b>{[U027]}</b>', '{[U027]}'),
+        ('<b>{[L008]}</b>', '{[L008]}'),
+        ('<b>{[L011]}</b>', '{[L011]}'),
+        ('<b>{[M590]}</b>', '{[M590]}'),
+        
         # Fix text differences to match target exactly
         ('which represents three (3) payments past due', 'which represents the past due amount'),
         
@@ -872,6 +884,7 @@ def transform_to_target_format(text):
         
         # Remove the separate Avoid Foreclosure Scams line since it's now in the table
         ('<div style="text-align: justify">Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company. </div>', ''),
+        ('<div style="text-align: justify">Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company.</div>', ''),
         
         # Fix final spacing and formatting
         ('<b>. </b></div>', '.</div>'),
@@ -947,15 +960,20 @@ def apply_comprehensive_spacing(text):
     # Replace all instances of "<div>" with "<div>" (keep as is, but ensure proper spacing after)
     text = text.replace(' <div>', '\n<div>')
     
-    # Fix table spacing
-    text = text.replace('<table', '\n<table')
-    text = text.replace('</table>', '</table>\n')
-    text = text.replace('<tbody>', '<tbody>\n')
-    text = text.replace('</tbody>', '\n</tbody>')
-    text = text.replace('<tr>', '  <tr>\n')
-    text = text.replace('</tr>', '\n  </tr>')
-    text = text.replace('<td', '    <td')
-    text = text.replace('</td>', '</td>\n')
+        # Fix table spacing to match target format exactly
+        text = text.replace('<table', '<table')
+        text = text.replace('</table>', '</table>')
+        text = text.replace('<tbody>', '<tbody>')
+        text = text.replace('</tbody>', '</tbody>')
+        text = text.replace('<tr>', '<tr>')
+        text = text.replace('</tr>', '</tr>')
+        text = text.replace('<td', '  <td')
+        text = text.replace('</td>', '</td>')
+        
+        # Fix specific table formatting issues
+        text = text.replace('</tr>   <tr>', '  </tr><tr>')
+        text = text.replace('</td> \n  </tr>', '</td>\n  </tr>')
+        text = text.replace('</td> \n</td>', '</td>\n    </td>')
     
     # Clean up multiple consecutive newlines
     text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)

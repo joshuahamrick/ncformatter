@@ -395,6 +395,9 @@ def apply_universal_formatting_rules(html_text):
         # STEP 3: PAYMENT INFORMATION CLEANUP - Clean up remaining payment descriptions
         html_text = fix_payment_information_cleanup(html_text)
         
+        # STEP 3.5: ADDITIONAL CLEANUP - Clean up remaining patterns
+        html_text = fix_remaining_patterns(html_text)
+        
         # STEP 4: HEADER STRUCTURE - Clean up header organization
         html_text = fix_header_structure_cleanup(html_text)
         
@@ -626,6 +629,62 @@ def fix_payment_information_cleanup(text):
         (' (Accrued Late Charge Bal)', ''),
         (' (NSF Balance + Other Fees)', ''),
         (' (Suspense Balance)', '')
+    ]
+    
+    for old_text, new_text in replacements:
+        text = text.replace(old_text, new_text)
+    
+    return text
+
+def fix_remaining_patterns(text):
+    """Clean up remaining patterns that weren't caught by previous functions"""
+    
+    # Clean up remaining payment-related descriptive text
+    replacements = [
+        # Payment descriptions still in the text
+        (' (Delinquent Balance)', ''),
+        (' (Late Charge Fee)', ''),
+        (' (Late Fee Date)', ''),
+        (' (Last Day This Month)', ''),
+        (' (Today Plus 30 Days)', ''),
+        (' (Total Amount Due + Mtgr Rec Corp Adv Bal + Total Monthly Payment - Suspense Balance)', ''),
+        (' (Total Amount Due + Mtgr Rec Corp Adv Bal - Suspense Balance)', ''),
+        (' (Mortgagor Name)', ''),
+        (' (Second Mortgagor)', ''),
+        (' (Mailing City), (State), (5-Digit Zip)', ''),
+        (' (4-Digit Zip)', ''),
+        
+        # Clean up some specific patterns we're seeing
+        ('<span style="font-size: 10pt">(Mailing City), (State), (5-Digit Zip)</span><span style="font-size: 10pt">,</span>', ''),
+        ('<span style="font-size: 10pt">, (4-Digit Zip)</span>', ''),
+        
+        # Clean up the borrower name formatting
+        ('<b>{</b><b>[M558]}</b> and <b>{</b><b>[M559]}</b>', '{[M558]} and {[M559]}'),
+        ('<b>{</b><b>[M594]</b><b>}</b>', '{[M594]}'),
+        
+        # Clean up remaining header template text
+        ('<div style="text-align: justify">(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules for Additional Addresses in BKFS) </div>', ''),
+        ('<div style="text-align: justify">Co-borrower Name 1</div>', ''),
+        ('<div style="text-align: justify">Co-borrower Name 2</div>', ''),
+        ('<div style="text-align: justify">Co-borrower Address Line 1</div>', ''),
+        ('<div style="text-align: justify">Co-borrower Address Line 2</div>', ''),
+        ('<div style="text-align: justify">Co-borrower Street</div>', ''),
+        ('<div style="text-align: justify">Co-borrower City, Co-borrower State, Co-borrower Zip Code, Co-borrower Zip Code Suffix</div>', ''),
+        ('<div style="text-align: justify; font-size: 11pt">(see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS)</div>', ''),
+        ('<div style="text-align: justify">Non-borrower Name</div>', ''),
+        ('<div style="text-align: justify">Non-borrower Address Line 1</div>', ''),
+        ('<div style="text-align: justify">Non-borrower Address Line 2</div>', ''),
+        ('<div style="text-align: justify">Non-borrower Address Line 3</div>', ''),
+        ('<div style="text-align: justify">Non-borrower Street</div>', ''),
+        
+        # Clean up remaining conditional logic
+        ('<div style="text-align: justify">(<u><b>"OR"</b></u> If <b>{[M956]}</b>)</div>', ''),
+        
+        # Clean up extra spacing and formatting
+        ('<b> </b>', ' '),
+        ('<b></b>', ''),
+        ('<u><b> </b></u>', ' '),
+        ('<u><b></b></u>', ''),
     ]
     
     for old_text, new_text in replacements:

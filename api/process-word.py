@@ -363,10 +363,13 @@ def create_clean_header_structure(text):
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>'''
     
-    # Find the start of the messy header and replace with clean structure
-    # Look for the first header field and replace everything until "Notice of Intention"
-    messy_start = re.search(r'<div[^>]*>\{[H0-9]+\}[^<]*</div>', text)
+    # Find the start of the messy header - look for the first {[tagHeader]} or similar
+    messy_start = re.search(r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>', text)
+    if not messy_start:
+        messy_start = re.search(r'<div[^>]*>\{[H0-9]+\}[^<]*</div>', text)
+    
     if messy_start:
+        # Find where the header section ends (before "Notice of Intention")
         notice_start = re.search(r'<div[^>]*>Notice of Intention', text)
         if notice_start:
             # Replace the entire messy header section
@@ -421,8 +424,16 @@ def create_universal_re_table(text):
     # Find where to insert the RE table - after the document title
     title_pattern = r'Notice of Intention to Foreclose Mortgage[^<]*</div>'
     if re.search(title_pattern, text):
-        # Insert RE table after the title
-        text = re.sub(title_pattern, lambda m: m.group(0) + '<br>' + re_table_html + '<br>', text)
+        # Find the scattered borrower info that should be replaced
+        borrower_start = re.search(r'<div><b>Borrower Name:', text)
+        if borrower_start:
+            # Find where the borrower info ends (before "Dear")
+            dear_start = re.search(r'<div>Dear \{[Salutation]\}', text)
+            if dear_start:
+                # Replace the scattered borrower info with the RE table
+                start_pos = borrower_start.start()
+                end_pos = dear_start.start()
+                text = text[:start_pos] + re_table_html + '<br>' + text[end_pos:]
     
     return text
 
@@ -576,6 +587,10 @@ def clean_excessive_formatting(text):
     text = re.sub(r'</b><b>', '', text)  # Remove broken </b><b> sequences
     text = re.sub(r'<b></b>', '', text)  # Remove empty bold tags
     text = re.sub(r'<b>\s*</b>', '', text)  # Remove bold tags with only whitespace
+    
+    # Fix orphaned </b> tags without opening <b>
+    text = re.sub(r'(\{[^}]+\})\s*</b>', r'\1', text)  # Remove </b> after field names
+    text = re.sub(r'([^<])\s*</b>', r'\1', text)  # Remove orphaned </b> tags
     
     # Clean up malformed field names
     text = re.sub(r'\{</b><b>([^}]+)</b><b>\}', r'{\[\1\]}', text)  # Fix broken field names

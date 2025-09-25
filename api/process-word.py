@@ -328,6 +328,12 @@ def fix_field_names(text):
     
     # Fix specific broken patterns we see in the output
     text = re.sub(r'<b>\{</b><b>\[M558\]\}</b>', '{[M558]}', text)
+    
+    # Convert specific header fields to the correct format
+    text = re.sub(r'\{\[H002\]\}', '{Insert(H003 TagHeader)}', text)
+    text = re.sub(r'\{\[H003\]\}', '{Insert(H003 TagHeader)}', text)
+    text = re.sub(r'\{\[H004\]\}', '{Insert(H003 TagHeader)}', text)
+    text = re.sub(r'\{\[L001E8\]\}', '{[L001]}', text)
     text = re.sub(r'<b>\{</b><b>\[M559\]\}</b>', '{[M559]}', text)
     text = re.sub(r'<b>\{</b><b>\[M594\]\}</b>', '{[M594]}', text)
     text = re.sub(r'<b>\{</b><b>\[M561\]\}</b>', '{[M561]}', text)
@@ -358,12 +364,15 @@ def create_clean_header_structure(text):
 <br><br><br><br><br>'''
     
     # Find the start of the messy header and replace with clean structure
-    # Look for patterns like {[H002]}, {[H003]}, {[L001E8]}, etc.
-    messy_header_pattern = r'<div[^>]*>\{[H0-9]+\}[^<]*</div>'
-    if re.search(messy_header_pattern, text):
-        # Replace the entire messy header section with clean structure
-        text = re.sub(messy_header_pattern + r'.*?(?=<div[^>]*>Notice of Intention)', 
-                     header_html, text, flags=re.DOTALL)
+    # Look for the first header field and replace everything until "Notice of Intention"
+    messy_start = re.search(r'<div[^>]*>\{[H0-9]+\}[^<]*</div>', text)
+    if messy_start:
+        notice_start = re.search(r'<div[^>]*>Notice of Intention', text)
+        if notice_start:
+            # Replace the entire messy header section
+            start_pos = messy_start.start()
+            end_pos = notice_start.start()
+            text = text[:start_pos] + header_html + text[end_pos:]
     
     return text
 
@@ -474,10 +483,18 @@ def create_borrower_table(text):
 
 def format_salutation_universal(text):
     """Format salutation following universal pattern"""
-    # Universal salutation pattern: simple "Dear {[Salutation]},"
-    text = re.sub(r'Dear \{[M0-9]+\} \(.*?\),?\s*\(or if.*?\)', 'Dear {[Salutation]},', text, flags=re.DOTALL)
-    text = re.sub(r'Dear \{[H0-9]+\} \(.*?\),?\s*\(or if.*?\)', 'Dear {[Salutation]},', text, flags=re.DOTALL)
-    text = re.sub(r'Dear \{[A-Z0-9]+\} \(.*?\),?\s*\(or if.*?\)', 'Dear {[Salutation]},', text, flags=re.DOTALL)
+    # Find the first "Dear" and replace all multiple options with clean salutation
+    dear_start = re.search(r'<div[^>]*>Dear', text)
+    if dear_start:
+        # Find where all the Dear options end (before "Notice is hereby")
+        notice_start = re.search(r'<div[^>]*>Notice is hereby given', text)
+        if notice_start:
+            # Replace all the Dear options with a clean salutation
+            salutation_html = '<div>Dear {[Salutation]},</div>'
+            text = text[:dear_start.start()] + salutation_html + text[notice_start.start():]
+    
+    # Also clean up any remaining broken Dear patterns
+    text = re.sub(r'<div[^>]*>Dear[^<]*</div>\s*<br>\s*<div[^>]*></div>\s*<br>\s*', '', text)
     
     return text
 
@@ -555,9 +572,18 @@ def clean_excessive_formatting(text):
     # Remove excessive <b> tags that wrap every line
     text = re.sub(r'<b>(\{[^}]+\})</b>', r'\1', text)
     
+    # Clean up broken HTML tags
+    text = re.sub(r'</b><b>', '', text)  # Remove broken </b><b> sequences
+    text = re.sub(r'<b></b>', '', text)  # Remove empty bold tags
+    text = re.sub(r'<b>\s*</b>', '', text)  # Remove bold tags with only whitespace
+    
+    # Clean up malformed field names
+    text = re.sub(r'\{</b><b>([^}]+)</b><b>\}', r'{\[\1\]}', text)  # Fix broken field names
+    
     # Clean up empty divs
     text = re.sub(r'<div><b></b></div>', '', text)
     text = re.sub(r'<div style="text-align: justify"></div>', '', text)
+    text = re.sub(r'<div></div>', '', text)
     
     # Remove duplicate payment information that appears after the table
     duplicate_pattern = r'<div><u><b>Number of Payments Due:</b></u><u><b> </b></u><b>{[M590]}</b><b> </b></div>.*?<div><u><b>Unapplied/Suspense Funds: </b></u><b>\$</b><b>\{Money\} </b></div>'

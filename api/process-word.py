@@ -888,6 +888,9 @@ def transform_to_target_format(text):
         # Ultra-specific fix for the exact current output pattern
         ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'),
         
+        # Direct fix for the exact current output - remove the break
+        ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>'),
+        
         # Fix extra bold tags in field names
         ('<b>{[U027]}</b>', '{[U027]}'),
         ('<b>{[L008]}</b>', '{[L008]}'),
@@ -1601,8 +1604,9 @@ def clean_excessive_formatting(text):
     text = re.sub(r'<div style="text-align: justify">', '<div>', text)
     
     # Fix the specific payment table spacing issue - remove break between Number of Payments Due and Net Payment Amount
-    text = re.sub(r'<div><b><u>Number of Payments Due:</u></b> \{[M590]\}</div>\s*<br>\s*<div><b><u>Net Payment Amount:</u></b> \{Money\(\{[M591]\}\)\}</div>', 
-                  '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>', 
+    # Simple approach: remove <br> between these two specific divs
+    text = re.sub(r'Number of Payments Due:</u></b> \{[M590]\}</div>\s*<br>\s*<div><b><u>Net Payment Amount:', 
+                  'Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:', 
                   text)
     
     # Remove excessive <b> tags that wrap every line

@@ -596,15 +596,15 @@ def fix_field_names(text):
     text = re.sub(r'\{([A-Z0-9]+E[0-9]+)\}', r'{\[\1\]}', text)  # {FIELDE1} -> {[FIELDE1]}
     
     # Clean up field names with descriptive text in parentheses - more flexible patterns
-    # Pattern 1: {[M558]}(New Bill Line 1/ Mortgagor Name)
+    # Pattern 1: {[M558]}(New Bill Line 1/ Mortgagor Name) - with square brackets
     text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\s*\([^)]*\)', r'{[\1]}', text)
     text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\([^)]*\)', r'{[\1]}', text)
     
-    # Pattern 2: {[tagHeader]}(Company Address Line 1)
+    # Pattern 2: {[tagHeader]}(Company Address Line 1) - with square brackets around field name
     text = re.sub(r'\{\[([A-Za-z0-9]+)\}\]\s*\([^)]*\)', r'{[\1]}', text)
     text = re.sub(r'\{\[([A-Za-z0-9]+)\}\]\([^)]*\)', r'{[\1]}', text)
     
-    # Pattern 3: {[L001]} (System Date) - with space before parentheses
+    # Pattern 3: {[L001]} (System Date) - with space before parentheses and square brackets
     text = re.sub(r'\{\[([A-Za-z0-9]+)\}\]\s+\([^)]*\)', r'{[\1]}', text)
     
     # Debug output to see if function is working

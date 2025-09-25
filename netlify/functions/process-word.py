@@ -693,6 +693,14 @@ def fix_remaining_patterns(text):
         (' (Total Amount Due + Mtgr Rec Corp Adv Bal + Total Monthly Payment - Suspense Balance)', ''),
         (' (Total Amount Due + Mtgr Rec Corp Adv Bal - Suspense Balance)', ''),
         
+        # Clean up specific patterns we're still seeing
+        ('<u><b>Demand Notice expires</b></u> <u><b>{[L011E8]} </b></u><u>(Today Plus 30 Days)</u><u>.</u> <u><b>Total Due: $</b></u><b>{[C001E6]} </b>+ <b>{[M585E6]}</b> – <b>{[M013E6]}</b> (Total Amount Due <b>+</b> Mtgr Rec Corp Adv Bal<b> - </b>Suspense Balance)', '<u><b>Demand Notice expires {[L011E8]}. Total Due: $</b></u><b>{[C001E6]} </b>+ <b>{[M585E6]}</b> – <b>{[M013E6]}</b>'),
+        ('<u><b>Number of Payments Due:</b></u> <b>{[M590]}</b>', '<u><b>Number of Payments Due:</b></u> <b>{[M590]}</b>'),
+        ('<u><b>Net Payment Amount </b></u><u><b>$</b></u><b>{[M591E6]}</b>', '<u><b>Net Payment Amount:</b></u> <b>${[M591E6]}</b>'),
+        ('<u><b>Unpaid Late Charges</b></u><u><b>:</b></u> <b>$</b><b>{[M015E6]}</b>', '<u><b>Unpaid Late Charges:</b></u> <b>${[M015E6]}</b>'),
+        ('<u><b>NSF & Other Fees: $</b></u><b>{[M593E6]} </b>+ <b>{[C004E6]} </b>', '<u><b>NSF & Other Fees:</b></u> <b>${[M593E6]} + ${[C004E6]}</b>'),
+        ('<u><b>Unapplied/Suspense Funds: </b></u><b>$</b><b>{[M013E6]} </b>', '<u><b>Unapplied/Suspense Funds:</b></u> <b>${[M013E6]}</b>'),
+        
         # Clean up extra spacing and formatting
         ('<b> </b>', ' '),
         ('<b></b>', ''),

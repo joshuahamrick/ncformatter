@@ -474,7 +474,79 @@ def simple_field_cleanup(text):
         ('{[M013E6]}(Suspense Balance', '{[M013E6]}'),
         ('{[M015E6]}(Accrued Late Charge Bal)', '{[M015E6]}'),
         ('{[M593E6]}(NSF Balance', '{[M593E6]}'),
-        ('{[C004E6]}(Other Fees)', '{[C004E6]}')
+        ('{[C004E6]}(Other Fees)', '{[C004E6]}'),
+        
+        # NEW PATTERNS - Handle the actual output we're seeing
+        # Header patterns with H002, H003, H004 and L001E8
+        ('<div style="text-align: justify"><b>{[H002]} </b>(Company Address Line 1)</div>', '<div style="text-align: justify"><b>{[H002]} </b></div>'),
+        ('<div style="text-align: justify"><b>{[H003]} </b>(Company Address Line 2)</div>', '<div style="text-align: justify"><b>{[H003]} </b></div>'),
+        ('<div style="text-align: justify"><b>{[H004]} </b>(Company Address Line 3)</div>', '<div style="text-align: justify"><b>{[H004]} </b></div>'),
+        ('<div style="text-align: justify"><b>{[L001E8]}</b> (System Date)</div>', '<div style="text-align: justify"><b>{[L001E8]}</b></div>'),
+        
+        # Borrower patterns with bold tags
+        ('<div style="text-align: justify"><b>{[M558]} </b>(New Bill Line 1/ Mortgagor Name)</div>', '<div style="text-align: justify"><b>{[M558]} </b></div>'),
+        ('<div style="text-align: justify"><b>{[M559]}</b> (New Bill Line 2/Second Mortgagor)</div>', '<div style="text-align: justify"><b>{[M559]}</b></div>'),
+        ('<div style="text-align: justify"><b>{[M560]}</b> (New Bill Line 3/Third Mortgagor)</div>', '<div style="text-align: justify"><b>{[M560]}</b></div>'),
+        
+        # Address patterns
+        ('<div style="text-align: justify"><b>{[M561]}</b> (Additional Mailing Address)</div>', '<div style="text-align: justify"><b>{[M561]}</b></div>'),
+        ('<div style="text-align: justify"><b>{[M562]}</b> (Mailing Street Address)</div>', '<div style="text-align: justify"><b>{[M562]}</b></div>'),
+        ('<div style="text-align: justify"><b>{[M563]} {[M564]} {[M565]} </b><b>{[M566]}</b> (Mailing City), (State), (5-Digit Zip), (4-Digit Zip)</div>', '<div style="text-align: justify"><b>{[M563]} {[M564]} {[M565]} </b><b>{[M566]}</b></div>'),
+        
+        # Foreign address patterns
+        ('<div style="text-align: justify"><b>{[M956]}</b> (Foreign Address Indicator = 1)</div>', '<div style="text-align: justify"><b>{[M956]}</b></div>'),
+        ('<div style="text-align: justify"><b>{[M928]}</b> (Foreign Country Code)</div>', '<div style="text-align: justify"><b>{[M928]}</b></div>'),
+        ('<div style="text-align: justify; font-size: 11pt"><b>{[M929]}</b> (Foreign Postal Code)</div>', '<div style="text-align: justify; font-size: 11pt"><b>{[M929]}</b></div>'),
+        
+        # Loan and property information with complex formatting
+        ('<div><b>Mortgage Loan No:</b><b>	</b><b>{</b><b>[M594]</b><b>}</b><b> </b>(Loan Number – No Dash)</div>', '<div><b>Mortgage Loan No:</b><b>	</b><b>{</b><b>[M594]</b><b>}</b></div>'),
+        ('<div><b>Property Address:</b><b>	</b><b>{[M567]}</b> (Property Line 1/Street Address)</div>', '<div><b>Property Address:</b><b>	</b><b>{[M567]}</b></div>'),
+        ('<div><b>                                </b><b>	</b><b>{[M583]} </b>(New Property Unit Number)</div>', '<div><b>                                </b><b>	</b><b>{[M583]} </b></div>'),
+        ('<div><b>                            </b><b>	</b><b>	</b><b>{[M568]} </b>(New Property Line 2/City State and Zip Code)</div>', '<div><b>                            </b><b>	</b><b>	</b><b>{[M568]} </b></div>'),
+        
+        # Payment information patterns
+        ('<div><u><b>Number of Payments Due:</b></u><u><b> </b></u><b>{[M590]}</b><b> </b>(Delinquent Payment Count)</div>', '<div><u><b>Number of Payments Due:</b></u><u><b> </b></u><b>{[M590]}</b></div>'),
+        ('<div><u><b>Net Payment Amount </b></u><u><b>$</b></u><b>{[M591E6]}</b><b> </b>(Delinquent Balance)</div>', '<div><u><b>Net Payment Amount </b></u><u><b>$</b></u><b>{[M591E6]}</b></div>'),
+        ('<div><u><b>Unpaid Late Charges</b></u><u><b>:</b></u><u><b> </b></u><b>$</b><b>{[M015E6]}</b><b> </b>(Accrued Late Charge Bal)</div>', '<div><u><b>Unpaid Late Charges</b></u><u><b>:</b></u><u><b> </b></u><b>$</b><b>{[M015E6]}</b></div>'),
+        ('<div><u><b>NSF & Other Fees: $</b></u><b>{[M593E6]} </b>+ <b>{[C004E6]} </b>(NSF Balance + Other Fees)</div>', '<div><u><b>NSF & Other Fees: $</b></u><b>{[M593E6]} </b>+ <b>{[C004E6]} </b></div>'),
+        ('<div><u><b>Unapplied/Suspense Funds: </b></u><b>$</b><b>{[M013E6]} </b>(Suspense Balance)</div>', '<div><u><b>Unapplied/Suspense Funds: </b></u><b>$</b><b>{[M013E6]} </b></div>'),
+        
+        # Add plsMatrix prefixes where missing
+        ('{[CSPhoneNumber]}', '{[plsMatrix.CSPhoneNumber]}'),
+        ('{[SPOCContactEmail]}', '{[plsMatrix.SPOCContactEmail]}'),
+        ('{[PayoffAddr1]}', '{[plsMatrix.PayoffAddr1]}'),
+        ('{[PayoffAddr2]}', '{[plsMatrix.PayoffAddr2]}'),
+        ('{[CompanyShortName]}', '{[plsMatrix.CompanyShortName]}'),
+        ('{[CompanyLongName]}', '{[plsMatrix.CompanyLongName]}'),
+        
+        # Clean up any remaining descriptive text patterns (fallback)
+        (' (Company Address Line 1)', ''),
+        (' (Company Address Line 2)', ''),
+        (' (Company Address Line 3)', ''),
+        (' (System Date)', ''),
+        (' (New Bill Line 1/ Mortgagor Name)', ''),
+        (' (New Bill Line 2/Second Mortgagor)', ''),
+        (' (New Bill Line 3/Third Mortgagor)', ''),
+        (' (Additional Mailing Address)', ''),
+        (' (Mailing Street Address)', ''),
+        (' (Mailing City), (State), (5-Digit Zip), (4-Digit Zip)', ''),
+        (' (Foreign Address Indicator = 1)', ''),
+        (' (Foreign Country Code)', ''),
+        (' (Foreign Postal Code)', ''),
+        (' (Loan Number – No Dash)', ''),
+        (' (Property Line 1/Street Address)', ''),
+        (' (New Property Unit Number)', ''),
+        (' (New Property Line 2/City State and Zip Code)', ''),
+        (' (Delinquent Balance)', ''),
+        (' (Late Charge Fee)', ''),
+        (' (Late Fee Date)', ''),
+        (' (Last Day This Month)', ''),
+        (' (Today Plus 30 Days)', ''),
+        (' (Total Amount Due + Mtgr Rec Corp Adv Bal + Total Monthly Payment - Suspense Balance)', ''),
+        (' (Delinquent Payment Count)', ''),
+        (' (Accrued Late Charge Bal)', ''),
+        (' (NSF Balance + Other Fees)', ''),
+        (' (Suspense Balance)', '')
     ]
     
     # Apply all replacements

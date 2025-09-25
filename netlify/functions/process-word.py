@@ -876,8 +876,11 @@ def transform_to_target_format(text):
         # Fix the specific pattern we're seeing in the output
         ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'),
         
-        # Fix the exact pattern from current output
+        # Fix the exact pattern from current output - remove all breaks in payment table
         ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>'),
+        
+        # Additional fix for the exact current output pattern
+        ('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>', '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>\n<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'),
         
         # Fix extra bold tags in field names
         ('<b>{[U027]}</b>', '{[U027]}'),

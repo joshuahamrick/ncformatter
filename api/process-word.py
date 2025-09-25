@@ -228,37 +228,159 @@ def detect_document_type(paragraphs):
         return 'GENERIC'
 
 def generate_formatted_html(paragraphs, tables, document_type):
-    """Generate the final formatted HTML"""
+    """Generate the final formatted HTML with proper structure"""
     
     html_parts = []
     
-    # Process each paragraph individually but cleanly
+    # Group paragraphs into logical sections
+    current_section = []
+    section_type = None
+    
     for para in paragraphs:
         if not para['text'].strip():
             continue
             
-        # Create the div with proper formatting
-        div_attrs = []
+        text = para['text'].strip()
         
-        # Add alignment
-        if para['alignment'] != 'left':
-            div_attrs.append(f'text-align: {para["alignment"]}')
+        # Determine section type based on content
+        if text.startswith('{[H') or text.startswith('{[L') or 'tagHeader' in text:
+            # Header section
+            if current_section and section_type != 'header':
+                html_parts.append(process_section(current_section, section_type))
+                current_section = []
+            section_type = 'header'
+            
+        elif 'Notice of Intention' in text or 'Notice of Default' in text:
+            # Document title section
+            if current_section:
+                html_parts.append(process_section(current_section, section_type))
+                current_section = []
+            section_type = 'title'
+            
+        elif text.startswith('{[M') and ('Borrower' in text or 'Loan' in text or 'Property' in text):
+            # Borrower info section (should become table)
+            if current_section and section_type != 'borrower':
+                html_parts.append(process_section(current_section, section_type))
+                current_section = []
+            section_type = 'borrower'
+            
+        elif text.startswith('Dear'):
+            # Salutation section
+            if current_section:
+                html_parts.append(process_section(current_section, section_type))
+                current_section = []
+            section_type = 'salutation'
+            
+        elif 'Number of Payments' in text or 'Net Payment' in text or 'Unpaid Late' in text:
+            # Payment info section (should become table)
+            if current_section and section_type != 'payment':
+                html_parts.append(process_section(current_section, section_type))
+                current_section = []
+            section_type = 'payment'
+            
+        else:
+            # Regular content
+            if current_section and section_type not in ['content', section_type]:
+                html_parts.append(process_section(current_section, section_type))
+                current_section = []
+            section_type = 'content'
         
-        # Add font size (if consistent across runs)
-        font_sizes = [run['fontSize'] for run in para['runs'] if run['fontSize']]
-        if font_sizes and len(set(font_sizes)) == 1:
-            div_attrs.append(f'font-size: {font_sizes[0]}')
-        
-        # Build the div tag
-        div_style = f' style="{"; ".join(div_attrs)}"' if div_attrs else ''
-        
-        # Process the text with formatting
-        formatted_text = process_text_with_formatting(para['runs'])
-        
-        html_parts.append(f'<div{div_style}>{formatted_text}</div>')
+        current_section.append(para)
+    
+    # Process the final section
+    if current_section:
+        html_parts.append(process_section(current_section, section_type))
     
     return '\n<br>\n'.join(html_parts)
 
+def process_section(paragraphs, section_type):
+    """Process a section of paragraphs based on its type"""
+    
+    if not paragraphs:
+        return ''
+    
+    if section_type == 'header':
+        # Create clean header structure
+        return '''<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<br>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>'''
+    
+    elif section_type == 'title':
+        # Create centered document title
+        title_text = paragraphs[0]['text'].strip()
+        if 'Notice of Intention' in title_text:
+            return '<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>'
+        elif 'Notice of Default' in title_text:
+            return '<div style="text-align: center"><b>Notice of Default</b></div>'
+        else:
+            return f'<div style="text-align: center"><b>{title_text}</b></div>'
+    
+    elif section_type == 'borrower':
+        # Create RE table structure
+        return '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%"><b>Borrower Name:</b></td>
+  <td>{[M558]}{If('{[M559]}'&lt;&gt;'')} and {[M559]}{End If}</td>
+  </tr><tr>
+  <td width="20%" valign="top"><b>Mailing Address:</b></td>
+  <td>{Compress({[M561]}|{[M562]}|{[M563]}{[M564]}{[M565]}{[M566]})}</td>
+  </tr><tr>
+  <td width="20%"><b>Mortgage Loan No:</b></td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%"><b>Property Address:</b></td>
+  <td>{Compress({[M567]}|{[M583]})}</td>
+</tr></tbody></table></div>'''
+    
+    elif section_type == 'salutation':
+        # Create clean salutation
+        return '<div>Dear {[Salutation]},</div>'
+    
+    elif section_type == 'payment':
+        # Create payment table
+        return '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%">Number of Payments Due:</td>
+  <td>{[M590]}</td>
+  </tr><tr>
+  <td width="50%">Net Payment Amount:</td>
+  <td>{Money}</td>
+  </tr><tr>
+  <td width="50%">Unpaid Late Charges:</td>
+  <td>{Money}</td>
+  </tr><tr>
+  <td width="50%">NSF & Other Fees:</td>
+  <td>{Money} + {Money}</td>
+  </tr><tr>
+  <td width="50%">Unapplied/Suspense Funds:</td>
+  <td>{Money}</td>
+</tr></tbody></table></div>'''
+    
+    else:
+        # Regular content - process normally
+        html_parts = []
+        for para in paragraphs:
+            div_attrs = []
+            
+            # Add alignment
+            if para['alignment'] != 'left':
+                div_attrs.append(f'text-align: {para["alignment"]}')
+            
+            # Add font size (if consistent across runs)
+            font_sizes = [run['fontSize'] for run in para['runs'] if run['fontSize']]
+            if font_sizes and len(set(font_sizes)) == 1:
+                div_attrs.append(f'font-size: {font_sizes[0]}')
+            
+            # Build the div tag
+            div_style = f' style="{"; ".join(div_attrs)}"' if div_attrs else ''
+            
+            # Process the text with formatting
+            formatted_text = process_text_with_formatting(para['runs'])
+            
+            html_parts.append(f'<div{div_style}>{formatted_text}</div>')
+        
+        return '\n'.join(html_parts)
 
 def process_text_with_formatting(runs):
     """Process text runs and apply formatting tags"""
@@ -292,28 +414,13 @@ def apply_universal_formatting_rules(html_text):
     # 1. Fix field names - convert to standard format
     html_text = fix_field_names(html_text)
     
-    # 2. Create clean header structure (universal pattern)
-    html_text = create_clean_header_structure(html_text)
-    
-    # 3. Create universal RE table structure  
-    html_text = create_universal_re_table(html_text)
-    
-    # 4. Format document title (universal pattern)
-    html_text = format_document_title_universal(html_text)
-    
-    # 5. Format salutation (universal pattern)
-    html_text = format_salutation_universal(html_text)
-    
-    # 7. Wrap money fields in Money() function
+    # 2. Wrap money fields in Money() function
     html_text = wrap_money_fields(html_text)
     
-    # 6. Clean excessive formatting
+    # 3. Clean excessive formatting
     html_text = clean_excessive_formatting(html_text)
     
-    # 7. Create payment information tables
-    html_text = create_payment_info_tables(html_text)
-    
-    # 8. Final cleanup and formatting
+    # 4. Final cleanup and formatting
     html_text = clean_and_format_html(html_text)
     
     return html_text

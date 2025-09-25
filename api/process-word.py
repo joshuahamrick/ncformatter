@@ -836,6 +836,21 @@ def transform_to_target_format(text):
         (' (Total Amount Due + Mtgr Rec Corp Adv Bal + Total Monthly Payment - Suspense Balance)', ''),
         (' (Total Amount Due + Mtgr Rec Corp Adv Bal - Suspense Balance)', ''),
         
+        # Fix remaining payment function issues
+        ('{Money({[U026]})}(Late Charge Fee)', '{Money({[U026]})}'),
+        ('{Math({[C001]} + {[M585]} + {[M029]} - {[M013]}|Money)} (Total Amount Due <b>+</b> Mtgr Rec Corp Adv Bal + Total Monthly Payment <b>- </b>Suspense Balance)', '{Math({[C001]} + {[M585]} + {[M029]} - {[M013]}|Money)}'),
+        ('{Math({[C001]} + {[M585]} - {[M013]}|Money)} (Total Amount Due <b>+</b> Mtgr Rec Corp Adv Bal<b> - </b>Suspense Balance)', '{Math({[C001]} + {[M585]} - {[M013]}|Money)}'),
+        
+        # Fix remaining field name issues
+        ('<b>${[M015E6]}</b>', '{Money({[M015]})}'),
+        ('{[M015E6]}', '{Money({[M015]})}'),
+        
+        # Fix Total Due formatting
+        ('<u><b>Total Due: $</b></u>{Math({[C001]} + {[M585]} - {[M013]}|Money)} (Total Amount Due <b>+</b> Mtgr Rec Corp Adv Bal<b> - </b>Suspense Balance)', '<b>Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b>'),
+        
+        # Clean up extra spacing and formatting
+        ('<u><b>Demand Notice expires</b></u> <u><b>{[L011]} </b></u><u>(Today Plus 30 Days)</u><u>.</u>', '<b>Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b>'),
+        
         # Clean up business rules and template text
         ('<div style="text-align: justify">(<u><b>"OR"</b></u> If <b>{[M956]}</b>)</div>', ''),
         ('<div style="text-align: justify">(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules for Additional Addresses in BKFS) </div>', ''),

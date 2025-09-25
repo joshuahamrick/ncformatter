@@ -404,7 +404,7 @@ def apply_universal_formatting_rules(html_text):
 
 def fix_header_structure_completely(text):
     """Completely replace the messy header with clean structure"""
-    # Find the start of the document (first tagHeader)
+    # Find the start of the document (first tagHeader with any content after it)
     start_match = re.search(r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>', text)
     if not start_match:
         return text
@@ -585,6 +585,9 @@ def fix_field_names(text):
     
     # Clean up field names with descriptive text in parentheses
     text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\([^)]*\)', r'{[\1]}', text)
+    
+    # Clean up field names with descriptive text in parentheses (alternative pattern)
+    text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\s*\([^)]*\)', r'{[\1]}', text)
     
     return text
 
@@ -884,17 +887,18 @@ def format_salutation(text):
 
 def wrap_money_fields(text):
     """Wrap money fields in Money() and Math() functions"""
-    # Wrap individual money fields
+    # Wrap individual money fields with E6 suffix
     text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}', r'{Money({\[\1\]})}', text)
-    text = re.sub(r'\{\[([A-Z0-9]+E6)\]\}', r'{Money({\[\1\]})}', text)
+    text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}\([^)]*\)', r'{Money({\[\1\]})}', text)
     
-    # Wrap math expressions
-    text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}\s*–\s*\{\[([A-Z0-9]+)\]\}', 
+    # Wrap math expressions with E6 fields
+    text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}\s*\+\s*\{\[([A-Z0-9]+E6)\]\}\s*\+\s*\{\[([A-Z0-9]+E6)\]\}\s*–\s*\{\[([A-Z0-9]+E6)\]\}\([^)]*\)', 
                   r'{Math({\[\1\]} + {\[\2\]} + {\[\3\]} - {\[\4\]}|Money)}', text)
-    text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}\s*–\s*\{\[([A-Z0-9]+)\]\}', 
+    text = re.sub(r'\$\{\[([A-Z0-9]+E6)\]\}\s*\+\s*\{\[([A-Z0-9]+E6)\]\}\s*–\s*\{\[([A-Z0-9]+E6)\]\}\([^)]*\)', 
                   r'{Math({\[\1\]} + {\[\2\]} - {\[\3\]}|Money)}', text)
-    text = re.sub(r'\$\{\[([A-Z0-9]+)\]\}\s*\+\s*\{\[([A-Z0-9]+)\]\}', 
-                  r'{Math({\[\1\]} + {\[\2\]}|Money)}', text)
+    
+    # Clean up remaining E6 fields without $ signs
+    text = re.sub(r'\{\[([A-Z0-9]+E6)\]\}\([^)]*\)', r'{Money({\[\1\]})}', text)
     
     return text
 

@@ -960,20 +960,20 @@ def apply_comprehensive_spacing(text):
     # Replace all instances of "<div>" with "<div>" (keep as is, but ensure proper spacing after)
     text = text.replace(' <div>', '\n<div>')
     
-        # Fix table spacing to match target format exactly
-        text = text.replace('<table', '<table')
-        text = text.replace('</table>', '</table>')
-        text = text.replace('<tbody>', '<tbody>')
-        text = text.replace('</tbody>', '</tbody>')
-        text = text.replace('<tr>', '<tr>')
-        text = text.replace('</tr>', '</tr>')
-        text = text.replace('<td', '  <td')
-        text = text.replace('</td>', '</td>')
-        
-        # Fix specific table formatting issues
-        text = text.replace('</tr>   <tr>', '  </tr><tr>')
-        text = text.replace('</td> \n  </tr>', '</td>\n  </tr>')
-        text = text.replace('</td> \n</td>', '</td>\n    </td>')
+    # Fix table spacing to match target format exactly
+    text = text.replace('<table', '<table')
+    text = text.replace('</table>', '</table>')
+    text = text.replace('<tbody>', '<tbody>')
+    text = text.replace('</tbody>', '</tbody>')
+    text = text.replace('<tr>', '<tr>')
+    text = text.replace('</tr>', '</tr>')
+    text = text.replace('<td', '  <td')
+    text = text.replace('</td>', '</td>')
+    
+    # Fix specific table formatting issues
+    text = text.replace('</tr>   <tr>', '  </tr><tr>')
+    text = text.replace('</td> \n  </tr>', '</td>\n  </tr>')
+    text = text.replace('</td> \n</td>', '</td>\n    </td>')
     
     # Clean up multiple consecutive newlines
     text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)

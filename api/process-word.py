@@ -379,25 +379,28 @@ def process_text_with_formatting(runs):
 def apply_universal_formatting_rules(html_text):
     """Apply universal formatting rules to any document"""
     
-    # 1. Fix the header structure completely
-    html_text = fix_header_structure_completely(html_text)
-    
-    # 2. Add document title and RE table
-    html_text = add_document_title_and_re_table(html_text)
-    
-    # 3. Fix salutation section
-    html_text = fix_salutation_section(html_text)
-    
-    # 4. Fix payment information
-    html_text = fix_payment_information(html_text)
-    
-    # 5. Fix field names
+    # 1. Fix field names first (clean up descriptive text)
     html_text = fix_field_names(html_text)
     
-    # 6. Add plsMatrix prefixes where needed
+    # 2. Wrap money fields
+    html_text = wrap_money_fields(html_text)
+    
+    # 3. Fix the header structure completely
+    html_text = fix_header_structure_completely(html_text)
+    
+    # 4. Add document title and RE table
+    html_text = add_document_title_and_re_table(html_text)
+    
+    # 5. Fix salutation section
+    html_text = fix_salutation_section(html_text)
+    
+    # 6. Fix payment information
+    html_text = fix_payment_information(html_text)
+    
+    # 7. Add plsMatrix prefixes where needed
     html_text = add_pls_matrix_prefixes(html_text)
     
-    # 7. Clean excessive formatting
+    # 8. Clean excessive formatting
     html_text = clean_excessive_formatting(html_text)
     
     return html_text
@@ -588,6 +591,9 @@ def fix_field_names(text):
     
     # Clean up field names with descriptive text in parentheses (alternative pattern)
     text = re.sub(r'\{\[([A-Z]\d+[A-Z]?E?\d*)\}\]\s*\([^)]*\)', r'{[\1]}', text)
+    
+    # Debug: Check if any changes were made
+    # print(f"Field names function - text changed: {text != text}")
     
     return text
 

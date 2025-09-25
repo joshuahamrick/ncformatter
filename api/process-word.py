@@ -851,6 +851,12 @@ def transform_to_target_format(text):
         # Clean up extra spacing and formatting
         ('<u><b>Demand Notice expires</b></u> <u><b>{[L011]} </b></u><u>(Today Plus 30 Days)</u><u>.</u>', '<b>Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b>'),
         
+        # Fix duplicate Total Due lines
+        ('<b>Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b> <u><b>Total Due: $</b></u>{Math({[C001]} + {[M585]} - {[M013]}|Money)}', '<b>Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b>'),
+        
+        # Fix Unpaid Late Charges formatting
+        ('<u><b>Unpaid Late Charges</b></u><u><b>:</b></u> <b>$</b><b>{Money({[M015]})}</b>', '<u><b>Unpaid Late Charges:</b></u> {Money({[M015]})}'),
+        
         # Clean up business rules and template text
         ('<div style="text-align: justify">(<u><b>"OR"</b></u> If <b>{[M956]}</b>)</div>', ''),
         ('<div style="text-align: justify">(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules for Additional Addresses in BKFS) </div>', ''),

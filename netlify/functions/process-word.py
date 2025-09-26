@@ -986,17 +986,47 @@ def apply_comprehensive_spacing(text):
     # Replace all instances of "<div>" with "<div>" (keep as is, but ensure proper spacing after)
     text = text.replace(' <div>', '\n<div>')
     
-    # Fix table spacing to match target format exactly with proper line breaks
-    text = text.replace('<table width="100%" style="border-collapse: collapse"><tbody><tr>  <td', '<table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td')
-    text = text.replace('</td> </tr><tr>  <td', '</td>\n  </tr><tr>\n  <td')
-    text = text.replace('</td> </tr><tr>  <td', '</td>\n  </tr><tr>\n  <td')
-    text = text.replace('</td></tbody></table>', '</td>\n</tr></tbody></table>')
-    text = text.replace('</td></tbody></table>', '</td>\n</tr></tbody></table>')
+    # Fix table formatting to match target structure exactly
+    # Pattern: <div><table>...</table></div> with proper indentation
     
-    # Fix table structure with proper indentation and line breaks
-    text = text.replace('<table width="100%" style="border-collapse: collapse"><tbody><tr>', '<table width="100%" style="border-collapse: collapse"><tbody><tr>')
-    text = text.replace('</tr><tr>', '\n  </tr><tr>')
-    text = text.replace('</tr></tbody></table>', '\n</tr></tbody></table>')
+    # Fix borrower info table formatting
+    borrower_table_pattern = r'<div><table width="100%" style="border-collapse: collapse"><tbody><tr>.*?</tr></tbody></table>'
+    def format_borrower_table(match):
+        table_content = match.group(0)
+        # Extract the table content and reformat it
+        if 'Borrower Name:' in table_content:
+            return '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%"><b>Borrower Name:</b></td>
+  <td>{[M558]}{If('{[M559]}'<>'')} and {[M559]}{End If}</td>
+  </tr><tr>
+  <td width="20%" valign="top"><b>Mailing Address:</b></td>
+  <td>{Compress({[M561]}|{[M562]}|{[M563]}{[M564]}{[M565]}{[M566]})}</td>
+  </tr><tr>
+  <td width="20%"><b>Mortgage Loan No:</b></td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%"><b>Property Address:</b></td>
+  <td>{Compress({[M567]}|{[M583]})}</td>
+</tr></tbody></table></div>'''
+        return table_content
+    
+    text = re.sub(borrower_table_pattern, format_borrower_table, text, flags=re.DOTALL)
+    
+    # Fix bullet point table formatting
+    bullet_table_pattern = r'<div><table width="100%" style="border-collapse: collapse"><tbody><tr>.*?</tr></tbody></table></div>'
+    def format_bullet_table(match):
+        table_content = match.group(0)
+        if '•' in table_content:
+            return '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>There may be homeownership assistance options available, and you can reach a {[plsMatrix.CompanyShortName]} Loss Mitigation Specialist at {[plsMatrix.CSPhoneNumber]} to discuss these options.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company. http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams</td>
+</tr></tbody></table></div>'''
+        return table_content
+    
+    text = re.sub(bullet_table_pattern, format_bullet_table, text, flags=re.DOTALL)
     
     # Fix extra bold tags in the output
     text = text.replace('<b>{[plsMatrix.CSPhoneNumber]}</b>', '{[plsMatrix.CSPhoneNumber]}')

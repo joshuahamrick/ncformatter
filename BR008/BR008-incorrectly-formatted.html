@@ -1,4 +1,4 @@
-<div style="color: green;">✓ Simple field cleanup worked!</div><div>{Insert(H003 TagHeader)}</div>
+<div>{Insert(H003 TagHeader)}</div>
 <br>
 <div>{[L001]}</div>
 <br>
@@ -21,12 +21,11 @@
 <br>
 <div><b>Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b></div>
 <br>
-<div><table width="100%" style="border-collapse: collapse"><tbody><tr> <td width="20%"><b><u>Number of Payments Due:</u></b></td> <td>{[M590]}</td> 
-  </tr><tr> <td width="20%"><b><u>Net Payment Amount:</u></b></td> <td>{Money({[M591]})}</td> 
-  </tr><tr> <td width="20%"><b><u>Unpaid Late Charges:</u></b></td> <td>{Money({[M015]})}</td> 
-  </tr><tr> <td width="20%"><b><u>NSF &amp; Other Fees:</u></b></td> <td>{Math({[M593]} + {[C004]}|Money)}</td> 
-  </tr><tr> <td width="20%"><b><u>Unapplied/Suspense Funds:</u></b></td> <td>{Money({[M013]})}</td> 
-</tr></tbody></table></div>
+<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>
+<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>
+<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>
+<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>
+<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>
 <br>
 <div>If you do not cure the default within thirty (30) days, we intend to exercise our right to accelerate the mortgage payments. This means that whatever is owed on the original amount borrowed will be considered due immediately and you may lose the chance to pay off the original mortgage in monthly installments. If full payment of the amount of default is not made within thirty (30) days, we also intend to instruct our attorneys to start a lawsuit to foreclose your mortgaged property. If the mortgage is foreclosed your mortgaged property will be sold to pay off the mortgage debt. If we refer your case to our attorneys, but you cure the default before they begin legal proceedings against you, you will still have to pay the reasonable attorney’s fees, actually incurred. However, if legal proceedings are started against you, you will have to pay the reasonable attorney’s fees within allowable fees and costs. Any attorney’s fees will be added to whatever you owe us, which may also include our reasonable costs. If you cure the default within the thirty-day period, you will not be required to pay attorney’s fees.
 </div>

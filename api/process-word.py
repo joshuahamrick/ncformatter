@@ -1012,39 +1012,20 @@ def apply_comprehensive_spacing(text):
     text = text.replace('<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<br>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>', 
                        '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>')
     
-    # CONVERT PAYMENT SECTION TO PROPER TABLE FORMAT
-    # Multiple approaches to catch the pattern
+    # REMOVE DEBUG MESSAGE
+    text = text.replace('<div style="color: green;">✓ Simple field cleanup worked!</div>', '')
     
-    # Approach 1: Direct string replacement for exact current pattern
-    payment_section_exact = '''<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>
+    # FIX PAYMENT SECTION FORMATTING - Keep as individual divs, not table
+    # Remove any table formatting that was incorrectly applied
+    payment_table_pattern = r'<div><table width="100%" style="border-collapse: collapse"><tbody><tr>.*?<td width="20%"><b><u>Unapplied/Suspense Funds:</u></b></td>.*?<td>\{Money\(\{[M013]\}\)\}</td>.*?</tr></tbody></table></div>'
+    
+    payment_div_replacement = '''<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>
 <div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>
 <div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>
 <div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>
 <div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'''
     
-    payment_table_replacement = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
-  <td width="20%"><b><u>Number of Payments Due:</u></b></td>
-  <td>{[M590]}</td>
-</tr><tr>
-  <td width="20%"><b><u>Net Payment Amount:</u></b></td>
-  <td>{Money({[M591]})}</td>
-</tr><tr>
-  <td width="20%"><b><u>Unpaid Late Charges:</u></b></td>
-  <td>{Money({[M015]})}</td>
-</tr><tr>
-  <td width="20%"><b><u>NSF &amp; Other Fees:</u></b></td>
-  <td>{Math({[M593]} + {[C004]}|Money)}</td>
-</tr><tr>
-  <td width="20%"><b><u>Unapplied/Suspense Funds:</u></b></td>
-  <td>{Money({[M013]})}</td>
-</tr></tbody></table></div>'''
-    
-    # Try direct replacement first
-    text = text.replace(payment_section_exact, payment_table_replacement)
-    
-    # Approach 2: Regex with very flexible pattern
-    payment_pattern = r'<div><b><u>Number of Payments Due:</u></b> \{[M590]\}</div>.*?<div><b><u>Unapplied/Suspense Funds:</u></b> \{Money\(\{[M013]\}\)\}</div>'
-    text = re.sub(payment_pattern, payment_table_replacement, text, flags=re.DOTALL)
+    text = re.sub(payment_table_pattern, payment_div_replacement, text, flags=re.DOTALL)
     
     return text
 

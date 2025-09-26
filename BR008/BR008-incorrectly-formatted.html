@@ -1,0 +1,56 @@
+<div style="color: green;">✓ Simple field cleanup worked!</div><div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<br>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr> <td width="20%"><b>Borrower Name:</b></td> <td>{[M558]}{If('{[M559]}'<>'')} and {[M559]}{End If}</td> 
+  </tr><tr> <td width="20%" valign="top"><b>Mailing Address:</b></td> <td>{Compress({[M561]}|{[M562]}|{[M563]}{[M564]}{[M565]}{[M566]})}</td> 
+  </tr><tr> <td width="20%"><b>Mortgage Loan No:</b></td> <td>{[M594]}</td> 
+  </tr><tr> <td width="20%"><b>Property Address:</b></td> <td>{Compress({[M567]}|{[M583]})}</td> 
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br><div>Notice is hereby given that you are in default in payment of the principal and interest due on the indebtedness represented by the above-described promissory note (the “Note”). According to its terms and conditions and in performance of the covenant contained in the certain Deed of Trust (the “Deed of Trust”) securing payment of the Note to promptly pay when due the principal of and the interest on the indebtedness evidenced by the Note.</div>
+<br>
+<div>To cure the aforesaid breach and default, you are required to pay {Money({[M591]})} which represents the past due amount. Please add an additional late charge of {Money({[U026]})} if paid after {[U027]}. This amount is only valid until {[L008]}.</div>
+<br>
+<div>If payment is received after {[L008]}, you must pay the past due amount of {Math({[C001]} + {[M585]} + {[M029]} - {[M013]}|Money)} on or before {[L011]}, which is thirty-five days from the date of this notice.</div>
+<br>
+<div><b>Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr> <td width="20%"><b><u>Number of Payments Due:</u></b></td> <td>{[M590]}</td> 
+  </tr><tr> <td width="20%"><b><u>Net Payment Amount:</u></b></td> <td>{Money({[M591]})}</td> 
+  </tr><tr> <td width="20%"><b><u>Unpaid Late Charges:</u></b></td> <td>{Money({[M015]})}</td> 
+  </tr><tr> <td width="20%"><b><u>NSF &amp; Other Fees:</u></b></td> <td>{Math({[M593]} + {[C004]}|Money)}</td> 
+  </tr><tr> <td width="20%"><b><u>Unapplied/Suspense Funds:</u></b></td> <td>{Money({[M013]})}</td> 
+</tr></tbody></table></div>
+<br>
+<div>If you do not cure the default within thirty (30) days, we intend to exercise our right to accelerate the mortgage payments. This means that whatever is owed on the original amount borrowed will be considered due immediately and you may lose the chance to pay off the original mortgage in monthly installments. If full payment of the amount of default is not made within thirty (30) days, we also intend to instruct our attorneys to start a lawsuit to foreclose your mortgaged property. If the mortgage is foreclosed your mortgaged property will be sold to pay off the mortgage debt. If we refer your case to our attorneys, but you cure the default before they begin legal proceedings against you, you will still have to pay the reasonable attorney’s fees, actually incurred. However, if legal proceedings are started against you, you will have to pay the reasonable attorney’s fees within allowable fees and costs. Any attorney’s fees will be added to whatever you owe us, which may also include our reasonable costs. If you cure the default within the thirty-day period, you will not be required to pay attorney’s fees.
+</div>
+<br>
+<div>If you have not cured the default within the thirty-day period and foreclosure proceedings have begun, you still have the right to cure the default and prevent the sale at any time up to one hour before the foreclosure sale. You may do so by paying the total amount of the unpaid monthly payments plus any late or other charges then due, as well as the reasonable attorney’s fees and costs connected with the foreclosure sale and perform any other requirements under the mortgage. A notice of the date of the foreclosure sale will be sent to you before the sale. Of course, the amount needed to cure the default will increase the longer you wait.</div>
+<br>
+<div><b>You may find out at any time exactly what the required payment will be by calling us at the following number: </b>{[plsMatrix.CSPhoneNumber]}<b> or </b>{[plsMatrix.SPOCContactEmail]}<b>. This payment must be in cash, cashier’s check, certified check or money order and made payable to us at </b>{[plsMatrix.PayoffAddr1]}, {[plsMatrix.PayoffAddr2]}.</div>
+<br>
+<div>You should realize that a foreclosure sale will end your ownership of the mortgaged property and your right to remain in it. If you continue to live in the property after the foreclosure sale, a lawsuit could be started to evict you.
+</div>
+<br>
+<div>Please consider the following:</div>
+<br>
+<div>You should contact a HUD Counselor at HUD’s National Servicing Center at (877) 622-8525/TDD (800) 877-8339 or the Homeownership Preservation Foundation (888-995-HOPE) to speak with counselors who can provide assistance and may be able to help you avoid foreclosure.
+</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr> <td width="3%" valign="top" style="text-align: center">•</td> <td>There may be homeownership assistance options available, and you can reach a {[plsMatrix.CompanyShortName]} Loss Mitigation Specialist at {[plsMatrix.CSPhoneNumber]} to discuss these options.</td> 
+  </tr><tr> <td width="3%" valign="top" style="text-align: center">•</td> <td>Avoid Foreclosure Scams: Do your research, make sure you are working with a reputable company. http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams</td> 
+</tr></tbody></table></div>
+<br>
+<div>If you pay the past due amount, and any additional monthly payments, late charges or fees that may become due between the date of this notice and the date when you make your payment, your account will be considered up-to-date, and you can continue to make your regular monthly payments.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Default Department</div>
+<br>
+<div>{[plsMatrix.CompanyLongName]}</div>

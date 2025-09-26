@@ -1013,8 +1013,14 @@ def apply_comprehensive_spacing(text):
                        '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>')
     
     # CONVERT PAYMENT SECTION TO PROPER TABLE FORMAT
-    # Use regex to catch the exact pattern with flexible spacing
-    payment_pattern = r'<div><b><u>Number of Payments Due:</u></b> \{[M590]\}</div>\s*<div><b><u>Net Payment Amount:</u></b> \{Money\(\{[M591]\}\)\}</div>\s*<div><b><u>Unpaid Late Charges:</u></b> \{Money\(\{[M015]\}\)\}</div>\s*<div><b><u>NSF &amp; Other Fees:</u></b> \{Math\(\{[M593]\} \+ \{[C004]\}\|Money\)\}</div>\s*<div><b><u>Unapplied/Suspense Funds:</u></b> \{Money\(\{[M013]\}\)\}</div>'
+    # Multiple approaches to catch the pattern
+    
+    # Approach 1: Direct string replacement for exact current pattern
+    payment_section_exact = '''<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>
+<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>
+<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>
+<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>
+<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'''
     
     payment_table_replacement = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
   <td width="20%"><b><u>Number of Payments Due:</u></b></td>
@@ -1033,6 +1039,11 @@ def apply_comprehensive_spacing(text):
   <td>{Money({[M013]})}</td>
 </tr></tbody></table></div>'''
     
+    # Try direct replacement first
+    text = text.replace(payment_section_exact, payment_table_replacement)
+    
+    # Approach 2: Regex with very flexible pattern
+    payment_pattern = r'<div><b><u>Number of Payments Due:</u></b> \{[M590]\}</div>.*?<div><b><u>Unapplied/Suspense Funds:</u></b> \{Money\(\{[M013]\}\)\}</div>'
     text = re.sub(payment_pattern, payment_table_replacement, text, flags=re.DOTALL)
     
     return text

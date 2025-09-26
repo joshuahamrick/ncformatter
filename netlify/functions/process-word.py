@@ -1028,6 +1028,13 @@ def apply_comprehensive_spacing(text):
     
     text = re.sub(bullet_table_pattern, format_bullet_table, text, flags=re.DOTALL)
     
+    # CRITICAL FIX: Remove excessive duplicate </div> tags
+    # This fixes the massive duplication issue at the end of tables
+    text = re.sub(r'</div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>', '</div>', text)
+    
+    # Also fix any other excessive </div> patterns
+    text = re.sub(r'(</div>){10,}', '</div>', text)
+    
     # Fix extra bold tags in the output
     text = text.replace('<b>{[plsMatrix.CSPhoneNumber]}</b>', '{[plsMatrix.CSPhoneNumber]}')
     text = text.replace('<b>{[plsMatrix.SPOCContactEmail]}</b>', '{[plsMatrix.SPOCContactEmail]}')

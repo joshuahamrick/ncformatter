@@ -1013,8 +1013,12 @@ def apply_comprehensive_spacing(text):
                        '<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>\n<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>')
     
     # CONVERT PAYMENT SECTION TO PROPER TABLE FORMAT
-    # Replace the individual divs with a proper table structure
-    payment_table_pattern = r'<div><b><u>Number of Payments Due:</u></b> \{[M590]\}</div>\n<div><b><u>Net Payment Amount:</u></b> \{Money\(\{[M591]\}\)\}</div>\n<div><b><u>Unpaid Late Charges:</u></b> \{Money\(\{[M015]\}\)\}</div>\n<div><b><u>NSF &amp; Other Fees:</u></b> \{Math\(\{[M593]\} \+ \{[C004]\}\|Money\)\}</div>\n<div><b><u>Unapplied/Suspense Funds:</u></b> \{Money\(\{[M013]\}\)\}</div>'
+    # Use direct string replacement for the exact current pattern
+    payment_section = '''<div><b><u>Number of Payments Due:</u></b> {[M590]}</div>
+<div><b><u>Net Payment Amount:</u></b> {Money({[M591]})}</div>
+<div><b><u>Unpaid Late Charges:</u></b> {Money({[M015]})}</div>
+<div><b><u>NSF &amp; Other Fees:</u></b> {Math({[M593]} + {[C004]}|Money)}</div>
+<div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'''
     
     payment_table_replacement = '''<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
   <td width="20%"><b><u>Number of Payments Due:</u></b></td>
@@ -1033,7 +1037,7 @@ def apply_comprehensive_spacing(text):
   <td>{Money({[M013]})}</td>
 </tr></tbody></table></div>'''
     
-    text = re.sub(payment_table_pattern, payment_table_replacement, text)
+    text = text.replace(payment_section, payment_table_replacement)
     
     return text
 

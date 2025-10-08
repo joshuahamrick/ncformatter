@@ -420,35 +420,44 @@ def fix_broken_bold_tags(text):
     """Fix field names that have been broken up by bold tags like <b>{[</b><b>M558</b><b>]}</b>"""
     import re
     
-    # MOST AGGRESSIVE APPROACH: Handle all bold tag variations in field names
-    # Pattern format: <b>{[</b><b>FIELDNAME</b><b>]}</b> with optional spaces
+    # ULTRA AGGRESSIVE: Handle ALL possible bold tag breakages, including broken field names
     
-    # Pattern 1: <b>{[</b><b>FIELD</b><b>]} </b> (with trailing space in bold)
+    # Pattern 1: Field name itself is broken: <b>{</b><b>[</b><b>M</b><b>567</b><b>]</b><b>}</b>
+    # This requires matching the letter and numbers separately
+    text = re.sub(r'<b>\{</b><b>\[</b><b>([A-Z])</b><b>([0-9]+)</b><b>\]</b><b>\}</b>', r'{[\1\2]}', text)
+    
+    # Pattern 2: <b>{[</b><b>FIELD</b><b>]} </b> (with trailing space in bold)
     text = re.sub(r'<b>\{\[</b><b>([A-Z0-9]+)</b><b>\]\} </b>', r'{[\1]} ', text)
     
-    # Pattern 2: <b>{[</b><b>FIELD</b><b>]}</b> (standard broken pattern)
+    # Pattern 3: <b>{[</b><b>FIELD</b><b>]}</b> (standard broken pattern)
     text = re.sub(r'<b>\{\[</b><b>([A-Z0-9]+)</b><b>\]</b><b>\}</b>', r'{[\1]}', text)
     
-    # Pattern 3: <b>{</b><b>[</b><b>FIELD</b><b>]</b><b>}</b> (most broken - each bracket separated)
+    # Pattern 4: <b>{</b><b>[</b><b>FIELD</b><b>]</b><b>}</b> (most broken - each bracket separated)
     text = re.sub(r'<b>\{</b><b>\[</b><b>([A-Z0-9]+)</b><b>\]</b><b>\}</b>', r'{[\1]}', text)
     
-    # Pattern 4: <b>{</b><b>[FIELD]</b><b>}</b>
+    # Pattern 5: <b>{</b><b>[FIELD]</b><b>}</b>
     text = re.sub(r'<b>\{</b><b>\[([A-Z0-9]+)\]</b><b>\}</b>', r'{[\1]}', text)
     
-    # Pattern 5: <b>{</b><b>[FIELD</b><b>]}</b>
+    # Pattern 6: <b>{</b><b>[FIELD</b><b>]}</b>
     text = re.sub(r'<b>\{</b><b>\[([A-Z0-9]+)</b><b>\]\}</b>', r'{[\1]}', text)
     
-    # Pattern 6: <b>{</b><b>[FIELD</b><b>]} </b> (with space)
+    # Pattern 7: <b>{</b><b>[FIELD</b><b>]} </b> (with space)
     text = re.sub(r'<b>\{</b><b>\[([A-Z0-9]+)</b><b>\]\} </b>', r'{[\1]} ', text)
     
-    # Pattern 7: More variations
+    # Pattern 8: More variations
     text = re.sub(r'<b>\{\[</b><b>([A-Z0-9]+)</b><b>\]\}</b>', r'{[\1]}', text)
     
-    # Pattern 8: <b>{[FIELD</b><b>]}</b>
+    # Pattern 9: <b>{[FIELD</b><b>]}</b>
     text = re.sub(r'<b>\{[[]([A-Z0-9]+)</b><b>\]</b><b>\}</b>', r'{[\1]}', text)
     
-    # Pattern 9: {[FIELD with bold around closing brackets
+    # Pattern 10: {[FIELD with bold around closing brackets
     text = re.sub(r'\{[[]([A-Z0-9]+)<b>\]</b><b>\}</b>', r'{[\1]}', text)
+    
+    # Pattern 11: <b>{</b><b>[M</b><b>568</b><b>]</b><b>} </b> (field name split, with space)
+    text = re.sub(r'<b>\{</b><b>\[([A-Z])</b><b>([0-9]+)</b><b>\]</b><b>\} </b>', r'{[\1\2]} ', text)
+    
+    # Pattern 12: <b>{</b><b>[M583]</b><b>} </b> (brackets around field, space after)
+    text = re.sub(r'<b>\{</b><b>\[([A-Z0-9]+)\]</b><b>\} </b>', r'{[\1]} ', text)
     
     return text
 
@@ -616,40 +625,32 @@ def fix_salutation_section(text):
     """Clean up the salutation section to have a single clean Dear statement"""
     import re
     
-    # STEP 1: Remove all the conditional "or if" statements first
-    # These appear as: (<u><b>or</b></u> if {[H202]} present)
-    text = re.sub(r'<div[^>]*>\(<u><b>or</b></u> if \{[^\}]+\} present\)</div>\s*(?:<br>\s*)?', '', text)
-    text = re.sub(r'<div[^>]*>\(<u><b>or </b></u>if \{[^\}]+\} present\)</div>\s*(?:<br>\s*)?', '', text)
+    # BRUTE FORCE APPROACH: Find first Dear and "Thank you for contacting" then nuke everything in between
     
-    # STEP 2: Find the FIRST "Dear" statement
-    first_dear = re.search(r'<div[^>]*>Dear \{[^}]+\}[^<]*</div>', text)
-    if not first_dear:
+    # Find the FIRST Dear line
+    first_dear_match = re.search(r'<div[^>]*>Dear \{[^\}]+\}', text)
+    if not first_dear_match:
         return text
     
-    # STEP 3: Find where content starts after all the Dear statements
-    # Look for "Thank you for contacting" or "Notice is hereby given" or substantial content
-    content_start = re.search(r'<div>Thank you for contacting', text)
-    if not content_start:
-        content_start = re.search(r'<div>Notice is hereby given', text)
-    if not content_start:
-        # Look for first substantial paragraph (50+ chars) after the first Dear
-        search_from = first_dear.end()
-        remaining_text = text[search_from:]
-        content_match = re.search(r'<div>(?!Dear)[A-Z][^<]{50,}', remaining_text)
-        if content_match:
-            class FakeMatch:
-                def __init__(self, pos):
-                    self.pos = pos
-                def start(self):
-                    return self.pos
-            content_start = FakeMatch(search_from + content_match.start())
+    # Find "Thank you for contacting" - this marks the end of salutation section
+    thank_you_match = re.search(r'<div>Thank you for contacting', text)
+    if not thank_you_match:
+        # Try "Notice is hereby given" as alternative
+        thank_you_match = re.search(r'<div>Notice is hereby given', text)
     
-    if not content_start:
+    if not thank_you_match:
         return text
     
-    # STEP 4: Replace everything from first Dear to content start with clean salutation
+    # Make sure "Thank you" comes AFTER the first Dear
+    if thank_you_match.start() <= first_dear_match.start():
+        return text
+    
+    # Replace EVERYTHING between first Dear and "Thank you" with clean salutation
+    before_salutation = text[:first_dear_match.start()]
+    after_salutation = text[thank_you_match.start():]
     clean_salutation = '<div>Dear {[Salutation]},</div>\n<br>\n'
-    text = text[:first_dear.start()] + clean_salutation + text[content_start.start():]
+    
+    text = before_salutation + clean_salutation + after_salutation
     
     return text
 
@@ -705,21 +706,22 @@ def fix_payment_information_cleanup(text):
         text = text.replace(old_text, new_text)
     
     # Remove conditional logic patterns like "If {[M944]} ="H", then print, else suppress"
-    # This appears both as standalone divs and inline within text
+    # This appears as: standalone divs, inline within paragraphs, and at sentence boundaries
     
-    # Remove as standalone divs
+    # Remove as standalone divs (with <br> after)
     text = re.sub(r'<div>If \{[^\}]+\} ="[^"]+", then print, else suppress</div>\s*<br>\s*', '', text)
+    text = re.sub(r'<div>If \{[^\}]+\} ="[^"]+", then print, else suppress</div>', '', text)
     
-    # Remove inline (with comma before, space after)
-    text = re.sub(r', If \{[^\}]+\} ="[^"]+", then print, else suppress ', ' ', text)
+    # Remove inline with comma before
+    text = re.sub(r', If \{[^\}]+\} ="[^"]+", then print, else suppress', '', text)
     
-    # Remove inline (with space before and after)
+    # Remove inline with just space before and after
     text = re.sub(r' If \{[^\}]+\} ="[^"]+", then print, else suppress ', ' ', text)
     
-    # Remove at start of sentence
+    # Remove at start of sentence (no space before)
     text = re.sub(r'If \{[^\}]+\} ="[^"]+", then print, else suppress ', '', text)
     
-    # Remove without trailing space
+    # Remove without any surrounding spaces
     text = re.sub(r'If \{[^\}]+\} ="[^"]+", then print, else suppress', '', text)
     
     # Remove "OR If" conditional patterns

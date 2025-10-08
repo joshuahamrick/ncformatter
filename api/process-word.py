@@ -380,6 +380,9 @@ def apply_universal_formatting_rules(html_text):
     """Apply universal formatting rules to any document - ENHANCED VERSION"""
     
     try:
+        # STEP 0: FIX BROKEN BOLD TAGS - Reconstruct field names broken by bold tags
+        html_text = fix_broken_bold_tags(html_text)
+        
         # STEP 1: FIELD CLEANUP - Direct string replacements that we know work
         html_text = simple_field_cleanup(html_text)
         
@@ -412,6 +415,28 @@ def apply_universal_formatting_rules(html_text):
         html_text = f'<div style="color: red;">Formatting error: {str(e)}</div>' + html_text
     
     return html_text
+
+def fix_broken_bold_tags(text):
+    """Fix field names that have been broken up by bold tags like <b>{[</b><b>M558</b><b>]}</b>"""
+    import re
+    
+    # Pattern to match broken field names: <b>{[</b><b>FIELD</b><b>]}</b> or similar variations
+    # This captures the field name and reconstructs it properly
+    pattern = r'<b>\{</b><b>\[</b><b>([A-Z0-9]+)</b><b>\]</b><b>\}</b>'
+    replacement = r'{[\1]}'
+    text = re.sub(pattern, replacement, text)
+    
+    # Also handle variations with spaces
+    pattern2 = r'<b>\{\[</b><b>([A-Z0-9]+)</b><b>\]\}</b>'
+    replacement2 = r'{[\1]}'
+    text = re.sub(pattern2, replacement2, text)
+    
+    # Handle another common pattern: <b>{</b><b>[FIELD]</b><b>}</b>
+    pattern3 = r'<b>\{</b><b>\[([A-Z0-9]+)\]</b><b>\}</b>'
+    replacement3 = r'{[\1]}'
+    text = re.sub(pattern3, replacement3, text)
+    
+    return text
 
 def simple_field_cleanup(text):
     """Simple, direct field cleanup using string replacements"""
@@ -577,13 +602,32 @@ def fix_salutation_section(text):
     """Clean up the salutation section to have a single clean Dear statement"""
     import re
     
-    # Find the start of the salutation section (first "Dear" with borrower names)
-    salutation_start = re.search(r'<div[^>]*>Dear <b>\{[^}]+\}</b> \(Mortgagor Name\)', text)
+    # Find the start of the salutation section (first "Dear" with borrower names or field codes)
+    salutation_start = re.search(r'<div[^>]*>Dear (?:<b>)?\{[^}]+\}(?:</b>)?(?: \([^)]+\))?', text)
     if not salutation_start:
         return text
     
-    # Find where this section ends (before "Notice is hereby given")
+    # Find where this section ends - look for common patterns after salutation
+    # Try "Notice is hereby given" first
     notice_start = re.search(r'<div>Notice is hereby given', text)
+    
+    # If not found, try "Thank you for contacting" (for LM112 style docs)
+    if not notice_start:
+        notice_start = re.search(r'<div>Thank you for contacting', text)
+    
+    # If still not found, look for any major content paragraph after multiple "Dear" lines
+    if not notice_start:
+        # Look for a div with substantial content (not just "Dear" or conditional logic)
+        notice_start = re.search(r'<div>(?!Dear)(?!\(<u>)[A-Z][^<]{20,}</div>', text[salutation_start.end():])
+        if notice_start:
+            # Adjust the position since we searched from salutation_start.end()
+            class FakeMatch:
+                def __init__(self, start_pos):
+                    self.start_val = start_pos
+                def start(self):
+                    return self.start_val
+            notice_start = FakeMatch(salutation_start.end() + notice_start.start())
+    
     if not notice_start:
         return text
     
@@ -597,6 +641,7 @@ def fix_salutation_section(text):
 
 def fix_payment_information_cleanup(text):
     """Clean up remaining payment information descriptions"""
+    import re
     
     # Clean up remaining descriptive text in payment sections
     replacements = [
@@ -612,16 +657,19 @@ def fix_payment_information_cleanup(text):
         (' (Mailing City), (State), (5-Digit Zip)', ''),
         (' (4-Digit Zip)', ''),
         (' (Foreign Address Indicator = 1)', ''),
+        (' (Foreign Address Indicator) = Y)', ''),
         (' (Foreign Country Code)', ''),
         (' (Foreign Postal Code)', ''),
         (' (Loan Number – No Dash)', ''),
         (' (Property Line 1/Street Address)', ''),
         (' (New Property Unit Number)', ''),
         (' (New Property Line 2/City State and Zip Code)', ''),
+        (' (New Property Line 1/Street Address)', ''),
         (' (Additional Mailing Address)', ''),
         (' (Mailing Street Address)', ''),
         (' (Mailing City), (State), (5-Digit Zip), (4-Digit Zip)', ''),
         (' (New Bill Line 1/ Mortgagor Name)', ''),
+        (' (New Bill Line 1/Mortgagor Name)', ''),
         (' (New Bill Line 2/Second Mortgagor)', ''),
         (' (New Bill Line 3/Third Mortgagor)', ''),
         (' (System Date)', ''),
@@ -631,11 +679,23 @@ def fix_payment_information_cleanup(text):
         (' (Delinquent Payment Count)', ''),
         (' (Accrued Late Charge Bal)', ''),
         (' (NSF Balance + Other Fees)', ''),
-        (' (Suspense Balance)', '')
+        (' (Suspense Balance)', ''),
+        (' (Plan Count)', ''),
+        (' (All Promises)', ''),
+        (' (First Payment Promise Date)', ''),
+        (' (LETTER ID)', ''),
+        (' (LETTER SENDER ID)', '')
     ]
     
     for old_text, new_text in replacements:
         text = text.replace(old_text, new_text)
+    
+    # Remove conditional logic patterns like "If {[M944]} ="H", then print, else suppress"
+    text = re.sub(r'<div>If \{[^\}]+\} ="[^"]+", then print, else suppress</div>\s*<br>\s*', '', text)
+    text = re.sub(r'If \{[^\}]+\} ="[^"]+", then print, else suppress\s*', '', text)
+    
+    # Remove business rules references
+    text = re.sub(r'<div style="text-align: justify">see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS\)</div>\s*<br>\s*', '', text)
     
     return text
 

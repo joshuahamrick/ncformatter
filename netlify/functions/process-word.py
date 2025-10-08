@@ -459,6 +459,13 @@ def fix_broken_bold_tags(text):
     # Pattern 12: <b>{</b><b>[M583]</b><b>} </b> (brackets around field, space after)
     text = re.sub(r'<b>\{</b><b>\[([A-Z0-9]+)\]</b><b>\} </b>', r'{[\1]} ', text)
     
+    # Pattern 13: Handle the specific M565/M566 pattern with just letter broken
+    # <b>{</b><b>[</b><b>M565</b><b>]}</b> - letter M separate from numbers
+    text = re.sub(r'<b>\{</b><b>\[</b><b>([A-Z])([0-9]+)</b><b>\]</b><b>\}</b>', r'{[\1\2]}', text)
+    
+    # Pattern 14: <b>{</b><b>[</b><b>M565</b><b>]</b><b>}</b> with ] separate
+    text = re.sub(r'<b>\{</b><b>\[</b><b>([A-Z][0-9]+)</b><b>\]</b><b>\}</b>', r'{[\1]}', text)
+    
     return text
 
 def simple_field_cleanup(text):
@@ -625,34 +632,36 @@ def fix_salutation_section(text):
     """Clean up the salutation section to have a single clean Dear statement"""
     import re
     
-    # BRUTE FORCE APPROACH: Find first Dear and "Thank you for contacting" then nuke everything in between
+    # SUPER SIMPLE APPROACH: Just remove all the alternative Dear lines
+    # Remove lines like: <div style="text-align: justify">Dear {[H202]},</div>
+    text = re.sub(r'<div[^>]*>Dear \{[^}]+\},?\s*</div>\s*<br>\s*', '', text, count=0, flags=re.IGNORECASE)
     
-    # Find the FIRST Dear line
-    first_dear_match = re.search(r'<div[^>]*>Dear \{[^\}]+\}', text)
-    if not first_dear_match:
-        return text
+    # But we need to keep at least ONE Dear line, so let's be smarter
+    # Find the FIRST "Dear" line and keep it, remove all subsequent ones
     
-    # Find "Thank you for contacting" - this marks the end of salutation section
-    thank_you_match = re.search(r'<div>Thank you for contacting', text)
-    if not thank_you_match:
-        # Try "Notice is hereby given" as alternative
-        thank_you_match = re.search(r'<div>Notice is hereby given', text)
+    lines = text.split('\n')
+    found_first_dear = False
+    found_content_after_dear = False
+    result_lines = []
     
-    if not thank_you_match:
-        return text
+    for line in lines:
+        # Check if this is a Dear line
+        if 'Dear {[' in line and not found_content_after_dear:
+            if not found_first_dear:
+                # Keep the first Dear but replace with clean salutation
+                result_lines.append('<div>Dear {[Salutation]},</div>')
+                result_lines.append('<br>')
+                found_first_dear = True
+            # Skip all other Dear lines
+            continue
+        
+        # Check if we've hit the content after salutation
+        if found_first_dear and ('Thank you for contacting' in line or 'Notice is hereby given' in line):
+            found_content_after_dear = True
+        
+        result_lines.append(line)
     
-    # Make sure "Thank you" comes AFTER the first Dear
-    if thank_you_match.start() <= first_dear_match.start():
-        return text
-    
-    # Replace EVERYTHING between first Dear and "Thank you" with clean salutation
-    before_salutation = text[:first_dear_match.start()]
-    after_salutation = text[thank_you_match.start():]
-    clean_salutation = '<div>Dear {[Salutation]},</div>\n<br>\n'
-    
-    text = before_salutation + clean_salutation + after_salutation
-    
-    return text
+    return '\n'.join(result_lines)
 
 def fix_payment_information_cleanup(text):
     """Clean up remaining payment information descriptions"""

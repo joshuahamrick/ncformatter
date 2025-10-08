@@ -420,21 +420,37 @@ def fix_broken_bold_tags(text):
     """Fix field names that have been broken up by bold tags like <b>{[</b><b>M558</b><b>]}</b>"""
     import re
     
-    # Pattern to match broken field names: <b>{[</b><b>FIELD</b><b>]}</b> or similar variations
-    # This captures the field name and reconstructs it properly
-    pattern = r'<b>\{</b><b>\[</b><b>([A-Z0-9]+)</b><b>\]</b><b>\}</b>'
-    replacement = r'{[\1]}'
-    text = re.sub(pattern, replacement, text)
+    # Pattern 1: <b>{[</b><b>FIELD</b><b>]}</b>
+    pattern1 = r'<b>\{\[</b><b>([A-Z0-9]+)</b><b>\]</b><b>\}</b>'
+    text = re.sub(pattern1, r'{[\1]}', text)
     
-    # Also handle variations with spaces
-    pattern2 = r'<b>\{\[</b><b>([A-Z0-9]+)</b><b>\]\}</b>'
-    replacement2 = r'{[\1]}'
-    text = re.sub(pattern2, replacement2, text)
+    # Pattern 2: <b>{</b><b>[FIELD]</b><b>}</b>
+    pattern2 = r'<b>\{</b><b>\[([A-Z0-9]+)\]</b><b>\}</b>'
+    text = re.sub(pattern2, r'{[\1]}', text)
     
-    # Handle another common pattern: <b>{</b><b>[FIELD]</b><b>}</b>
-    pattern3 = r'<b>\{</b><b>\[([A-Z0-9]+)\]</b><b>\}</b>'
-    replacement3 = r'{[\1]}'
-    text = re.sub(pattern3, replacement3, text)
+    # Pattern 3: <b>{</b><b>[</b><b>FIELD</b><b>]</b><b>}</b> (most broken)
+    pattern3 = r'<b>\{</b><b>\[</b><b>([A-Z0-9]+)</b><b>\]</b><b>\}</b>'
+    text = re.sub(pattern3, r'{[\1]}', text)
+    
+    # Pattern 4: <b>{[FIELD</b><b>]}</b>
+    pattern4 = r'<b>\{([A-Z0-9]+)</b><b>\]</b><b>\}</b>'
+    text = re.sub(pattern4, r'{[\1]}', text)
+    
+    # Pattern 5: <b>{</b><b>[FIELD</b><b>]}</b>
+    pattern5 = r'<b>\{</b><b>\[([A-Z0-9]+)</b><b>\]\}</b>'
+    text = re.sub(pattern5, r'{[\1]}', text)
+    
+    # Pattern 6: More variations with spaces
+    pattern6 = r'<b>\{\[</b><b>([A-Z0-9]+)</b><b>\]\}</b>'
+    text = re.sub(pattern6, r'{[\1]}', text)
+    
+    # Pattern 7: {[FIELD with bold around closing brackets
+    pattern7 = r'\{([A-Z0-9]+)<b>\]</b><b>\}</b>'
+    text = re.sub(pattern7, r'{[\1]}', text)
+    
+    # Pattern 8: Handle patterns where bold is only around the field code itself
+    pattern8 = r'<b>\{</b><b>\[([A-Z0-9]+)\]</b><b>\}</b>'
+    text = re.sub(pattern8, r'{[\1]}', text)
     
     return text
 
@@ -603,7 +619,8 @@ def fix_salutation_section(text):
     import re
     
     # Find the start of the salutation section (first "Dear" with borrower names or field codes)
-    salutation_start = re.search(r'<div[^>]*>Dear (?:<b>)?\{[^}]+\}(?:</b>)?(?: \([^)]+\))?', text)
+    # Look for patterns like: Dear {[M558]} and {[M559]}, or Dear {[H202]},
+    salutation_start = re.search(r'<div[^>]*>Dear \{[^}]+\}', text)
     if not salutation_start:
         return text
     
@@ -616,17 +633,19 @@ def fix_salutation_section(text):
         notice_start = re.search(r'<div>Thank you for contacting', text)
     
     # If still not found, look for any major content paragraph after multiple "Dear" lines
+    # We need to search after the salutation_start position
     if not notice_start:
-        # Look for a div with substantial content (not just "Dear" or conditional logic)
-        notice_start = re.search(r'<div>(?!Dear)(?!\(<u>)[A-Z][^<]{20,}</div>', text[salutation_start.end():])
-        if notice_start:
-            # Adjust the position since we searched from salutation_start.end()
+        # Look for substantial content (at least 50 characters of non-tag text)
+        search_text = text[salutation_start.end():]
+        notice_match = re.search(r'<div>(?!Dear)(?!\(<u>)(?!<b>Dear)[A-Z][^<]{50,}', search_text)
+        if notice_match:
+            # Calculate absolute position
             class FakeMatch:
                 def __init__(self, start_pos):
                     self.start_val = start_pos
                 def start(self):
                     return self.start_val
-            notice_start = FakeMatch(salutation_start.end() + notice_start.start())
+            notice_start = FakeMatch(salutation_start.end() + notice_match.start())
     
     if not notice_start:
         return text
@@ -693,14 +712,28 @@ def fix_payment_information_cleanup(text):
     # Remove conditional logic patterns like "If {[M944]} ="H", then print, else suppress"
     text = re.sub(r'<div>If \{[^\}]+\} ="[^"]+", then print, else suppress</div>\s*<br>\s*', '', text)
     text = re.sub(r'If \{[^\}]+\} ="[^"]+", then print, else suppress\s*', '', text)
+    text = re.sub(r'If \{[^\}]+\} ="[^"]+", then print, else suppress', '', text)
+    
+    # Remove inline conditional logic within paragraphs
+    text = re.sub(r' If \{[^\}]+\} ="[^"]+", then print, else suppress ', ' ', text)
     
     # Remove business rules references
     text = re.sub(r'<div style="text-align: justify">see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS\)</div>\s*<br>\s*', '', text)
+    text = re.sub(r'see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS\)', '', text)
     
     return text
 
 def fix_remaining_patterns(text):
     """Clean up remaining patterns that weren't caught by previous functions"""
+    import re
+    
+    # Remove conditional "or if" statements that appear in salutations
+    # Pattern: (<u><b>or</b></u> if {[H202]} present)
+    text = re.sub(r'<div[^>]*>\(<u><b>or</b></u> if \{[^\}]+\} present\)</div>\s*<br>\s*', '', text)
+    text = re.sub(r'<div[^>]*>\(<u><b>or </b></u>if \{[^\}]+\} present\)</div>\s*<br>\s*', '', text)
+    
+    # Also remove the "Dear" lines that follow these conditional statements
+    # We want to keep only the first "Dear" line and remove all the alternatives
     
     # Clean up remaining payment-related descriptive text
     replacements = [
@@ -710,6 +743,7 @@ def fix_remaining_patterns(text):
         (' (Late Fee Date)', ''),
         (' (Last Day This Month)', ''),
         (' (Today Plus 30 Days)', ''),
+        (' (Today\'s Date) + 14 Days)', ''),
         (' (Total Amount Due + Mtgr Rec Corp Adv Bal + Total Monthly Payment - Suspense Balance)', ''),
         (' (Total Amount Due + Mtgr Rec Corp Adv Bal - Suspense Balance)', ''),
         (' (Mortgagor Name)', ''),

@@ -1,0 +1,12 @@
+{
+	"paragraph": {
+		"Normal": { "class": "" },
+		"HeadingCenter": { "class": "nc-center", "align": "center", "bold": true },
+		"AddressCenter": { "class": "nc-center", "align": "center" }
+	},
+	"table": {
+		"BulletTable": { "class": "nc-bullets", "widthPct": 100, "borderCollapse": true },
+		"PaymentTable": { "class": "nc-payment", "widthPct": 100, "borderCollapse": true }
+	}
+}
+

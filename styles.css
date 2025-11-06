@@ -342,6 +342,22 @@ body {
     display: none !important;
 }
 
+/* Canonical layout helper classes (used by style-map.json) */
+.formatted-preview .nc-center {
+	text-align: center;
+}
+.formatted-preview .nc-bullets td:first-child {
+	width: 3%;
+}
+.formatted-preview .nc-bullets td:nth-child(2) {
+	width: 97%;
+}
+.formatted-preview .nc-payment td:first-child {
+	width: 70%;
+}
+.formatted-preview .nc-payment td:nth-child(2) {
+	width: 30%;
+}
 .formatted-preview div {
     margin-bottom: 8px;
     line-height: 1.6;

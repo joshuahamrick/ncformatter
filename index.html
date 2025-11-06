@@ -18,6 +18,7 @@
         <header class="header">
             <h1>Template HTML Formatter</h1>
             <p>Drag and drop your Word document to convert it to formatted HTML</p>
+			<div id="healthStatus" style="margin-top:8px;font-size:13px;opacity:.85;"></div>
         </header>
 
         <main class="main-content">
@@ -32,9 +33,9 @@
                                 <line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
                         </div>
-                        <h3>Drop your Word document here</h3>
+                        <h3>Drop your Word or PDF document here</h3>
                         <p>Or click to browse files</p>
-                        <input type="file" id="fileInput" accept=".doc,.docx" hidden>
+                        <input type="file" id="fileInput" accept=".doc,.docx,.pdf" hidden>
                         <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
                             Browse Files
                         </button>

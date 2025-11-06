@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Snapshot Tests</title>
+	<link rel="stylesheet" href="../../styles.css">
+	<style>
+		body { background: #0d1117; color: #e2e8f0; }
+		.container { padding-top: 40px; }
+		.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+		.panel { border: 1px solid #30363d; border-radius: 8px; padding: 12px; background: #161b22; }
+		.panel h3 { margin-bottom: 8px; }
+		.sample { margin-bottom: 16px; }
+		.diff { white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+		.ok { color: #2ecc71; }
+		.bad { color: #e74c3c; }
+	</style>
+	<script src="../../script-new.js"></script>
+	<script src="normalize.js"></script>
+	<script src="snapshot.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', () => {
+			window.Snapshots.init();
+		});
+	</script>
+</head>
+<body>
+	<div class="container">
+		<h1>Snapshot Tests</h1>
+		<p>Load a sample DOCX/PDF and compare against its expected formatted HTML.</p>
+		<div class="panel">
+			<label>Choose sample:</label>
+			<select id="sampleSelect"></select>
+			<button id="loadExpected">Load Expected HTML</button>
+		</div>
+
+		<div class="grid">
+			<div class="panel">
+				<h3>Upload Input (DOCX or PDF)</h3>
+				<input id="inputFile" type="file" accept=".doc,.docx,.pdf">
+				<button id="runTest">Run Test</button>
+				<div id="generatedHtml" class="formatted-preview" style="margin-top:10px;"></div>
+			</div>
+			<div class="panel">
+				<h3>Expected HTML</h3>
+				<div id="expectedHtml" class="formatted-preview" style="margin-top:10px;"></div>
+			</div>
+		</div>
+
+		<div class="panel" style="margin-top:16px;">
+			<h3>Diff</h3>
+			<div id="result" class="diff"></div>
+		</div>
+	</div>
+</body>
+	</html>
+

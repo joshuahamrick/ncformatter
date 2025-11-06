@@ -1,7 +1,9 @@
 {
+	"builds": [
+		{ "src": "api/**/*.py", "use": "@vercel/python" }
+	],
 	"functions": {
 		"api/**/*.py": {
-			"runtime": "python3.11",
 			"maxDuration": 30,
 			"memory": 1024
 		}

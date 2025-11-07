@@ -91,7 +91,10 @@ def _extract_paragraph_ir(paragraph):
 		'listMarker': marker,
 		'spacingBeforePt': float(paragraph.paragraph_format.space_before.pt) if paragraph.paragraph_format.space_before else None,
 		'spacingAfterPt': float(paragraph.paragraph_format.space_after.pt) if paragraph.paragraph_format.space_after else None,
-		'lineHeightMultiple': None
+		'lineHeightMultiple': None,
+		'leftIndentPt': float(paragraph.paragraph_format.left_indent.pt) if paragraph.paragraph_format.left_indent else None,
+		'firstLineIndentPt': float(paragraph.paragraph_format.first_line_indent.pt) if paragraph.paragraph_format.first_line_indent else None,
+		'hangingIndentPt': float(paragraph.paragraph_format.hanging_indent.pt) if paragraph.paragraph_format.hanging_indent else None
 	}
 	return para_ir
 

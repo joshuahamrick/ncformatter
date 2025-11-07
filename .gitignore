@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.vercel/
+tools/debug-output.html
+tests/snapshots/artifacts/
+

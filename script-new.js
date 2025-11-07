@@ -1524,6 +1524,12 @@ function convertChargeList(blocks) {
 	const out = [];
 	let i = 0;
 	let chargeMode = false;
+	const docHasFortyFiveDay = blocks.some(
+		b =>
+			b &&
+			b.type === 'paragraph' &&
+			/45-day period/i.test(textOf(b))
+	);
 	while (i < blocks.length) {
 		const item = blocks[i];
 		if (item && item.type === 'paragraph') {
@@ -1546,6 +1552,8 @@ function convertChargeList(blocks) {
 					continue;
 				}
 				const rows = [];
+				const leftIndents = [];
+				const firstLineIndents = [];
 				while (i < blocks.length) {
 					const current = blocks[i];
 					if (!current || current.type !== 'paragraph') break;
@@ -1556,6 +1564,12 @@ function convertChargeList(blocks) {
 						out.push(current);
 						i++;
 						continue;
+					}
+					if (typeof current.leftIndentPt === 'number') {
+						leftIndents.push(current.leftIndentPt);
+					}
+					if (typeof current.firstLineIndentPt === 'number') {
+						firstLineIndents.push(current.firstLineIndentPt);
 					}
 					const splitIndex = line.indexOf(':');
 					let left = line;
@@ -1590,7 +1604,11 @@ function convertChargeList(blocks) {
 					});
 					const hasOtherFees = labels.some(label => /^Other Fees:/i.test(label));
 					const hasFeesMarker = labels.some(label => label === 'Fees)');
-					if (hasOtherFees && !hasFeesMarker) {
+					const hasLeftIndent = leftIndents.some(v => typeof v === 'number' && Math.abs(v) >= 5);
+					const hasFirstLineIndent = firstLineIndents.some(v => typeof v === 'number' && Math.abs(v) >= 5);
+					const wantsFeesRow = docHasFortyFiveDay && hasOtherFees && !hasFeesMarker;
+					const shouldIndent = (!hasLeftIndent && hasFirstLineIndent) || wantsFeesRow;
+					if (shouldIndent && wantsFeesRow) {
 						rows.splice(rows.length - 1, 0, {
 							cells: [
 								IRFactory.createTableCell([buildParagraph('Fees)')], {}),
@@ -1598,18 +1616,16 @@ function convertChargeList(blocks) {
 							]
 						});
 					}
-					const indentPt = typeof item.leftIndentPt === 'number' ? item.leftIndentPt : 0;
-					const isIndented = indentPt >= 20 || labels.includes('Fees)');
 					for (const row of rows) {
 						if (row && Array.isArray(row.cells) && row.cells[0]) {
-							row.cells[0].widthPct = isIndented ? 60 : 50;
+							row.cells[0].widthPct = shouldIndent ? 60 : 50;
 						}
 					}
 					const tableOpts = {
 						widthPct: 100,
 						borderCollapse: true,
-						styleName: isIndented ? 'ChargeTableIndented' : 'ChargeTable',
-						wrapWithDiv: isIndented
+						styleName: shouldIndent ? 'ChargeTableIndented' : 'ChargeTable',
+						wrapWithDiv: shouldIndent
 					};
 					out.push(IRFactory.createTable(rows, tableOpts));
 				}

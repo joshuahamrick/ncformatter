@@ -92,10 +92,16 @@ def _extract_paragraph_ir(paragraph):
 		'spacingBeforePt': float(paragraph.paragraph_format.space_before.pt) if paragraph.paragraph_format.space_before else None,
 		'spacingAfterPt': float(paragraph.paragraph_format.space_after.pt) if paragraph.paragraph_format.space_after else None,
 		'lineHeightMultiple': None,
-		'leftIndentPt': float(paragraph.paragraph_format.left_indent.pt) if paragraph.paragraph_format.left_indent else None,
-		'firstLineIndentPt': float(paragraph.paragraph_format.first_line_indent.pt) if paragraph.paragraph_format.first_line_indent else None,
-		'hangingIndentPt': float(paragraph.paragraph_format.hanging_indent.pt) if paragraph.paragraph_format.hanging_indent else None
+		'leftIndentPt': float(paragraph.paragraph_format.left_indent.pt) if getattr(paragraph.paragraph_format, 'left_indent', None) else None,
+		'firstLineIndentPt': float(paragraph.paragraph_format.first_line_indent.pt) if getattr(paragraph.paragraph_format, 'first_line_indent', None) else None,
+		'hangingIndentPt': None
 	}
+	hanging = getattr(paragraph.paragraph_format, 'hanging_indent', None)
+	if hanging is not None:
+		try:
+			para_ir['hangingIndentPt'] = float(getattr(hanging, 'pt', hanging))
+		except Exception:
+			para_ir['hangingIndentPt'] = None
 	return para_ir
 
 

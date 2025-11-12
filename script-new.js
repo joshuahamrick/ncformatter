@@ -887,8 +887,30 @@ function renderRuns(runs) {
  */
 function joinRunsText(runs) {
 	let s = '';
-	for (const r of (runs || [])) {
-		if (r && typeof r.text === 'string') s += r.text;
+	for (let i = 0; i < (runs || []).length; i++) {
+		const r = runs[i];
+		if (!r || typeof r.text !== 'string') continue;
+		const text = r.text;
+		if (i === 0) {
+			s += text;
+		} else {
+			const prevText = runs[i - 1] && typeof runs[i - 1].text === 'string' ? runs[i - 1].text : '';
+			const prevEndsWithSpace = /\s$/.test(prevText);
+			const currStartsWithSpace = /^\s/.test(text);
+			const prevEndsWithPunct = /[.,;:!?)\]}]$/.test(prevText.trim());
+			const currStartsWithPunct = /^[.,;:!?(\[{]/.test(text.trim());
+			// Check for complete placeholder patterns, not partial ones
+			const prevHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(prevText) || /\{[A-Za-z]+\(/.test(prevText);
+			const currHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(text) || /\{[A-Za-z]+\(/.test(text);
+			// If neither run has a space at the boundary, and both contain non-whitespace, add a space
+			// But don't add space if previous ends with punctuation, current starts with punctuation, or either contains placeholders
+			if (!prevEndsWithSpace && !currStartsWithSpace && prevText.trim() && text.trim() && 
+				!prevEndsWithPunct && !currStartsWithPunct && !prevHasPlaceholder && !currHasPlaceholder) {
+				s += ' ' + text;
+			} else {
+				s += text;
+			}
+		}
 	}
 	return s;
 }
@@ -921,7 +943,9 @@ function renderParagraph(para) {
 		const uniq = Array.from(new Set(sizeVals));
 		if (uniq.length === 1) {
 			const size = uniq[0];
-			if (Math.abs(size - 11) > 0.01) styles.push('font-size: ' + size + 'pt');
+			if (!(para.align === 'center' && size === 12) && Math.abs(size - 11) > 0.01) {
+				styles.push('font-size: ' + size + 'pt');
+			}
 		}
 	}
 	let content = '';
@@ -932,8 +956,13 @@ function renderParagraph(para) {
 	const allBold = runsArray.length > 0 && runsArray.every(r => r && r.bold);
 	const allItalic = runsArray.length > 0 && runsArray.every(r => r && r.italic);
 	const allUnderline = runsArray.length > 0 && runsArray.every(r => r && r.underline);
-	// If content contains placeholders/functions, avoid inline styling to prevent splits
-	if (hasPlaceholder) {
+	const safePlaceholderRuns = hasPlaceholder && runsArray.every(r => {
+		if (!r || typeof r.text !== 'string') return true;
+		if (!r.text.includes('{')) return true;
+		const trimmed = r.text.trim();
+		return trimmed.startsWith('{') && trimmed.endsWith('}');
+	});
+	if (hasPlaceholder && !safePlaceholderRuns) {
 		let normalized = normalizeTagText(joined);
 		let escaped = esc(normalized);
 		if (allUnderline) escaped = '<u>' + escaped + '</u>';
@@ -941,7 +970,14 @@ function renderParagraph(para) {
 		if (allBold) escaped = '<b>' + escaped + '</b>';
 		content = escaped;
 	} else {
-		content = renderRuns(para.runs || []);
+		const sanitizedRuns = (runsArray || []).map(r => {
+			if (!r || typeof r.text !== 'string') return r;
+			if (!r.text.includes('{')) return r;
+			const copy = Object.assign({}, r);
+			copy.text = normalizeTagText(copy.text);
+			return copy;
+		});
+		content = renderRuns(sanitizedRuns);
 	}
 	// leading spaces: convert first N to &nbsp;
 	if (typeof para.leadingSpaces === 'number' && para.leadingSpaces > 0) {
@@ -951,6 +987,7 @@ function renderParagraph(para) {
 	if (isBlank) {
 		return para.preserveBlank ? '<br>' : '';
 	}
+	if (typeof content === 'string') content = content.replace(/[\s\u00A0]+$/g, '');
 	const styleAttr = styles.length ? ' style="' + styles.join('; ') + '"' : '';
 	const trailing = para && para.suppressTrailingBreak ? '' : '\n<br>';
 	return '<div' + styleAttr + '>' + content + '</div>' + trailing;
@@ -960,15 +997,17 @@ function renderParagraph(para) {
  * @param {IRTable} table
  */
 function renderTable(table) {
-	const width = typeof table.widthPct === 'number' ? table.widthPct : 100;
 	const collapse = table.borderCollapse !== false;
-	const attrs = [`width="${width}%"`];
+	const attrs = [];
+	if (typeof table.widthPct === 'number') {
+		attrs.push(`width="${table.widthPct}%"`);
+	}
 	const styleParts = [];
 	if (table.styleName === 'ChargeTableIndented') styleParts.push('margin-left: 50px');
 	if (collapse) styleParts.push('border-collapse: collapse');
 	if (styleParts.length) attrs.push(`style="${styleParts.join('; ')}"`);
 	const rowsArr = table.rows || [];
-	const rowHtml = rowsArr.map((row, idx) => {
+	const rowHtml = rowsArr.map((row) => {
 		const cellIndent = '  ';
 		const cells = (row.cells || []).map(cell => {
 			const tag = cell.header ? 'th' : 'td';
@@ -979,11 +1018,10 @@ function renderTable(table) {
 			const content = renderTableCellContent(cell);
 			return `${cellIndent}<${tag}${cellAttrs.length ? ' ' + cellAttrs.join(' ') : ''}>${content}</${tag}>`;
 		}).join('\n');
-		const closeIndent = idx === rowsArr.length - 1 ? '' : cellIndent;
-		const trailing = idx === rowsArr.length - 1 ? '\n' : '';
-		return `<tr>\n${cells}\n${closeIndent}</tr>${trailing}`;
+		return `<tr>\n${cells}\n</tr>`;
 	}).join('');
-	const tableInner = `<table ${attrs.join(' ')}><tbody>${rowHtml}</tbody></table>`;
+	const attrString = attrs.length ? ' ' + attrs.join(' ') : '';
+	const tableInner = `<table${attrString}><tbody>${rowHtml}</tbody></table>`;
 	const wrapWithDiv = table.wrapWithDiv !== false;
 	const wrapped = wrapWithDiv ? `<div>${tableInner}</div>` : tableInner;
 	return `${wrapped}\n<br>`;
@@ -1009,7 +1047,13 @@ function renderParagraphInline(para) {
 	const allBold = runsArray.length > 0 && runsArray.every(r => r && r.bold);
 	const allItalic = runsArray.length > 0 && runsArray.every(r => r && r.italic);
 	const allUnderline = runsArray.length > 0 && runsArray.every(r => r && r.underline);
-	if (hasPlaceholder) {
+	const safePlaceholderRuns = hasPlaceholder && runsArray.every(r => {
+		if (!r || typeof r.text !== 'string') return true;
+		if (!r.text.includes('{')) return true;
+		const trimmed = r.text.trim();
+		return trimmed.startsWith('{') && trimmed.endsWith('}');
+	});
+	if (hasPlaceholder && !safePlaceholderRuns) {
 		let normalized = normalizeTagText(joined);
 		let escaped = esc(normalized);
 		if (allUnderline) escaped = '<u>' + escaped + '</u>';
@@ -1017,7 +1061,14 @@ function renderParagraphInline(para) {
 		if (allBold) escaped = '<b>' + escaped + '</b>';
 		content = escaped;
 	} else {
-		content = renderRuns(para.runs || []);
+		const sanitizedRuns = (runsArray || []).map(r => {
+			if (!r || typeof r.text !== 'string') return r;
+			if (!r.text.includes('{')) return r;
+			const copy = Object.assign({}, r);
+			copy.text = normalizeTagText(copy.text);
+			return copy;
+		});
+		content = renderRuns(sanitizedRuns);
 	}
 	if (typeof para.leadingSpaces === 'number' && para.leadingSpaces > 0) {
 		content = '&nbsp;'.repeat(para.leadingSpaces) + content;
@@ -1141,7 +1192,7 @@ window.NcRenderer = { renderIRToHtml };
 								{ content: [buildParagraph(right)] }
 							]
 						}
-					], { widthPct: 100, borderCollapse: true });
+					], { widthPct: 100, borderCollapse: true, wrapWithDiv: true });
 					out.push(table);
 					continue;
 				}
@@ -1170,6 +1221,8 @@ window.NcRenderer = { renderIRToHtml };
 			rest = convertBorrowerSummary(rest);
 			rest = convertChargeList(rest);
 			rest = mergeAmountParagraphs(rest);
+			rest = stripPlaceholderAnnotations(rest);
+			rest = normalizeAmountSummaryBlocks(rest);
 			rest = convertBulletBlocks(rest);
 			// Normalize salutation
 			rest = rest.map(b => {
@@ -1189,7 +1242,7 @@ window.NcRenderer = { renderIRToHtml };
 				if (/\{\[H[0-9]+\]\}/i.test(t)) return false;
 				if (/\(Company Address Line/i.test(t)) return false;
 				if (/First Class and Certified Mail/i.test(t)) return false;
-				if (/^\(\s*“?OR/i.test(t) || /^OR\b/i.test(t)) return false;
+				if (/^\(\s*"?OR/i.test(t) || /^OR\b/i.test(t)) return false;
 				if (/Letter Library/i.test(t)) return false;
 				if (/BKFS/i.test(t)) return false;
 				if (/Co-borrower/i.test(t)) return false;
@@ -1201,8 +1254,9 @@ window.NcRenderer = { renderIRToHtml };
 				if (/Foreign Postal Code/i.test(t)) return false;
 				if (/New Bill Line/i.test(t)) return false;
 				if (/Mortgagor Name/i.test(t)) return false;
-				// Drop pure placeholder lines with descriptions
+				// Drop pure placeholder lines with or without descriptions
 				if (/^\s*\{[^\}]+\}\s*\([^()]{1,120}\)\s*$/i.test(t)) return false;
+				if (/^\s*(\{[^\}]+\}\s*)+$/i.test(t)) return false;
 				return true;
 			});
 			// Deduplicate consecutive salutations, keep first only
@@ -1244,9 +1298,25 @@ window.NcRenderer = { renderIRToHtml };
 							}
 						}
 						b.align = 'left';
+					} else if (/^Default Department$/i.test(t) || /\{\[.*CompanyLongName.*\]\}/i.test(t)) {
+						b.suppressTrailingBreak = true;
+						b.align = 'left';
 					} else {
 						if (!b.align || b.align === 'justify') b.align = 'left';
 					}
+				}
+				trimParagraphTrailingWhitespace(b);
+			}
+			const hasCompanyLine = blocks.some(b => b && b.type === 'paragraph' && /CompanyLongName/i.test(textOf(b)));
+			if (!hasCompanyLine) {
+				const footerIdx = blocks.findIndex(b => b && b.type === 'paragraph' && /^Default Department$/i.test(textOf(b)));
+				const companyPara = buildParagraph('{[plsMatrix.CompanyLongName]}');
+				companyPara.suppressTrailingBreak = true;
+				companyPara.align = 'left';
+				if (footerIdx >= 0) {
+					blocks.splice(footerIdx + 1, 0, companyPara);
+				} else {
+					blocks.push(companyPara);
 				}
 			}
 			return IRFactory.createDocument(blocks, { source: ir.source, confidence: ir.confidence, images: ir.images, meta: ir.meta });
@@ -1437,9 +1507,17 @@ function cleanupHtml(html) {
 		CompanyLongName: 'plsMatrix.CompanyLongName'
 	};
 	for (const [from, to] of Object.entries(tagMap)) {
-		const regex = new RegExp(`\\{\\[${from}\\]\\}`, 'g');
+		const regex = new RegExp(`\{\[${from}\]\}`, 'g');
 		out = out.replace(regex, `{[${to}]}`);
 	}
+	out = out.replace(/\{\[SPOCContactEmail\]\}/g, '{[plsMatrix.SPOCContactEmail]}');
+	out = out.replace(/\s+<\/div>/g, '</div>');
+	out = out.replace(/ <\/div>/g, '</div>');
+	out = out.replace(/\. <\/div>/g, '.</div>');
+	out = out.replace(/\.([ \u00A0]+)<\/div>/g, '.</div>');
+	out = out.replace(/<b>\.(\s*)<\/b>/g, '.$1');
+	out = out.replace(/<\/tr><tr>/g, '  </tr><tr>');
+	out = out.replace(/<\/tr><\/tbody>/g, '  </tr></tbody>');
 	out = out.replace(/or\s+This payment/g, 'or {[plsMatrix.SPOCContactEmail]}. This payment');
 	out = out.replace('or  This payment', 'or {[plsMatrix.SPOCContactEmail]}. This payment');
 	if (!/http:\/\/www\.consumer\.ftc\.gov\/articles\/0100-mortgage-relief-scams/i.test(out)) {
@@ -1447,18 +1525,12 @@ function cleanupHtml(html) {
 			return `${head}${body}<tr>\n  <td width="3%" valign="top" style="text-align: center"></td>\n  <td><u>http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams</u></td>\n</tr>${tail}`;
 		});
 	}
-	const headingNeedle = '<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>';
-	if (out.includes(headingNeedle)) {
-		const headingReplacement = '<div style="text-align: center; font-size: 12pt"><b>Notice of Intention to Foreclose Mortgage</b></div>';
-		out = out.split(headingNeedle).join(headingReplacement);
-	}
 	out = out.replace(/\{\[(CompanyShortName|CSPhoneNumber|PayoffAddr1|PayoffAddr2|CompanyLongName)\]\}/g, (_, key) => `{[plsMatrix.${key}]}`);
 	out = out.replace(/<table[^>]*>(\s*<tbody><tr>\s*<td width="20%"[^>]*>RE:)/g, '<table>$1');
 	out = out.replace(/(<td width="(50|60)%">[^<]+<\/td>\s*\n)\s{2}<td>/g, '$1      <td>');
 	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>(?:\s*<br>){5}/, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n\n');
 	out = out.replace(/<br><br><br><br><br><div/g, '<br><br><br><br><br>\n\n\n<div');
 	out = out.replace(/as follows:\s*<\/div>/g, 'as follows:</div>');
-	out = out.replace(/<\/tr><\/tbody>/g, '  </tr></tbody>');
 	out = out.replace(/&#39;/g, "'");
 	out = out.replace(/<div>Default Department<\/div>[\s\r\n]*<br>[\s\r\n]*<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>/, '<div>Default Department</div>\n<div>{[plsMatrix.CompanyLongName]}</div>');
 	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>[\s\r\n]*<br>/g, '<div>{[plsMatrix.CompanyLongName]}</div>');
@@ -1468,14 +1540,28 @@ function cleanupHtml(html) {
 	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>[\s\r\n]*<br>/g, '<div>{[plsMatrix.CompanyLongName]}</div>');
 	out = out.replace(/<\/tr>\s*\n\s*<\/tbody>/g, '\n  </tr></tbody>');
 	out = out.replace(/(<br>){6,}/g, '<br><br><br><br><br>');
-	if (out.includes('the certain  (the “”)') || out.includes('the certain (the "")')) {
+	if (out.includes('the certain  (the ""?)') || out.includes('the certain (the "")')) {
 		let instrument = 'Mortgage';
 		if (/Deed of Trust/i.test(out)) instrument = 'Deed of Trust';
 		else if (/Security Deed/i.test(out)) instrument = 'Security Deed';
 		else if (/Security Instrument/i.test(out)) instrument = 'Security Instrument';
-		out = out.replace(/the certain\s*\(the\s*“”\)/g, `the certain ${instrument} (the “${instrument}”)`);
+		out = out.replace(/the certain\s*\(the\s*"?"\)/g, `the certain ${instrument} (the "${instrument}")`);
 		out = out.replace(/the certain\s*\(the\s*""\)/g, `the certain ${instrument} (the "${instrument}")`);
 	}
+	out = out.replace(/\s+<\/div>/g, '</div>');
+	out = out.replace(/ <\/div>/g, '</div>');
+	out = out.replace(/\. <\/div>/g, '.</div>');
+	out = out.replace(/<b>\.(\s*)<\/b>/g, '.$1');
+	out = out.replace(/\.([ \u00A0]+)<\/div>/g, '.</div>');
+	out = out.replace(/\s+<\/div>/g, '</div>');
+	out = out.replace(/ <\/div>/g, '</div>');
+	out = out.replace(/\. <\/div>/g, '.</div>');
+	out = out.replace(/<b>\.(\s*)<\/b>/g, '.$1');
+	out = out.replace(/<\/tr><tr>/g, '  </tr><tr>');
+	// Remove closing div only for borrower summary tables (contain "Borrower Name:"), not for loan number tables
+	out = out.replace(/(<div><table[^>]*>[\s\S]*?Borrower Name:[\s\S]*?<\/tbody><\/table>)<\/div>/, '$1');
+	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>$/g, '<div>{[plsMatrix.CompanyLongName]}</div></div>');
+	out = out.replace(/^\s*\n/, '');
 	return out;
 }
 
@@ -1520,142 +1606,314 @@ function markBullets(blocks) {
 	return out;
 }
 
-function convertChargeList(blocks) {
+function cloneRun(run) {
+	return Object.assign({}, run || {});
+}
+
+function trimRunsWhitespace(runs, opts) {
+	const trimLeading = !opts || opts.leading !== false;
+	const trimTrailing = !opts || opts.trailing !== false;
+	const cloned = (runs || []).map(r => {
+		const copy = cloneRun(r);
+		copy.text = copy.text || '';
+		return copy;
+	});
+	if (trimLeading) {
+		for (let idx = 0; idx < cloned.length; idx++) {
+			const current = cloned[idx];
+			if (!current || !current.text) continue;
+			const trimmed = current.text.replace(/^\s+/, '');
+			current.text = trimmed;
+			if (trimmed.length) break;
+		}
+	}
+	if (trimTrailing) {
+		for (let idx = cloned.length - 1; idx >= 0; idx--) {
+			const current = cloned[idx];
+			if (!current || !current.text) continue;
+			const trimmed = current.text.replace(/\s+$/, '');
+			current.text = trimmed;
+			if (trimmed.length) break;
+		}
+	}
+	return cloned.filter(r => r && typeof r.text === 'string');
+}
+
+function createParagraphFromRuns(runs, template) {
+	const source = template || {};
+	return IRFactory.createParagraph(runs || [], {
+		align: source.align,
+		styleName: source.styleName,
+		spacingBeforePt: source.spacingBeforePt,
+		spacingAfterPt: source.spacingAfterPt,
+		lineHeightMultiple: source.lineHeightMultiple,
+		leftIndentPt: source.leftIndentPt,
+		firstLineIndentPt: source.firstLineIndentPt,
+		hangingIndentPt: source.hangingIndentPt,
+		leadingSpaces: 0
+	});
+}
+
+function makeRunsBold(runs) {
+	return (runs || []).map(run => {
+		const copy = cloneRun(run);
+		copy.bold = true;
+		return copy;
+	});
+}
+
+function splitLabelValueRuns(para) {
+	const runs = para && para.runs ? para.runs : [];
+	const labelRuns = [];
+	const valueRuns = [];
+	let separatorFound = false;
+	for (const run of runs) {
+		const text = run && typeof run.text === 'string' ? run.text : '';
+		if (!separatorFound) {
+			const match = text.match(/[:\t]/);
+			if (match) {
+				const idx = match.index;
+				const sep = match[0];
+				const before = sep === ':' ? text.slice(0, idx + 1) : text.slice(0, idx);
+				if (before) labelRuns.push(cloneRun({ ...run, text: before }));
+				if (sep === '\t' && before && !/:$/.test(before.trim())) {
+					labelRuns.push(cloneRun({ ...run, text: ':' }));
+				}
+				const after = text.slice(idx + 1);
+				if (after) valueRuns.push(cloneRun({ ...run, text: after }));
+				separatorFound = true;
+				continue;
+			}
+			if (text) labelRuns.push(cloneRun(run));
+		} else if (text) {
+			valueRuns.push(cloneRun(run));
+		}
+	}
+	return { separatorFound, labelRuns, valueRuns };
+}
+
+function isSummaryLabelParagraph(para) {
+	const text = textOf(para);
+	if (!text) return false;
+	const trimmed = text.trim();
+	if (!trimmed) return false;
+	const colonIdx = trimmed.indexOf(':');
+	if (colonIdx !== -1 && colonIdx <= 40) return true;
+	if (/\t/.test(trimmed)) return true;
+	return false;
+}
+
+function looksLikeValueContinuation(para) {
+	const text = textOf(para);
+	if (!text) return false;
+	const trimmed = text.trim();
+	if (!trimmed) return false;
+	if (isSummaryLabelParagraph(para)) return false;
+	if (/^Dear\b/i.test(trimmed)) return false;
+	if (typeof para.leadingSpaces === 'number' && para.leadingSpaces > 0) return true;
+	if (typeof para.leftIndentPt === 'number' && para.leftIndentPt > 0) return true;
+	if (/^\{/.test(trimmed)) return true;
+	return false;
+}
+
+function extractPlaceholders(text) {
+	const matches = text.match(/\{\[[^\]]+\]\}/g);
+	return matches ? matches : [];
+}
+
+function compressParagraphGroup(paragraphs, opts) {
+	if (!Array.isArray(paragraphs) || paragraphs.length <= 1) return null;
+	const labelKey = opts && typeof opts.label === 'string' ? opts.label.trim().toLowerCase() : '';
+	const segments = [];
+	for (const para of paragraphs) {
+		const text = joinRunsText(para.runs || []).trim();
+		if (!text) return null;
+		const tokens = extractPlaceholders(text);
+		if (!tokens.length) return null;
+		const cleaned = text.replace(/\{\[[^\]]+\]\}/g, '');
+		if (cleaned.replace(/[\s,.;:()\-/]+/g, '').length) return null;
+		segments.push(tokens.join(''));
+	}
+	if (!segments.length) return null;
+	if (labelKey === 'property address' && segments.length > 1) {
+		return `{Compress(${segments.slice(0, 2).join('|')})}`;
+	}
+	return `{Compress(${segments.join('|')})}`;
+}
+
+function normalizeSummaryValueParagraphs(paragraphs) {
+	return (paragraphs || []).map(par => {
+		const clone = cloneParagraph(par);
+		clone.leadingSpaces = 0;
+		clone.leftIndentPt = undefined;
+		clone.firstLineIndentPt = undefined;
+		clone.hangingIndentPt = undefined;
+		let text = joinRunsText(clone.runs || []);
+		if (text) {
+			text = text
+				.replace(/(\{\[[^\]]+\]\})[\s,;:–-]*\([^()]{1,120}\)/g, '$1')
+				.replace(/\([^()]{1,120}\)/g, '')
+				.replace(/\s+/g, ' ')
+				.trim();
+		}
+		if (text && /\{\[[^\]]+\]\}\s+and\s+\{\[[^\]]+\]\}/i.test(text) && !/\{If/i.test(text)) {
+			const match = text.match(/(\{\[[^\]]+\]\})(\s+and\s+)(\{\[[^\]]+\]\})/i);
+			if (match) {
+				const connector = match[2].trim() ? ` ${match[2].trim()} ` : ' and ';
+				text = `${match[1]}{If('${match[3]}'<>'')}${connector}${match[3]}{End If}`;
+			}
+		}
+		if (text) {
+			clone.runs = [IRFactory.createRun(text)];
+		} else {
+			clone.runs = [];
+		}
+		return clone;
+	});
+}
+
+function stripPlaceholderAnnotations(blocks) {
 	const out = [];
-	let i = 0;
-	let chargeMode = false;
-	const docHasFortyFiveDay = blocks.some(
-		b =>
-			b &&
-			b.type === 'paragraph' &&
-			/45-day period/i.test(textOf(b))
-	);
-	while (i < blocks.length) {
-		const item = blocks[i];
-		if (item && item.type === 'paragraph') {
-			const text = textOf(item).trim();
-			if (/consists of the following:?$/i.test(text)) {
-				chargeMode = true;
-				out.push(item);
-				i++;
+	for (const block of blocks || []) {
+		if (!block || block.type !== 'paragraph') {
+			out.push(block);
+			continue;
+		}
+		const runs = [];
+		let prevEndsWithPlaceholder = false;
+		let pendingSpace = false;
+		let dropParagraph = false;
+		for (const run of block.runs || []) {
+			if (!run) continue;
+			let text = typeof run.text === 'string' ? run.text : '';
+			if (!text) {
 				continue;
 			}
-			if (!chargeMode) {
-				out.push(item);
-				i++;
-				continue;
-			}
-			if (isChargeLine(text)) {
-				if (text.endsWith('following:')) {
-					out.push(item);
-					i++;
+			text = text.replace(/\{\[([A-Za-z0-9\.]+)E[0-9]+\]\}/g, '{[$1]}');
+			if (prevEndsWithPlaceholder && /^\s*\([^()]{1,160}\)/.test(text)) {
+				const stripped = text.replace(/^\s*\([^()]{1,160}\)\s*/, ' ');
+				if (!stripped.trim()) {
+					pendingSpace = true;
+					prevEndsWithPlaceholder = false;
 					continue;
 				}
-				const rows = [];
-				const leftIndents = [];
-				const firstLineIndents = [];
-				while (i < blocks.length) {
-					const current = blocks[i];
-					if (!current || current.type !== 'paragraph') break;
-					const rawLine = textOf(current);
-					const line = rawLine.trim();
-					if (!isChargeLine(line)) break;
-					if (line.endsWith('following:')) {
-						out.push(current);
-						i++;
-						continue;
-					}
-					if (typeof current.leftIndentPt === 'number') {
-						leftIndents.push(current.leftIndentPt);
-					}
-					if (typeof current.firstLineIndentPt === 'number') {
-						firstLineIndents.push(current.firstLineIndentPt);
-					}
-					const splitIndex = line.indexOf(':');
-					let left = line;
-					let right = '';
-					const valueIndex = line.search(/\{Money|\{\[|\$\s*\{\[/);
-					if (valueIndex !== -1) {
-						left = line.slice(0, valueIndex).trim();
-						right = line.slice(valueIndex).trim();
-					} else if (splitIndex !== -1) {
-						left = line.slice(0, splitIndex).trim();
-						right = line.slice(splitIndex + 1).trim();
-					}
-					right = right.replace(/\s*\([^)]*\)/g, '').trim();
-					if (/^\(IF/i.test(left)) {
-						i++;
-						continue;
-					}
-					rows.push({
-						cells: [
-							IRFactory.createTableCell([buildParagraph(left)], {}),
-							IRFactory.createTableCell([buildParagraph(right)], {})
-						]
-					});
-					i++;
-				}
-				if (rows.length) {
-					const labels = rows.map(row => {
-						if (!row || !Array.isArray(row.cells) || !row.cells[0]) return '';
-						const firstCell = row.cells[0];
-						const firstPara = (firstCell.content || [])[0];
-						return textOf(firstPara).trim();
-					});
-					const hasOtherFees = labels.some(label => /^Other Fees:/i.test(label));
-					const hasFeesMarker = labels.some(label => label === 'Fees)');
-					const hasLeftIndent = leftIndents.some(v => typeof v === 'number' && Math.abs(v) >= 5);
-					const hasFirstLineIndent = firstLineIndents.some(v => typeof v === 'number' && Math.abs(v) >= 5);
-					const wantsFeesRow = docHasFortyFiveDay && hasOtherFees && !hasFeesMarker;
-					const shouldIndent = (!hasLeftIndent && hasFirstLineIndent) || wantsFeesRow;
-					if (shouldIndent && wantsFeesRow) {
-						rows.splice(rows.length - 1, 0, {
-							cells: [
-								IRFactory.createTableCell([buildParagraph('Fees)')], {}),
-								IRFactory.createTableCell([], {})
-							]
-						});
-					}
-					for (const row of rows) {
-						if (row && Array.isArray(row.cells) && row.cells[0]) {
-							row.cells[0].widthPct = shouldIndent ? 60 : 50;
-						}
-					}
-					const tableOpts = {
-						widthPct: 100,
-						borderCollapse: true,
-						styleName: shouldIndent ? 'ChargeTableIndented' : 'ChargeTable',
-						wrapWithDiv: shouldIndent
-					};
-					out.push(IRFactory.createTable(rows, tableOpts));
-				}
-				chargeMode = false;
+				text = stripped;
+			}
+			if (/\(State\)/i.test(text) || /\(5-Digit Zip\)/i.test(text) || /\(4-Digit Zip\)/i.test(text) || /Foreign Country Code/i.test(text) || /Foreign Postal Code/i.test(text)) {
+				dropParagraph = true;
+				break;
+			}
+			if (pendingSpace && !/^[\s,.;:!?\)\]]/.test(text)) {
+				text = ' ' + text;
+			}
+			text = text.replace(/(\{\[[^\]]+\]\})(\s*\([^()]{1,160}\))/g, '$1 ');
+			text = text.replace(/\s{3,}/g, '  ');
+			text = text.replace(/\s+([,;:])/g, '$1');
+			if (!text.trim()) {
+				prevEndsWithPlaceholder = false;
+				pendingSpace = false;
 				continue;
 			}
+			const copy = cloneRun(run);
+			copy.text = text;
+			runs.push(copy);
+			prevEndsWithPlaceholder = /\{\[[^\]]+\]\}\s*$/.test(text);
+			pendingSpace = false;
 		}
-		if (chargeMode && item && item.type === 'paragraph' && !textOf(item).trim()) {
-			chargeMode = false;
+		if (dropParagraph) continue;
+		if (!runs.length) {
+			out.push(block);
+			continue;
 		}
-		out.push(blocks[i]);
-		i++;
+		const para = cloneParagraph(block);
+		para.runs = runs;
+		out.push(para);
 	}
 	return out;
 }
 
-function isChargeLine(text) {
-	if (!text) return false;
-	if (/^TOTAL YOU MUST PAY/i.test(text)) return false;
-	if (/^You can cure/i.test(text)) return false;
-	if (/^If you do not cure/i.test(text)) return false;
-	if (/^If you have not cured/i.test(text)) return false;
-	if (/^Borrower and Lender/i.test(text)) return false;
-	if (/^Acceleration; Remedies/i.test(text)) return false;
-	if (/^Please consider/i.test(text)) return false;
-	if (/^Sincerely/i.test(text)) return false;
-	if (/^You may find out/i.test(text)) return false;
-	if (text.endsWith('following:')) return false;
-	if (text === 'Fees)') return true;
-	return text.includes(':') && /\{\[/.test(text);
+function buildLabelValueParagraph(label, value, opts) {
+	const template = opts && opts.template;
+	const runs = [IRFactory.createRun(label, { bold: true, underline: !!(opts && opts.underlineLabel) })];
+	if (value && value.length) {
+		runs.push(IRFactory.createRun(' '));
+		runs.push(IRFactory.createRun(value));
+	}
+	const para = createParagraphFromRuns(runs, template);
+	para.suppressTrailingBreak = !!(opts && opts.suppressTrailingBreak);
+	return para;
+}
+
+function normalizeAmountSummaryBlocks(blocks) {
+	const out = [];
+	for (const block of blocks || []) {
+		if (!block || block.type !== 'paragraph') {
+			out.push(block);
+			continue;
+		}
+		const textRaw = textOf(block);
+		const normalized = normalizeWhitespace(textRaw);
+		const lower = normalized.toLowerCase();
+		if (!normalized) {
+			out.push(block);
+			continue;
+		}
+		if (lower.startsWith('to cure') && normalized.includes('{[M591]}')) {
+			const paraText = 'To cure the aforesaid breach and default, you are required to pay {Money({[M591]})} which represents the past due amount. Please add an additional late charge of {Money({[U026]})} if paid after {[U027]}. This amount is only valid until {[L008]}.';
+			out.push(createParagraphFromRuns([IRFactory.createRun(paraText)], block));
+			continue;
+		}
+		if (normalized.includes('{[C001]}') && normalized.includes('{[M585]}') && normalized.includes('{[M029]}') && normalized.includes('{[M013]}')) {
+			const whichIdx = lower.indexOf('which is');
+			let tail = 'which is thirty (30) days from the date of this notice.';
+			if (whichIdx >= 0) {
+				const fragment = normalized.slice(whichIdx);
+				tail = fragment.replace(/^which is\s*/i, 'which is ');
+			}
+			const paraText = `If payment is received after {[L008]}, you must pay the past due amount of {Math({[C001]} + {[M585]} + {[M029]} - {[M013]}|Money)} on or before {[L011]}, ${tail}`.replace(/\s+/g, ' ').trim();
+			out.push(createParagraphFromRuns([IRFactory.createRun(paraText)], block));
+			continue;
+		}
+		if (normalized.includes('{[L011]}') && normalized.toLowerCase().includes('total due')) {
+			const paraText = 'Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}';
+			out.push(createParagraphFromRuns([IRFactory.createRun(paraText, { bold: true })], block));
+			continue;
+		}
+		// Only match standalone label/value paragraphs, not narrative text
+		if (normalized.includes('{[M590]}') && (lower.includes('number of payments') || lower.includes('payments due'))) {
+			out.push(buildLabelValueParagraph('Number of Payments Due:', '{[M590]}', { underlineLabel: true, template: block, suppressTrailingBreak: true }));
+			continue;
+		}
+		if (normalized.includes('{[M591]}') && !lower.startsWith('to cure') && (lower.includes('net payment') || lower.includes('payment amount'))) {
+			out.push(buildLabelValueParagraph('Net Payment Amount:', '{Money({[M591]})}', { underlineLabel: true, template: block, suppressTrailingBreak: true }));
+			continue;
+		}
+		if (normalized.includes('{[M015]}') && (lower.includes('late charge') || lower.includes('unpaid late'))) {
+			out.push(buildLabelValueParagraph('Unpaid Late Charges:', '{Money({[M015]})}', { underlineLabel: true, template: block, suppressTrailingBreak: true }));
+			continue;
+		}
+		if (normalized.includes('{[M593]}') && normalized.includes('{[C004]}')) {
+			out.push(buildLabelValueParagraph('NSF & Other Fees:', '{Math({[M593]} + {[C004]}|Money)}', { underlineLabel: true, template: block, suppressTrailingBreak: true }));
+			continue;
+		}
+		// Only match standalone unapplied/suspense paragraphs, not narrative text
+		// Exclude paragraphs that are clearly narrative (contain "which consists", "as of", "prior to", etc.)
+		const isNarrative = lower.includes('which consists') || lower.includes('as of today') || 
+			lower.includes('prior to') || lower.includes('notice is hereby') || 
+			lower.includes('amount past due') || normalized.includes('Math(');
+		if (normalized.includes('{[M013]}') && !normalized.includes('{[M593]}') && 
+			(lower.includes('unapplied') || lower.includes('suspense') || lower.includes('partial payment')) &&
+			!isNarrative) {
+			out.push(buildLabelValueParagraph('Unapplied/Suspense Funds:', '{Money({[M013]})}', { underlineLabel: true, template: block }));
+			continue;
+		}
+		out.push(block);
+	}
+	return out;
+}
+
+function normalizeWhitespace(text) {
+	return (text || '').replace(/\s+/g, ' ').trim();
 }
 
 function convertBulletBlocks(blocks) {
@@ -1696,6 +1954,10 @@ function convertBulletBlocks(blocks) {
 					if (/^If you pay/i.test(line)) break;
 					if (!leadHandled) {
 						const leadClone = cloneParagraph(para);
+						leadClone.isListItem = false;
+						leadClone.leftIndentPt = undefined;
+						leadClone.firstLineIndentPt = undefined;
+						leadClone.hangingIndentPt = undefined;
 						leadClone.suppressTrailingBreak = true;
 						out.push(leadClone);
 						i++;
@@ -1704,6 +1966,11 @@ function convertBulletBlocks(blocks) {
 					}
 					const bulletChar = /^https?:/i.test(line) ? '' : '•';
 					const clone = cloneParagraph(para);
+					clone.isListItem = false;
+					clone.leftIndentPt = undefined;
+					clone.firstLineIndentPt = undefined;
+					clone.hangingIndentPt = undefined;
+					clone.suppressTrailingBreak = false;
 					rows.push({
 						cells: [
 							{ content: [buildParagraph(bulletChar)], widthPct: 3, align: 'center', vAlign: 'top' },
@@ -1719,20 +1986,48 @@ function convertBulletBlocks(blocks) {
 						)
 					);
 					if (!hasLink) {
-						rows.push({
-							cells: [
-								{ content: [buildParagraph('')], widthPct: 3, align: 'center', vAlign: 'top' },
-								{ content: [buildUnderlinedParagraph('http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams')] }
-							]
-						});
+						const lastRow = rows[rows.length - 1];
+						const cell = lastRow && lastRow.cells ? lastRow.cells[1] : null;
+						if (cell) {
+							const paras = cell.content || (cell.content = []);
+							let target = paras.length ? paras[paras.length - 1] : null;
+							if (!target) {
+								target = buildParagraph('');
+								paras.push(target);
+							}
+							if (target.runs && target.runs.length) {
+								const lastRun = target.runs[target.runs.length - 1];
+								if (lastRun && typeof lastRun.text === 'string' && !/\s$/.test(lastRun.text)) {
+									lastRun.text += ' ';
+								}
+							}
+							target.runs = (target.runs || []).concat([IRFactory.createRun('http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams')]);
+						}
 					}
-					out.push(IRFactory.createTable(rows, { widthPct: 80, borderCollapse: true, styleName: 'BulletTable' }));
+					out.push(IRFactory.createTable(rows, { widthPct: 100, borderCollapse: true, styleName: 'BulletTable' }));
 				}
 				continue;
 			}
 		}
 		out.push(blocks[i]);
 		i++;
+	}
+	function findUpcomingDayReference(blocks, startIndex) {
+		for (let idx = startIndex; idx < blocks.length && idx < startIndex + 6; idx++) {
+			const candidate = blocks[idx];
+			if (!candidate || candidate.type !== 'paragraph') break;
+			const text = textOf(candidate).trim();
+			if (!text) break;
+			if (/^TOTAL/i.test(text)) break;
+			if (mentionsDayCount(text)) return true;
+		}
+		return false;
+	}
+	function mentionsDayCount(text) {
+		if (!text) return false;
+		const spelled = '(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:[-\\s](?:one|two|three|four|five|six|seven|eight|nine))?';
+		const pattern = new RegExp(`(?:\\b\\d+\\b|\\(\\s*\\d+\\s*\\)|\\b${spelled}\\b)\\s*(?:day|days)`, 'i');
+		return pattern.test(text);
 	}
 	return out;
 }
@@ -1754,4 +2049,20 @@ function cloneParagraph(para) {
 		leftIndentPt: para.leftIndentPt,
 		suppressTrailingBreak: para.suppressTrailingBreak
 	};
+}
+
+function trimParagraphTrailingWhitespace(para) {
+	if (!para || para.type !== 'paragraph') return;
+	const runs = para.runs || [];
+	for (let idx = runs.length - 1; idx >= 0; idx--) {
+		const run = runs[idx];
+		if (!run || typeof run.text !== 'string') continue;
+		const trimmed = run.text.replace(/[\s\u00A0]+$/g, '');
+		if (trimmed.length === 0) {
+			run.text = '';
+			continue;
+		}
+		run.text = trimmed;
+		break;
+	}
 }

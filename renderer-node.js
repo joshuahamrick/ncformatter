@@ -33,8 +33,30 @@ function renderRuns(runs) {
 
 function joinRunsText(runs) {
 	let s = '';
-	for (const r of runs || []) {
-		if (r && typeof r.text === 'string') s += r.text;
+	for (let i = 0; i < (runs || []).length; i++) {
+		const r = runs[i];
+		if (!r || typeof r.text !== 'string') continue;
+		const text = r.text;
+		if (i === 0) {
+			s += text;
+		} else {
+			const prevText = runs[i - 1] && typeof runs[i - 1].text === 'string' ? runs[i - 1].text : '';
+			const prevEndsWithSpace = /\s$/.test(prevText);
+			const currStartsWithSpace = /^\s/.test(text);
+			const prevEndsWithPunct = /[.,;:!?)\]}]$/.test(prevText.trim());
+			const currStartsWithPunct = /^[.,;:!?(\[{]/.test(text.trim());
+			// Check for complete placeholder patterns, not partial ones
+			const prevHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(prevText) || /\{[A-Za-z]+\(/.test(prevText);
+			const currHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(text) || /\{[A-Za-z]+\(/.test(text);
+			// If neither run has a space at the boundary, and both contain non-whitespace, add a space
+			// But don't add space if previous ends with punctuation, current starts with punctuation, or either contains placeholders
+			if (!prevEndsWithSpace && !currStartsWithSpace && prevText.trim() && text.trim() && 
+				!prevEndsWithPunct && !currStartsWithPunct && !prevHasPlaceholder && !currHasPlaceholder) {
+				s += ' ' + text;
+			} else {
+				s += text;
+			}
+		}
 	}
 	return s;
 }
@@ -59,7 +81,9 @@ function renderParagraph(para, styleMap) {
 		const uniq = Array.from(new Set(sizeVals));
 		if (uniq.length === 1) {
 			const size = uniq[0];
-			if (Math.abs(size - 11) > 0.01) styles.push('font-size: ' + size + 'pt');
+			if (!(para.align === 'center' && size === 12) && Math.abs(size - 11) > 0.01) {
+				styles.push('font-size: ' + size + 'pt');
+			}
 		}
 	}
 	let content = '';
@@ -70,7 +94,13 @@ function renderParagraph(para, styleMap) {
 	const allBold = runsArray.length > 0 && runsArray.every(r => r && r.bold);
 	const allItalic = runsArray.length > 0 && runsArray.every(r => r && r.italic);
 	const allUnderline = runsArray.length > 0 && runsArray.every(r => r && r.underline);
-	if (hasPlaceholder) {
+	const safePlaceholderRuns = hasPlaceholder && runsArray.every(r => {
+		if (!r || typeof r.text !== 'string') return true;
+		if (!r.text.includes('{')) return true;
+		const trimmed = r.text.trim();
+		return trimmed.startsWith('{') && trimmed.endsWith('}');
+	});
+	if (hasPlaceholder && !safePlaceholderRuns) {
 		let normalized = normalizeTagText(joined);
 		let escaped = esc(normalized);
 		if (allUnderline) escaped = '<u>' + escaped + '</u>';
@@ -78,7 +108,14 @@ function renderParagraph(para, styleMap) {
 		if (allBold) escaped = '<b>' + escaped + '</b>';
 		content = escaped;
 	} else {
-		content = renderRuns(para.runs || []);
+		const sanitizedRuns = (runsArray || []).map(r => {
+			if (!r || typeof r.text !== 'string') return r;
+			if (!r.text.includes('{')) return r;
+			const copy = { ...r };
+			copy.text = normalizeTagText(copy.text);
+			return copy;
+		});
+		content = renderRuns(sanitizedRuns);
 	}
 	if (typeof para.leadingSpaces === 'number' && para.leadingSpaces > 0) {
 		const leading = '&nbsp;'.repeat(para.leadingSpaces);
@@ -87,21 +124,24 @@ function renderParagraph(para, styleMap) {
 	if (isBlank) {
 		return para.preserveBlank ? '<br>' : '';
 	}
+	if (typeof content === 'string') content = content.replace(/[\s\u00A0]+$/g, '');
 	const styleAttr = styles.length ? ' style="' + styles.join('; ') + '"' : '';
 	const trailing = para && para.suppressTrailingBreak ? '' : '\n<br>';
 	return '<div' + styleAttr + '>' + content + '</div>' + trailing;
 }
 
 function renderTable(table, styleMap) {
-	const width = typeof table.widthPct === 'number' ? table.widthPct : 100;
 	const collapse = table.borderCollapse !== false;
-	const attrs = [`width="${width}%"`];
+	const attrs = [];
+	if (typeof table.widthPct === 'number') {
+		attrs.push(`width="${table.widthPct}%"`);
+	}
 	const styleParts = [];
 	if (table.styleName === 'ChargeTableIndented') styleParts.push('margin-left: 50px');
 	if (collapse) styleParts.push('border-collapse: collapse');
 	if (styleParts.length) attrs.push(`style="${styleParts.join('; ')}"`);
 	const rowsArr = table.rows || [];
-	const rowHtml = rowsArr.map((row, idx) => {
+	const rowHtml = rowsArr.map((row) => {
 		const cellIndent = '  ';
 		const cells = (row.cells || []).map(cell => {
 			const tag = cell.header ? 'th' : 'td';
@@ -112,11 +152,10 @@ function renderTable(table, styleMap) {
 			const content = renderTableCellContent(cell, styleMap);
 			return `${cellIndent}<${tag}${cellAttrs.length ? ' ' + cellAttrs.join(' ') : ''}>${content}</${tag}>`;
 		}).join('\n');
-		const closeIndent = idx === rowsArr.length - 1 ? '' : cellIndent;
-		const trailing = idx === rowsArr.length - 1 ? '\n' : '';
-		return `<tr>\n${cells}\n${closeIndent}</tr>${trailing}`;
+		return `<tr>\n${cells}\n</tr>`;
 	}).join('');
-	const tableInner = `<table ${attrs.join(' ')}><tbody>${rowHtml}</tbody></table>`;
+	const attrString = attrs.length ? ' ' + attrs.join(' ') : '';
+	const tableInner = `<table${attrString}><tbody>${rowHtml}</tbody></table>`;
 	const wrapWithDiv = table.wrapWithDiv !== false;
 	const wrapped = wrapWithDiv ? `<div>${tableInner}</div>` : tableInner;
 	return `${wrapped}\n<br>`;
@@ -245,24 +284,13 @@ function cleanupHtml(html) {
 		const regex = new RegExp(`\{\[${from}\]\}`, 'g');
 		out = out.replace(regex, `{[${to}]}`);
 	}
+	out = out.replace(/\{\[SPOCContactEmail\]\}/g, '{[plsMatrix.SPOCContactEmail]}');
 	out = out.replace(/or\s+This payment/g, 'or {[plsMatrix.SPOCContactEmail]}. This payment');
 	out = out.replace('or  This payment', 'or {[plsMatrix.SPOCContactEmail]}. This payment');
 	out = out.replace(/<div>\s*(?:&nbsp;\s*)+<\/div>\s*<br>\s*/g, '');
 	out = out.replace(/<div>\s*<\/div>\s*<br>\s*/g, '<br>');
 	out = out.replace(/(?:<br>\s*){2,}/g, '<br><br><br><br><br>');
-	if (!/http:\/\/www\.consumer\.ftc\.gov\/articles\/0100-mortgage-relief-scams/i.test(out)) {
-		out = out.replace(/(<table[^>]*width="80%"[^>]*>[^]*?<tbody>)([^]*?)(<\/tbody>)/, ($0, head, body, tail) => {
-			return `${head}${body}<tr>\n  <td width="3%" valign="top" style="text-align: center"></td>\n  <td><u>http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams</u></td>\n</tr>${tail}`;
-		});
-	}
-	const headingNeedle = '<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage</b></div>';
-	if (out.includes(headingNeedle)) {
-		const headingReplacement = '<div style="text-align: center; font-size: 12pt"><b>Notice of Intention to Foreclose Mortgage</b></div>';
-		out = out.split(headingNeedle).join(headingReplacement);
-	}
 	out = out.replace(/\{\[(CompanyShortName|CSPhoneNumber|PayoffAddr1|PayoffAddr2|CompanyLongName)\]\}/g, (_, key) => `{[plsMatrix.${key}]}`);
-	out = out.replace(/<table[^>]*>(\s*<tbody><tr>\s*<td width="20%"[^>]*>RE:)/g, '<table>$1');
-	out = out.replace(/(<td width="(50|60)%">[^<]+<\/td>\s*\n)\s{2}<td>/g, '$1      <td>');
 	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>(?:\s*<br>){5}/, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n\n');
 	out = out.replace(/<br><br><br><br><br><div/g, '<br><br><br><br><br>\n\n\n<div');
 	out = out.replace(/as follows:\s*<\/div>/g, 'as follows:</div>');
@@ -278,6 +306,16 @@ function cleanupHtml(html) {
 		out = out.replace(/the certain\s*\(the\s*“”\)/g, `the certain ${instrument} (the “${instrument}”)`);
 		out = out.replace(/the certain\s*\(the\s*""\)/g, `the certain ${instrument} (the "${instrument}")`);
 	}
+	out = out.replace(/\s+<\/div>/g, '</div>');
+	out = out.replace(/ <\/div>/g, '</div>');
+	out = out.replace(/\. <\/div>/g, '.</div>');
+	out = out.replace(/\.([ \u00A0]+)<\/div>/g, '.</div>');
+	out = out.replace(/<b>\.(\s*)<\/b>/g, '.$1');
+	out = out.replace(/<\/tr><tr>/g, '  </tr><tr>');
+	// Remove closing div only for borrower summary tables (contain "Borrower Name:"), not for loan number tables
+	out = out.replace(/(<div><table[^>]*>[\s\S]*?Borrower Name:[\s\S]*?<\/tbody><\/table>)<\/div>/, '$1');
+	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>$/g, '<div>{[plsMatrix.CompanyLongName]}</div></div>');
+	out = out.replace(/^\s*\n/, '');
 	return out;
 }
 

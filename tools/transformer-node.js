@@ -15,14 +15,36 @@ function joinRunsText(runs) {
 			const prevEndsWithSpace = /\s$/.test(prevText);
 			const currStartsWithSpace = /^\s/.test(text);
 			const prevEndsWithPunct = /[.,;:!?)\]}]$/.test(prevText.trim());
-			const currStartsWithPunct = /^[.,;:!?(\[{]/.test(text.trim());
+			// Don't treat { or [ as punctuation - they're placeholder starts, we want spaces before them
+			const currStartsWithPunct = /^[.,;:!?)]/.test(text.trim());
+			const currStartsWithPlaceholder = /^\{/.test(text.trim());
+			// Never add space if previous ends with { or [ or current starts with ] or } (placeholder boundaries)
+			// Also check if previous contains { or [ without closing } (incomplete placeholder)
+			const prevEndsWithPlaceholderStart = /[\{\[]$/.test(prevText);
+			const prevHasIncompletePlaceholder = /[\{\[]/.test(prevText) && !/\}/.test(prevText);
+			const currStartsWithPlaceholderEnd = /^[\]}]/.test(text);
+			const currHasIncompletePlaceholder = /[\]}]/.test(text) && !/^\{/.test(text);
+			// Don't add space if previous ends with } and current starts with punctuation (e.g., {Math(...)}.)
+			const prevEndsWithPlaceholderClose = /\}$/.test(prevText.trim());
 			// Check for complete placeholder patterns, not partial ones
 			const prevHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(prevText) || /\{[A-Za-z]+\(/.test(prevText);
 			const currHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(text) || /\{[A-Za-z]+\(/.test(text);
 			// If neither run has a space at the boundary, and both contain non-whitespace, add a space
 			// But don't add space if previous ends with punctuation, current starts with punctuation, or either contains placeholders
+			// Also never add space at placeholder boundaries
+			const currStartsWithPunctAfterPlaceholder = prevEndsWithPlaceholderClose && /^[.,;:!?]/.test(text.trim());
+			// Add space before placeholders unless previous ends with punctuation or placeholder boundary
+			const shouldAddSpaceBeforePlaceholder = currStartsWithPlaceholder && !prevEndsWithPunct && 
+				!prevEndsWithPlaceholderStart && !prevHasIncompletePlaceholder;
+			// Add space after punctuation when followed by a word (e.g., "{[L001]}, your" not "{[L001]},your")
+			const prevIsJustPunct = /^[.,;:!?]+$/.test(prevText.trim());
+			const currStartsWithWord = /^[a-zA-Z]/.test(text.trim());
+			const shouldAddSpaceAfterPunct = prevIsJustPunct && currStartsWithWord;
 			if (!prevEndsWithSpace && !currStartsWithSpace && prevText.trim() && text.trim() && 
-				!prevEndsWithPunct && !currStartsWithPunct && !prevHasPlaceholder && !currHasPlaceholder) {
+				((!prevEndsWithPunct && !currStartsWithPunct && 
+				!prevEndsWithPlaceholderStart && !currStartsWithPlaceholderEnd &&
+				!prevHasIncompletePlaceholder && !currHasIncompletePlaceholder &&
+				!currStartsWithPunctAfterPlaceholder) || shouldAddSpaceBeforePlaceholder || shouldAddSpaceAfterPunct)) {
 				s += ' ' + text;
 			} else {
 				s += text;
@@ -618,6 +640,7 @@ function convertReBlock(blocks) {
 				const compress = unique.length ? `{Compress(${unique.join('|')})}` : '';
 				out.push({
 					type: 'table',
+					borderCollapse: true,
 					wrapWithDiv: false,
 					rows: [
 						{
@@ -931,12 +954,15 @@ function normalizeAmountSummaryBlocks(blocks) {
 		}
 		// Only match standalone unapplied/suspense paragraphs, not narrative text
 		// Exclude paragraphs that are clearly narrative (contain "which consists", "as of", "prior to", etc.)
-		const isNarrative = lower.includes('which consists') || lower.includes('as of today') || 
+		// Also exclude paragraphs that contain Math expressions (they're not standalone label/value pairs)
+		const isNarrative = lower.includes('which consists') || lower.includes('as of') || 
 			lower.includes('prior to') || lower.includes('notice is hereby') || 
 			lower.includes('amount past due') || normalized.includes('Math(');
+		// Only match if it's a standalone label/value paragraph, not part of a Math expression
+		const isStandaloneLabelValue = (lower.includes('unapplied') || lower.includes('suspense') || lower.includes('partial payment')) &&
+			!normalized.includes('Math(') && !normalized.includes('+') && !normalized.includes('-');
 		if (normalized.includes('{[M013]}') && !normalized.includes('{[M593]}') && 
-			(lower.includes('unapplied') || lower.includes('suspense') || lower.includes('partial payment')) &&
-			!isNarrative) {
+			isStandaloneLabelValue && !isNarrative) {
 			out.push(buildLabelValueParagraph('Unapplied/Suspense Funds:', '{Money({[M013]})}', { underlineLabel: true, template: block }));
 			continue;
 		}

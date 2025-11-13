@@ -871,8 +871,48 @@ function renderRuns(runs) {
 		}
 	}
 	let out = '';
-	for (const r of runs) {
-		let t = esc(r.text || '');
+	for (let i = 0; i < (runs || []).length; i++) {
+		const r = runs[i];
+		if (!r || typeof r.text !== 'string') continue;
+		const text = r.text;
+		// Add space between runs if needed (same logic as joinRunsText)
+		if (i > 0) {
+			const prevRun = runs[i - 1];
+			const prevText = prevRun && typeof prevRun.text === 'string' ? prevRun.text : '';
+			const prevEndsWithSpace = /\s$/.test(prevText);
+			const currStartsWithSpace = /^\s/.test(text);
+			const prevEndsWithPunct = /[.,;:!?)\]}]$/.test(prevText.trim());
+			// Don't treat { or [ as punctuation - they're placeholder starts, we want spaces before them
+			const currStartsWithPunct = /^[.,;:!?)]/.test(text.trim());
+			const currStartsWithPlaceholder = /^\{/.test(text.trim());
+			// Never add space if previous ends with { or [ or current starts with ] or } (placeholder boundaries)
+			// Also check if previous contains { or [ without closing } (incomplete placeholder)
+			const prevEndsWithPlaceholderStart = /[\{\[]$/.test(prevText);
+			const prevHasIncompletePlaceholder = /[\{\[]/.test(prevText) && !/\}/.test(prevText);
+			const currStartsWithPlaceholderEnd = /^[\]}]/.test(text);
+			const currHasIncompletePlaceholder = /[\]}]/.test(text) && !/^\{/.test(text);
+			// Don't add space if previous ends with } and current starts with punctuation (e.g., {Math(...)}.)
+			const prevEndsWithPlaceholderClose = /\}$/.test(prevText.trim());
+			const prevHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(prevText) || /\{[A-Za-z]+\(/.test(prevText);
+			const currHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(text) || /\{[A-Za-z]+\(/.test(text);
+			const currStartsWithPunctAfterPlaceholder = prevEndsWithPlaceholderClose && /^[.,;:!?]/.test(text.trim());
+			// Add space before placeholders unless previous ends with punctuation or placeholder boundary
+			const shouldAddSpaceBeforePlaceholder = currStartsWithPlaceholder && !prevEndsWithPunct && 
+				!prevEndsWithPlaceholderStart && !prevHasIncompletePlaceholder;
+			// Add space after punctuation when followed by a word (e.g., "{[L001]}, your" not "{[L001]},your")
+			const prevIsJustPunct = /^[.,;:!?]+$/.test(prevText.trim());
+			const currStartsWithWord = /^[a-zA-Z]/.test(text.trim());
+			const shouldAddSpaceAfterPunct = prevIsJustPunct && currStartsWithWord;
+			if (!prevEndsWithSpace && !currStartsWithSpace && prevText.trim() && text.trim() && 
+				((!prevEndsWithPunct && !currStartsWithPunct && 
+				!prevEndsWithPlaceholderStart && !currStartsWithPlaceholderEnd &&
+				!prevHasIncompletePlaceholder && !currHasIncompletePlaceholder &&
+				!currStartsWithPunctAfterPlaceholder) || shouldAddSpaceBeforePlaceholder || shouldAddSpaceAfterPunct)) {
+				out += ' ';
+			}
+		}
+		// Apply formatting
+		let t = esc(text);
 		if (r.underline) t = '<u>' + t + '</u>';
 		if (r.italic) t = '<i>' + t + '</i>';
 		if (r.bold) t = '<b>' + t + '</b>';
@@ -898,14 +938,36 @@ function joinRunsText(runs) {
 			const prevEndsWithSpace = /\s$/.test(prevText);
 			const currStartsWithSpace = /^\s/.test(text);
 			const prevEndsWithPunct = /[.,;:!?)\]}]$/.test(prevText.trim());
-			const currStartsWithPunct = /^[.,;:!?(\[{]/.test(text.trim());
+			// Don't treat { or [ as punctuation - they're placeholder starts, we want spaces before them
+			const currStartsWithPunct = /^[.,;:!?)]/.test(text.trim());
+			const currStartsWithPlaceholder = /^\{/.test(text.trim());
+			// Never add space if previous ends with { or [ or current starts with ] or } (placeholder boundaries)
+			// Also check if previous contains { or [ without closing } (incomplete placeholder)
+			const prevEndsWithPlaceholderStart = /[\{\[]$/.test(prevText);
+			const prevHasIncompletePlaceholder = /[\{\[]/.test(prevText) && !/\}/.test(prevText);
+			const currStartsWithPlaceholderEnd = /^[\]}]/.test(text);
+			const currHasIncompletePlaceholder = /[\]}]/.test(text) && !/^\{/.test(text);
+			// Don't add space if previous ends with } and current starts with punctuation (e.g., {Math(...)}.)
+			const prevEndsWithPlaceholderClose = /\}$/.test(prevText.trim());
 			// Check for complete placeholder patterns, not partial ones
 			const prevHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(prevText) || /\{[A-Za-z]+\(/.test(prevText);
 			const currHasPlaceholder = /\{[A-Za-z0-9\[\]\.]+\}/.test(text) || /\{[A-Za-z]+\(/.test(text);
 			// If neither run has a space at the boundary, and both contain non-whitespace, add a space
 			// But don't add space if previous ends with punctuation, current starts with punctuation, or either contains placeholders
+			// Also never add space at placeholder boundaries
+			const currStartsWithPunctAfterPlaceholder = prevEndsWithPlaceholderClose && /^[.,;:!?]/.test(text.trim());
+			// Add space before placeholders unless previous ends with punctuation or placeholder boundary
+			const shouldAddSpaceBeforePlaceholder = currStartsWithPlaceholder && !prevEndsWithPunct && 
+				!prevEndsWithPlaceholderStart && !prevHasIncompletePlaceholder;
+			// Add space after punctuation when followed by a word (e.g., "{[L001]}, your" not "{[L001]},your")
+			const prevIsJustPunct = /^[.,;:!?]+$/.test(prevText.trim());
+			const currStartsWithWord = /^[a-zA-Z]/.test(text.trim());
+			const shouldAddSpaceAfterPunct = prevIsJustPunct && currStartsWithWord;
 			if (!prevEndsWithSpace && !currStartsWithSpace && prevText.trim() && text.trim() && 
-				!prevEndsWithPunct && !currStartsWithPunct && !prevHasPlaceholder && !currHasPlaceholder) {
+				((!prevEndsWithPunct && !currStartsWithPunct && 
+				!prevEndsWithPlaceholderStart && !currStartsWithPlaceholderEnd &&
+				!prevHasIncompletePlaceholder && !currHasIncompletePlaceholder &&
+				!currStartsWithPunctAfterPlaceholder) || shouldAddSpaceBeforePlaceholder || shouldAddSpaceAfterPunct)) {
 				s += ' ' + text;
 			} else {
 				s += text;
@@ -937,13 +999,15 @@ function normalizeTagText(s) {
  */
 function renderParagraph(para) {
 	const styles = [];
-	if (para.align && para.align !== 'left') styles.push('text-align: ' + para.align);
+	// Never render justify - everything defaults to left-aligned
+	if (para.align && para.align !== 'left' && para.align !== 'justify') styles.push('text-align: ' + para.align);
 	const sizeVals = (para.runs || []).map(r => r && typeof r.fontSizePt === 'number' ? r.fontSizePt : null).filter(v => v !== null);
 	if (sizeVals.length > 0) {
 		const uniq = Array.from(new Set(sizeVals));
 		if (uniq.length === 1) {
 			const size = uniq[0];
-			if (!(para.align === 'center' && size === 12) && Math.abs(size - 11) > 0.01) {
+			// Always include font-size if it's not 11pt (default), even for center-aligned 12pt
+			if (Math.abs(size - 11) > 0.01) {
 				styles.push('font-size: ' + size + 'pt');
 			}
 		}
@@ -1485,6 +1549,10 @@ window.NcRenderer = { renderIRToHtml };
 // ------------------------
 function cleanupHtml(html) {
 	let out = String(html);
+	// Remove text-align: justify everywhere - everything defaults to left-aligned
+	out = out.replace(/text-align:\s*justify;?\s*/g, '');
+	out = out.replace(/style="\s*"/g, '');
+	out = out.replace(/style='\s*'/g, '');
 	// Remove short explanatory parentheses immediately after placeholders e.g., {[M558]} (Mortgagor Name)
 	out = out.replace(/(\{[^\}]+\})(\s*\([^()]{1,80}\))/g, '$1');
 	// Remove standalone explanatory lines (just parentheses)
@@ -1511,6 +1579,17 @@ function cleanupHtml(html) {
 		out = out.replace(regex, `{[${to}]}`);
 	}
 	out = out.replace(/\{\[SPOCContactEmail\]\}/g, '{[plsMatrix.SPOCContactEmail]}');
+	// Remove bold tags around standalone placeholders, adding space before if needed
+	// First pass: add space before bold placeholder if preceded by letter (e.g., until<b>{[L008]}</b> -> until <b>{[L008]}</b>)
+	out = out.replace(/([a-zA-Z])(<b>(\{[A-Za-z0-9\[\]\.\(\)\|]+\})<\/b>)/g, '$1 $3');
+	// Second pass: remove bold tags (e.g., <b>{[L008]}</b> -> {[L008]})
+	out = out.replace(/<b>(\{[A-Za-z0-9\[\]\.\(\)\|]+\})<\/b>/g, '$1');
+	// Font-size is now handled generically in renderParagraph based on IR data
+	// No document-specific font-size rules needed
+	// Remove space between } and punctuation (e.g., {Math(...)} . -> {Math(...)}.)
+	out = out.replace(/\}\s+([.,;:!?])/g, '}$1');
+	// Remove space before punctuation at end of divs (e.g., "wait .</div>" -> "wait.</div>")
+	out = out.replace(/([a-zA-Z0-9\)\}])\s+([.,;:!?])<\/div>/g, '$1$2</div>');
 	out = out.replace(/\s+<\/div>/g, '</div>');
 	out = out.replace(/ <\/div>/g, '</div>');
 	out = out.replace(/\. <\/div>/g, '.</div>');
@@ -1528,8 +1607,10 @@ function cleanupHtml(html) {
 	out = out.replace(/\{\[(CompanyShortName|CSPhoneNumber|PayoffAddr1|PayoffAddr2|CompanyLongName)\]\}/g, (_, key) => `{[plsMatrix.${key}]}`);
 	out = out.replace(/<table[^>]*>(\s*<tbody><tr>\s*<td width="20%"[^>]*>RE:)/g, '<table>$1');
 	out = out.replace(/(<td width="(50|60)%">[^<]+<\/td>\s*\n)\s{2}<td>/g, '$1      <td>');
-	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>(?:\s*<br>){5}/, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n\n');
-	out = out.replace(/<br><br><br><br><br><div/g, '<br><br><br><br><br>\n\n\n<div');
+	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>(?:\s*<br>){5}/, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n');
+	out = out.replace(/<br><br><br><br><br><div/g, '<br><br><br><br><br>\n\n<div');
+	// Add blank line after header section consistently for all documents
+	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>\s*<br><br><br><br><br>)\s*(<div><table)/g, '$1\n\n$2');
 	out = out.replace(/as follows:\s*<\/div>/g, 'as follows:</div>');
 	out = out.replace(/&#39;/g, "'");
 	out = out.replace(/<div>Default Department<\/div>[\s\r\n]*<br>[\s\r\n]*<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>/, '<div>Default Department</div>\n<div>{[plsMatrix.CompanyLongName]}</div>');
@@ -1538,15 +1619,32 @@ function cleanupHtml(html) {
 	out = out.replace(/&#39;/g, "'");
 	out = out.replace(/<div>Default Department<\/div>[\s\r\n]*<br>[\s\r\n]*<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>/, '<div>Default Department</div>\n<div>{[plsMatrix.CompanyLongName]}</div>');
 	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>[\s\r\n]*<br>/g, '<div>{[plsMatrix.CompanyLongName]}</div>');
-	out = out.replace(/<\/tr>\s*\n\s*<\/tbody>/g, '\n  </tr></tbody>');
+	// Normalize table closing tags - ensure consistent formatting
+	// Match </tr> followed by </tbody> and ensure proper spacing
+	out = out.replace(/<\/tr>\s*<\/tbody>/g, '  </tr></tbody>');
+	out = out.replace(/<\/tr>\s*\n\s*<\/tbody>/g, '  </tr></tbody>');
+	// Normalize table cell indentation - ensure consistent 2-space indentation
+	out = out.replace(/(<tr>\n)\s{0,1}(<td|<th)/g, '$1  $2');
+	out = out.replace(/(<\/td>|<\/th>)\n\s{0,1}(<td|<th)/g, '$1\n  $2');
+	// Normalize table width attributes - convert style="width: X%" to width="X%"
+	out = out.replace(/style="width:\s*(\d+)%"/g, 'width="$1%"');
+	out = out.replace(/style="width:\s*(\d+)%;\s*vertical-align:\s*top"/g, 'width="$1%" valign="top"');
+	out = out.replace(/style="width:\s*(\d+)%;\s*vertical-align:\s*top;\s*([^"]+)"/g, 'width="$1%" valign="top" style="$2"');
 	out = out.replace(/(<br>){6,}/g, '<br><br><br><br><br>');
-	if (out.includes('the certain  (the ""?)') || out.includes('the certain (the "")')) {
+	if (out.includes('the certain  (the ""') || out.includes('the certain (the ""') || out.includes('the certain  (the " "') || out.includes('the certain  (the ""') || /the certain\s+\(the\s+[""\u201C\u201D]/.test(out)) {
 		let instrument = 'Mortgage';
 		if (/Deed of Trust/i.test(out)) instrument = 'Deed of Trust';
 		else if (/Security Deed/i.test(out)) instrument = 'Security Deed';
 		else if (/Security Instrument/i.test(out)) instrument = 'Security Instrument';
-		out = out.replace(/the certain\s*\(the\s*"?"\)/g, `the certain ${instrument} (the "${instrument}")`);
-		out = out.replace(/the certain\s*\(the\s*""\)/g, `the certain ${instrument} (the "${instrument}")`);
+		// Match "the certain  (the " ")" or "the certain  (the "")" or "the certain (the "")"
+		// Handle both straight quotes (") and curly quotes ("")
+		// Match any quote character (straight or curly) with optional space between
+		// Try multiple patterns to catch all variations
+		out = out.replace(/the certain\s+\(the\s+[""\u201C\u201D][\s]*[""\u201C\u201D]\s*\)/g, `the certain ${instrument} (the "${instrument}")`);
+		out = out.replace(/the certain\s+\(the\s+[""\u201C\u201D]\s*[""\u201C\u201D]\s*\)/g, `the certain ${instrument} (the "${instrument}")`);
+		out = out.replace(/the certain\s*\(the\s*[""\u201C\u201D]\s*[""\u201C\u201D]\s*\)/g, `the certain ${instrument} (the "${instrument}")`);
+		// More specific pattern for "the certain  (the " ")"
+		out = out.replace(/the certain\s+\(the\s+[\u201C\u201D]\s+[\u201C\u201D]\s*\)/g, `the certain ${instrument} (the "${instrument}")`);
 	}
 	out = out.replace(/\s+<\/div>/g, '</div>');
 	out = out.replace(/ <\/div>/g, '</div>');
@@ -1561,6 +1659,8 @@ function cleanupHtml(html) {
 	// Remove closing div only for borrower summary tables (contain "Borrower Name:"), not for loan number tables
 	out = out.replace(/(<div><table[^>]*>[\s\S]*?Borrower Name:[\s\S]*?<\/tbody><\/table>)<\/div>/, '$1');
 	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>$/g, '<div>{[plsMatrix.CompanyLongName]}</div></div>');
+	// Remove extra blank lines (more than one consecutive newline)
+	out = out.replace(/\n{3,}/g, '\n\n');
 	out = out.replace(/^\s*\n/, '');
 	return out;
 }
@@ -1898,12 +1998,14 @@ function normalizeAmountSummaryBlocks(blocks) {
 		}
 		// Only match standalone unapplied/suspense paragraphs, not narrative text
 		// Exclude paragraphs that are clearly narrative (contain "which consists", "as of", "prior to", etc.)
-		const isNarrative = lower.includes('which consists') || lower.includes('as of today') || 
+		const isNarrative = lower.includes('which consists') || lower.includes('as of') || 
 			lower.includes('prior to') || lower.includes('notice is hereby') || 
 			lower.includes('amount past due') || normalized.includes('Math(');
+		// Only match if it's a standalone label/value paragraph, not part of a Math expression
+		const isStandaloneLabelValue = (lower.includes('unapplied') || lower.includes('suspense') || lower.includes('partial payment')) &&
+			!normalized.includes('Math(') && !normalized.includes('+') && !normalized.includes('-');
 		if (normalized.includes('{[M013]}') && !normalized.includes('{[M593]}') && 
-			(lower.includes('unapplied') || lower.includes('suspense') || lower.includes('partial payment')) &&
-			!isNarrative) {
+			isStandaloneLabelValue && !isNarrative) {
 			out.push(buildLabelValueParagraph('Unapplied/Suspense Funds:', '{Money({[M013]})}', { underlineLabel: true, template: block }));
 			continue;
 		}

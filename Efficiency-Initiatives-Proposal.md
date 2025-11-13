@@ -19,7 +19,7 @@ This plan prioritizes quick wins that compound, followed by structural fixes to 
 ### 1) Letter Template Formatter & Automation Suite (highest ROI)
 
 - What: A drag‑and‑drop app that ingests a Word/PDF template and outputs production‑ready HTML aligned to our standards, including PLS Matrix tagging and helper functions like `Money()`, `Math()`, and `Compress()`.
-- Status: Concept and prior prototype exist; it would need a restart. I can provide a short demo link and a simple test document—no code review needed.
+- Status: Concept and prior prototype exist; currently undergoing second itteration. I can provide a short demo link and a simple test document.
 - Impact: Cuts manual letter build time dramatically (often ~60–80% for the creation/formatting portion) and reduces rework by standardizing output.
 - Why now: This replaces a large block of repetitive, error‑prone effort with deterministic, standardized output—freeing dev time for higher‑value tasks.
 
@@ -33,21 +33,18 @@ This plan prioritizes quick wins that compound, followed by structural fixes to 
 ### Streamline NcConnect Core Workflow
 
 - Systematically fix high‑friction bugs (tab resets, unreliable save flows, counter‑intuitive task steps) that force programmers to reopen tasks or take detours.
-- Combine letter “product creation” and “composition creation” into a single action—when a product is created, its composition is composed and ready for assignment.
 - Grow the developer team to reduce backlog and accelerate fixes/iteration.
+- Combine letter “product creation” and “composition creation” into a single action—when a product is created, its composition may be composed and ready for assignment. (low friction task, low priority)
 
 ### CRF Folder Automation
 
 - On CRF creation, automatically create the server folder and ingest all CRF‑attached files—removing a fully manual step.
 
-### QC Ordering Automation
-
-- When daily reports are created, automatically order QCs by link of CRF number (from SharePoint or its successor) to the relevant file/letter in NcConnect. Eliminates manual searching and ordering.
-
-### Unified Workspace for Data Drops
+### Unified Workspace for Data Drops & File Reviewing
 
 - Link the programming drive and data‑dropping drive directly into NcConnect for a single, in‑app flow.
-- Provide a one‑stop “Drop Data” action (select files and drop) to eliminate deep path navigation across multiple shares.
+- Provide a one‑stop “Drop Data” component (select files and drop) to eliminate deep path navigation across multiple shares.
+- Introduce a one-click solution to view the most recent files uploaded for a specific product, eliminating deep path navigation.
 
 ### Client Transparency Portal
 
@@ -67,6 +64,10 @@ This plan prioritizes quick wins that compound, followed by structural fixes to 
 - Improve the embedded editor: multi‑cursor (Ctrl/Cmd‑D), reliable save behavior (no “click out to save”), and common editor ergonomics.
 - Optional: minimal, opinionated formatter/linters to catch simple mistakes and reduce nit rework.
 
+### QC Ordering Automation
+
+- When daily reports are created, automatically order QCs by link of CRF number (from SharePoint or its successor) to the relevant file/letter in NcConnect. Eliminates manual searching and ordering.
+
 ### Infrastructure Considerations
 
 - Add capacity and tuning so sample processing is consistently fast (reduce the current multi‑minute waits).
@@ -78,10 +79,10 @@ This plan prioritizes quick wins that compound, followed by structural fixes to 
 - Faster sample generation
 - Fewer manual steps to build letters
 - More time for programming (paper QCs handled by a dedicated QC team)
-- Less time spent navigating and dropping files (unified workspace)
+- Less time spent navigating and dropping files (unified workspace, automating file path navgation/file generation)
 - Fewer client status questions (client transparency portal)
 - Smoother daily work in NcConnect (fewer bugs, reliable saves, better editor)
-- Quicker startup on new work (CRF folders created automatically)
+- Quicker startup on new work (CRF folders created automatically, document generation largely automated by drag-n-drop formatter)
 - Reduced context‑switching for programmers (QC team covers paper QCs, QC orders being automated)
 
 ## Optional: AI‑Enabled Acceleration (guardrailed)

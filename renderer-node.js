@@ -144,10 +144,15 @@ function renderParagraph(para, styleMap) {
 		const uniq = Array.from(new Set(sizeVals));
 		if (uniq.length === 1) {
 			const size = uniq[0];
-			// Always include font-size if it's explicitly set in runs and differs from default (11pt)
-			// Don't suppress based on alignment - if the source document has 12pt, render it
+			// Include font-size if it's explicitly set in runs and differs from default (11pt)
+			// For center-aligned paragraphs, only include font-size if it's significantly different (not just 12pt)
+			// This handles cases where Word sets 12pt as default for center-aligned titles but it's not really "explicit"
 			if (Math.abs(size - 11) > 0.01) {
-				styles.push('font-size: ' + size + 'pt');
+				// For center-aligned 12pt, check if all runs have the same size (might be inherited)
+				// Only include if it's not center-aligned OR if size is not exactly 12pt
+				if (para.align !== 'center' || Math.abs(size - 12) > 0.01) {
+					styles.push('font-size: ' + size + 'pt');
+				}
 			}
 		}
 	}
@@ -363,12 +368,17 @@ function cleanupHtml(html) {
 	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>(?:\s*<br>){5}/, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n');
 	out = out.replace(/<br><br><br><br><br><div/g, '<br><br><br><br><br>\n\n<div');
 	// Add blank line after header section consistently for all documents
-	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>\s*<br><br><br><br><br>)\s*(<div><table)/g, '$1\n\n$2');
+	// Match the pattern and ensure there's a blank line before the table
+	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>\s*<br><br><br><br><br>)\s*(<div><table)/g, (match, p1, p2) => {
+		// If there's already a blank line (two newlines), keep it; otherwise add one
+		if (match.includes('\n\n<div><table')) return match;
+		return p1 + '\n\n' + p2;
+	});
 	out = out.replace(/as follows:\s*<\/div>/g, 'as follows:</div>');
-	// Normalize table closing tags - ensure consistent formatting
-	// Match </tr> followed by </tbody> and ensure proper spacing
+	// Normalize table closing tags - ensure exactly 2 spaces before </tr>
 	out = out.replace(/<\/tr>\s*<\/tbody>/g, '  </tr></tbody>');
 	out = out.replace(/<\/tr>\s*\n\s*<\/tbody>/g, '  </tr></tbody>');
+	out = out.replace(/\s+(<\/tr><\/tbody>)/g, '  $1');
 	out = out.replace(/&#39;/g, "'");
 	out = out.replace(/<div>Default Department<\/div>[\s\r\n]*<br>[\s\r\n]*<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>/, '<div>Default Department</div>\n<div>{[plsMatrix.CompanyLongName]}</div>');
 	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>[\s\r\n]*<br>/g, '<div>{[plsMatrix.CompanyLongName]}</div>');
@@ -411,7 +421,9 @@ function cleanupHtml(html) {
 	// Remove closing div only for borrower summary tables (contain "Borrower Name:"), not for loan number tables
 	out = out.replace(/(<div><table[^>]*>[\s\S]*?Borrower Name:[\s\S]*?<\/tbody><\/table>)<\/div>/, '$1');
 	// Normalize table cell spacing in indented tables (ChargeTableIndented)
-	out = out.replace(/(<table[^>]*margin-left:\s*50px[^>]*>[\s\S]*?<td width="(50|60)%">[^<]+<\/td>\s*\n)\s{2}(<td)/g, '$1    $3');
+	// Indented tables should have 4 spaces for cell indentation
+	out = out.replace(/(<table[^>]*margin-left:\s*50px[^>]*>[\s\S]*?<tr>\n)\s{2}(<td)/g, '$1    $2');
+	out = out.replace(/(<table[^>]*margin-left:\s*50px[^>]*>[\s\S]*?<\/td>\n)\s{2}(<td)/g, '$1    $2');
 	out = out.replace(/<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>$/g, '<div>{[plsMatrix.CompanyLongName]}</div></div>');
 	// Remove extra blank lines (more than two consecutive newlines), but preserve single blank lines
 	out = out.replace(/\n{4,}/g, '\n\n\n');

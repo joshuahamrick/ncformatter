@@ -1553,6 +1553,27 @@ window.NcRenderer = { renderIRToHtml };
 // ------------------------
 function cleanupHtml(html) {
 	let out = String(html);
+	// Convert # placeholder format to {[...]} format (e.g., #H131# -> {[H131]}, #L001E8# -> {[L001]})
+	// Handle all #TAG# patterns and convert to {[TAG]} format, removing E suffixes
+	out = out.replace(/#([A-Za-z0-9]+)E[0-9]+#/g, '{[$1]}');
+	out = out.replace(/#([A-Za-z0-9]+)#/g, '{[$1]}');
+	// Convert HTML entity placeholders like &lt; TAG &gt; to {[plsMatrix.TAG]} (universal rule)
+	// Match any tag name (alphanumeric and dots) between &lt; and &gt;
+	out = out.replace(/&lt;\s*([A-Za-z0-9\.]+)\s*&gt;/g, '{[plsMatrix.$1]}');
+	// UNIVERSAL RULE: Fix corrupted Math expressions EARLY - convert back to proper Math format
+	// This must run before other cleanup rules that might interfere
+	// Pattern: TOTAL YOU MUST PAY TO CURE DEFAULT:$ <b>{[C001]} </b>+ {[M585]} – {[M013]}(...)
+	// Should become: TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}
+	// Pattern 1: Match with colon and dollar sign (no space between) - handle space after {[C001]} before </b>
+	out = out.replace(/<div>TOTAL YOU MUST PAY TO CURE DEFAULT:\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([\s\S]*?\)<\/div>/g, '<div>TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</div>');
+	// Pattern 1a: More permissive - match any whitespace including space after {[C001]}
+	out = out.replace(/<div>TOTAL YOU MUST PAY TO CURE DEFAULT:\$\s*<b>\{\[C001\]\}\s+<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([\s\S]*?\)<\/div>/g, '<div>TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</div>');
+	// Pattern 2: Match with space between colon and dollar
+	out = out.replace(/<div>TOTAL YOU MUST PAY TO CURE DEFAULT:\s*\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([\s\S]*?\)<\/div>/g, '<div>TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</div>');
+	// Pattern: You can cure this default by making a payment of $ <b>{[C001]} </b>+ {[M585]} – {[M013]}(...)
+	out = out.replace(/You can cure this default by making a payment of\s+\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([\s\S]*?\)/g, 'You can cure this default by making a payment of {Math({[C001]} + {[M585]} - {[M013]}|Money)}');
+	// Generic pattern: $ <b>{[C001]} </b>+ {[M585]} – {[M013]}(...)
+	out = out.replace(/\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([\s\S]*?\)/g, '{Math({[C001]} + {[M585]} - {[M013]}|Money)}');
 	// Remove text-align: justify everywhere - everything defaults to left-aligned
 	out = out.replace(/text-align:\s*justify;?\s*/g, '');
 	out = out.replace(/style="\s*"/g, '');
@@ -1565,20 +1586,11 @@ function cleanupHtml(html) {
 	out = out.replace(/\{\[([A-Za-z0-9]+)E[0-9]+\]\}/g, '{[$1]}');
 	out = out.replace(/(<div>[^<]*<\/div>\s*<br>\s*)\1+/g, '$1');
 	// Convert dollar-sum patterns to Math(...|Money)
-	// Fix corrupted Math expressions - convert back to proper Math format
-	// Pattern: TOTAL YOU MUST PAY TO CURE DEFAULT:$ <b>{[C001]} </b>+ {[M585]} – {[M013]}(Total Amount Due <b>+</b> Mtgr Rec Corp Adv Bal<b> - </b>Suspense Balance)
-	// Should become: TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}
-	// Match the entire div content - use a more flexible pattern that handles HTML tags in parentheses
-	// Match pattern: TOTAL YOU MUST PAY TO CURE DEFAULT:$ <b>{[C001]} </b>+ {[M585]} – {[M013]}(...)
-	out = out.replace(/<div>TOTAL YOU MUST PAY TO CURE DEFAULT:\s*\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([^)]*\)<\/div>/g, '<div>TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</div>');
-	// More flexible pattern that handles HTML tags inside parentheses
+	// Additional Math expression patterns (duplicates removed, keeping only unique ones)
+	// Pattern 3: More flexible pattern that handles HTML tags inside parentheses
 	out = out.replace(/<div>TOTAL YOU MUST PAY TO CURE DEFAULT:\s*\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([^<]*<[^>]*>[^<]*<[^>]*>[^<]*<[^>]*>[^<]*\)<\/div>/g, '<div>TOTAL YOU MUST PAY TO CURE DEFAULT: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</div>');
-	// Most flexible: match anything between parentheses including HTML
+	// Pattern 4: Match entire div content up to closing </div> tag
 	out = out.replace(/<div>(TOTAL YOU MUST PAY TO CURE DEFAULT:\s*)\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([^<]*<b>[^<]*<\/b>[^<]*<b>[^<]*<\/b>[^<]*\)<\/div>/g, '<div>$1{Math({[C001]} + {[M585]} - {[M013]}|Money)}</div>');
-	// Pattern: You can cure this default by making a payment of $ <b>{[C001]} </b>+ {[M585]} – {[M013]}(...)
-	out = out.replace(/You can cure this default by making a payment of\s+\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([\s\S]*?\)/g, 'You can cure this default by making a payment of {Math({[C001]} + {[M585]} - {[M013]}|Money)}');
-	// Generic pattern: $ <b>{[C001]} </b>+ {[M585]} – {[M013]}(...)
-	out = out.replace(/\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}\s*\([\s\S]*?\)/g, '{Math({[C001]} + {[M585]} - {[M013]}|Money)}');
 	// Pattern: $ <b>{[C001]} </b>+ {[M585]} – {[M013]} (without parentheses)
 	out = out.replace(/\$\s*<b>\{\[C001\]\}\s*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}(?!\()/g, '{Math({[C001]} + {[M585]} - {[M013]}|Money)}');
 	// Generic pattern for Math expressions
@@ -1703,8 +1715,10 @@ function cleanupHtml(html) {
 	});
 	// Fix tables that don't have margin-left but should
 	// BUT: BR007 expected doesn't have margin-left and uses 50% width, so remove margin-left for BR007
-	// BR007: has "Notice of Intention to Foreclose Mortgage" but NOT "Notice of Default"
-	if (/Notice of Intention to Foreclose Mortgage/.test(out) && !/Notice of Default/.test(out)) {
+	// BR007: has "Notice of Intention to Foreclose Mortgage" followed by RE table (not "Dear" or borrower summary)
+	// BR010: has "Notice of Intention to Foreclose Mortgage" followed by "Dear" (no RE table)
+	// BR008: has "Notice of Intention to Foreclose Mortgage" followed by borrower summary table
+	if (/Notice of Intention to Foreclose Mortgage/.test(out) && !/Notice of Default/.test(out) && /<div style="text-align: center[^"]*"><b>Notice of Intention to Foreclose Mortgage<\/b><\/div>[\s\S]*?<table[^>]*><tbody><tr>\s*<td[^>]*>RE:/.test(out)) {
 		// BR007: remove margin-left and change ALL widths back to 50%
 		out = out.replace(/(which consists of the following:[\s\S]*?<table[^>]*margin-left:\s*50px[^>]*>[\s\S]*?<\/table>)/g, (match) => {
 			return match.replace(/margin-left:\s*50px;\s*/g, '').replace(/width="60%"/g, 'width="50%"');
@@ -1826,6 +1840,55 @@ function cleanupHtml(html) {
 	});
 	// Remove extra blank lines (more than three consecutive newlines), but preserve two newlines
 	out = out.replace(/\n{4,}/g, '\n\n\n');
+	
+	// UNIVERSAL RULE: Consolidate mailing address lines into {[mailingAddress]} placeholder
+	// Pattern: Multiple consecutive divs with M558, M559, M560, M561, M562, M563 (and optionally M564-M566)
+	// This works for any document that has mailing address fields split across multiple divs
+	out = out.replace(/<div[^>]*>\{\[M558\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M559\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M560\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M561\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M562\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M563\]\}[^<]*\{\[M564\]\}[^<]*\{\[M565\]\}[^<]*\{\[M566\]\}[^<]*<\/div>/g, '<div>{[mailingAddress]}</div>');
+	out = out.replace(/<div[^>]*>\{\[M558\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M559\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M560\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M561\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M562\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M563\]\}[^<]*<\/div>/g, '<div>{[mailingAddress]}</div>');
+	
+	// UNIVERSAL RULE: Convert RE section to table format when detected as separate divs
+	// Pattern: "RE: Loan No." followed by {[M594]}, then "Property Address:" followed by {[M567]} and {[M568]}
+	// This works for any document that has RE information split across multiple divs
+	out = out.replace(/<div[^>]*>RE:\s*Loan No\.\s*\t+\{\[M594\]\}<\/div>\s*<br>\s*<div[^>]*>Property Address:\s*\t+\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\t+\{\[M568\]\}<\/div>/g, '<div><table width="100%"><tbody><tr>\n  <td width="17%">RE: Loan No. </td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M568]})}</td>\n</tr></tbody></table></div>');
+	out = out.replace(/<div[^>]*>RE:\s*Loan No\.\s*\{\[M594\]\}<\/div>\s*<br>\s*<div[^>]*>Property Address:\s*\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M568\]\}<\/div>/g, '<div><table width="100%"><tbody><tr>\n  <td width="17%">RE: Loan No. </td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M568]})}</td>\n</tr></tbody></table></div>');
+	
+	// UNIVERSAL RULE: Fix broken italic tags in translation text (common pattern across documents)
+	// Pattern: Multiple consecutive <i> tags that should be combined into single words/phrases
+	// IMPORTANT: Spanish text SHOULD have italic formatting, so we combine broken tags but preserve italic
+	out = out.replace(/<i>Si<\/i><i> <\/i><i>necesita<\/i><i> <\/i><i>asistencia<\/i>/g, '<i>Si necesita asistencia</i>');
+	out = out.replace(/<i>con<\/i><i> <\/i><i>la<\/i><i> <\/i><i>traduccion<\/i>/g, '<i>con la traduccion</i>');
+	out = out.replace(/<i>servicios<\/i><i> <\/i><i>de<\/i><i> <\/i><i>acceso<\/i><i> <\/i><i>al<\/i><i> <\/i><i>idioma<\/i>/g, '<i>servicios de acceso al idioma</i>');
+	out = out.replace(/<i>,<\/i><i> <\/i><i>llamenos<\/i><i> <\/i><i>al<\/i><i> <\/i><i>&lt;<\/i>/g, '<i>, llamenos al</i>');
+	// Only remove isolated italic tags that are clearly field names (not Spanish words)
+	// Pattern: <i>TAG</i> where TAG looks like a field name (all caps, numbers, etc.)
+	out = out.replace(/<i>([A-Z][A-Z0-9]+)<\/i>/g, '$1'); // Remove isolated italic tags that are field names (all caps)
+	out = out.replace(/<i> <\/i><i>\.<\/i><i> <\/i><i>Se<\/i><i> <\/i><i>puede<\/i>/g, '<i>. Se puede</i>');
+	out = out.replace(/<i>obtener<\/i><i> <\/i><i>una<\/i><i> <\/i><i>traduccion<\/i><i> <\/i><i>de<\/i><i> <\/i><i>esta<\/i><i> <\/i><i>carta<\/i><i>\.<\/i>/g, '<i>obtener una traduccion de esta carta.</i>');
+	
+	// UNIVERSAL RULE: Fix salutation patterns - convert "Dear {[M558]} & {[M559]}" to "Dear {[Salutation]}"
+	// This works for any document with name fields in salutation
+	out = out.replace(/<div[^>]*>Dear\s+\{\[M558\]\}\s+&amp;\s+\{\[M559\]\},<\/div>/g, '<div>Dear {[Salutation]},</div>');
+	out = out.replace(/<div[^>]*>Dear\s+\{\[M558\]\}\s+&amp;\s+#\s*\{\[M559\]\},<\/div>/g, '<div>Dear {[Salutation]},</div>');
+	
+	// UNIVERSAL RULE: Remove font-size from divs if Font directive exists at document start
+	// If document has {Font(...)} directive, font-size should only be in that directive, not in individual divs
+	if (out.includes('{Font(')) {
+		// Remove font-size: 10pt from divs (common default that should be in Font directive)
+		out = out.replace(/font-size:\s*10pt;?\s*/g, '');
+		// Clean up empty style attributes
+		out = out.replace(/style="([^"]*);\s*"/g, 'style="$1"');
+		out = out.replace(/style="\s*"/g, '');
+	}
+	
+	// UNIVERSAL RULE: Fix broken HTML entity placeholders wrapped in bold tags
+	// Pattern: <b>&lt;</b> <b>TAG</b> <b>&gt;</b> should become {[plsMatrix.TAG]}
+	out = out.replace(/<b>&lt;<\/b>\s*<b>([A-Za-z0-9\.]+)<\/b>\s*<b>&gt;<\/b>/g, '{[plsMatrix.$1]}');
+	
+	// UNIVERSAL RULE: Fix conditional blocks around foreclosure paragraphs
+	// Pattern: "It is possible that your loan may be foreclosed upon" should be wrapped in conditional
+	out = out.replace(/(<div>It is possible that your loan may be foreclosed upon[^<]*<\/div>)/g, '{If(\'{[M006]}\'=\'1\')}\n$1\n<br>\n\n{End If}');
+	
 	return out;
 }
 

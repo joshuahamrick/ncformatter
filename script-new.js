@@ -1555,8 +1555,9 @@ function cleanupHtml(html) {
 	let out = String(html);
 	// Convert # placeholder format to {[...]} format (e.g., #H131# -> {[H131]}, #L001E8# -> {[L001]})
 	// Handle all #TAG# patterns and convert to {[TAG]} format, removing E suffixes
-	out = out.replace(/#([A-Za-z0-9]+)E[0-9]+#/g, '{[$1]}');
-	out = out.replace(/#([A-Za-z0-9]+)#/g, '{[$1]}');
+	// Also handle spaces: # M567# -> {[M567]}
+	out = out.replace(/#\s*([A-Za-z0-9]+)E[0-9]+\s*#/g, '{[$1]}');
+	out = out.replace(/#\s*([A-Za-z0-9]+)\s*#/g, '{[$1]}');
 	// Convert HTML entity placeholders like &lt; TAG &gt; to {[plsMatrix.TAG]} (universal rule)
 	// Match any tag name (alphanumeric and dots) between &lt; and &gt;
 	out = out.replace(/&lt;\s*([A-Za-z0-9\.]+)\s*&gt;/g, '{[plsMatrix.$1]}');
@@ -1846,30 +1847,83 @@ function cleanupHtml(html) {
 	// This works for any document that has mailing address fields split across multiple divs
 	out = out.replace(/<div[^>]*>\{\[M558\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M559\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M560\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M561\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M562\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M563\]\}[^<]*\{\[M564\]\}[^<]*\{\[M565\]\}[^<]*\{\[M566\]\}[^<]*<\/div>/g, '<div>{[mailingAddress]}</div>');
 	out = out.replace(/<div[^>]*>\{\[M558\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M559\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M560\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M561\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M562\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M563\]\}[^<]*<\/div>/g, '<div>{[mailingAddress]}</div>');
+	// Ensure blank lines after mailingAddress (5 br tags) - but remove extra br before RE table
+	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>\s*<br>\s*<br>/g, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n');
+	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>\s*(?!<br><br><br><br><br>)/g, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n');
+	// Remove extra <br> after mailingAddress blank lines (before RE table)
+	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>\n<br><br><br><br><br>\n\n)\s*<br>\s*(<div><table)/g, '$1$2');
 	
+	// UNIVERSAL RULE: Fix broken RE table - replace broken table with proper RE table structure
+	// Pattern: Broken table with just "RE:" followed by separate divs with Property Address
+	out = out.replace(/<table[^>]*><tbody><tr>\s*<td[^>]*>RE:<\/td>\s*<td><\/td>\s*<\/tr><\/tbody><\/table>\s*<br>\s*<div[^>]*>Property Address:\s*\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M568\]\}<\/div>/g, '<div><table width="100%"><tbody><tr>\n  <td width="17%">RE: Loan No. </td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M568]})}</td>\n</tr></tbody></table></div>');
 	// UNIVERSAL RULE: Convert RE section to table format when detected as separate divs
 	// Pattern: "RE: Loan No." followed by {[M594]}, then "Property Address:" followed by {[M567]} and {[M568]}
 	// This works for any document that has RE information split across multiple divs
-	out = out.replace(/<div[^>]*>RE:\s*Loan No\.\s*\t+\{\[M594\]\}<\/div>\s*<br>\s*<div[^>]*>Property Address:\s*\t+\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\t+\{\[M568\]\}<\/div>/g, '<div><table width="100%"><tbody><tr>\n  <td width="17%">RE: Loan No. </td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M568]})}</td>\n</tr></tbody></table></div>');
-	out = out.replace(/<div[^>]*>RE:\s*Loan No\.\s*\{\[M594\]\}<\/div>\s*<br>\s*<div[^>]*>Property Address:\s*\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M568\]\}<\/div>/g, '<div><table width="100%"><tbody><tr>\n  <td width="17%">RE: Loan No. </td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M568]})}</td>\n</tr></tbody></table></div>');
+	// Handle both with and without spaces in placeholders: # M567# -> {[M567]}
+	out = out.replace(/<div[^>]*>RE:\s*Loan No\.\s*\t+\{\[M594\]\}<\/div>\s*<br>\s*<div[^>]*>Property Address:\s*\t+(#\s*M567\s*#|\{\[M567\]\})<\/div>\s*<br>\s*<div[^>]*>\t+\{\[M568\]\}<\/div>/g, '<div><table width="100%"><tbody><tr>\n  <td width="17%">RE: Loan No. </td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M568]})}</td>\n</tr></tbody></table></div>');
+	out = out.replace(/<div[^>]*>RE:\s*Loan No\.\s*\{\[M594\]\}<\/div>\s*<br>\s*<div[^>]*>Property Address:\s*(#\s*M567\s*#|\{\[M567\]\})<\/div>\s*<br>\s*<div[^>]*>\{\[M568\]\}<\/div>/g, '<div><table width="100%"><tbody><tr>\n  <td width="17%">RE: Loan No. </td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M568]})}</td>\n</tr></tbody></table></div>');
 	
 	// UNIVERSAL RULE: Fix broken italic tags in translation text (common pattern across documents)
 	// Pattern: Multiple consecutive <i> tags that should be combined into single words/phrases
 	// IMPORTANT: Spanish text SHOULD have italic formatting, so we combine broken tags but preserve italic
-	out = out.replace(/<i>Si<\/i><i> <\/i><i>necesita<\/i><i> <\/i><i>asistencia<\/i>/g, '<i>Si necesita asistencia</i>');
-	out = out.replace(/<i>con<\/i><i> <\/i><i>la<\/i><i> <\/i><i>traduccion<\/i>/g, '<i>con la traduccion</i>');
-	out = out.replace(/<i>servicios<\/i><i> <\/i><i>de<\/i><i> <\/i><i>acceso<\/i><i> <\/i><i>al<\/i><i> <\/i><i>idioma<\/i>/g, '<i>servicios de acceso al idioma</i>');
-	out = out.replace(/<i>,<\/i><i> <\/i><i>llamenos<\/i><i> <\/i><i>al<\/i><i> <\/i><i>&lt;<\/i>/g, '<i>, llamenos al</i>');
+	// First, fix broken HTML entities: <i>&lt;</i> <i>CSPhoneNumber</i> <i>&gt;</i> -> {[plsMatrix.CSPhoneNumber]}
+	out = out.replace(/<i>&lt;<\/i>\s*<i>([A-Za-z0-9\.]+)<\/i>\s*<i>&gt;<\/i>/g, '{[plsMatrix.$1]}');
+	// More comprehensive approach: match multiple consecutive <i> tags and combine them
+	// Pattern: <i>word</i> <i>word</i> <i>word</i>... -> <i>word word word...</i>
+	// Also handle: <i>word</i> <i>word</i> o <i>word</i> -> <i>word word o word</i>
+	// Use a function to combine all consecutive Spanish italic tags - repeat to catch all
+	for (let i = 0; i < 15; i++) {
+		// First, combine consecutive italic tags with optional non-italic Spanish words between them
+		out = out.replace(/(<i>[a-záéíóúñ,\.\s]+<\/i>)\s*([a-záéíóúñ]+)\s*(<i>[a-záéíóúñ,\.\s]+<\/i>)/g, (match, p1, p2, p3) => {
+			// Combine: extract text from both italic tags and include the middle word
+			let text1 = p1.replace(/<\/?i>/g, '');
+			let text2 = p3.replace(/<\/?i>/g, '');
+			let combined = `${text1.trim()} ${p2} ${text2.trim()}`;
+			combined = combined.replace(/\s+/g, ' ').replace(/\s+([,\.])/g, '$1').replace(/([,\.])\s+/g, '$1 ');
+			return `<i>${combined.trim()}</i>`;
+		});
+		// Then combine consecutive italic tags without text between
+		out = out.replace(/(<i>[a-záéíóúñ,\.\s]+<\/i>(?:\s*<i>[a-záéíóúñ,\.\s]+<\/i>)+)/g, (match) => {
+			// Extract all text from consecutive <i> tags and combine with spaces
+			let combined = match.replace(/<\/i>\s*<i>/g, ' ').replace(/<\/?i>/g, '');
+			// Clean up extra spaces
+			combined = combined.replace(/\s+/g, ' ').replace(/\s+([,\.])/g, '$1').replace(/([,\.])\s+/g, '$1 ');
+			return `<i>${combined.trim()}</i>`;
+		});
+		// Also handle cases with punctuation: <i>word</i><i>,</i> <i>word</i>
+		out = out.replace(/(<i>[a-záéíóúñ]+<\/i><i>[,\.]<\/i>\s*<i>[a-záéíóúñ]+<\/i>)/g, (match) => {
+			let combined = match.replace(/<\/i><i>/g, '').replace(/<\/?i>/g, '');
+			combined = combined.replace(/\s+/g, ' ').replace(/\s+([,\.])/g, '$1').replace(/([,\.])\s+/g, '$1 ');
+			return `<i>${combined.trim()}</i>`;
+		});
+	}
+	// Fix specific Spanish phrases - combine into single italic tags
+	out = out.replace(/<i>Si<\/i> <i>necesita<\/i> <i>asistencia<\/i>/g, '<i>Si necesita asistencia</i>');
+	out = out.replace(/<i>con<\/i> <i>la<\/i> <i>traduccion<\/i>/g, '<i>con la traduccion</i>');
+	out = out.replace(/<i>servicios<\/i> <i>de<\/i> <i>acceso<\/i> <i>al<\/i> <i>idioma<\/i>/g, '<i>servicios de acceso al idioma</i>');
+	out = out.replace(/<i>,<\/i> <i>llamenos<\/i> <i>al<\/i>/g, '<i>, llamenos al</i>');
+	out = out.replace(/<i>\.<\/i> <i>Se<\/i> <i>puede<\/i>/g, '<i>. Se puede</i>');
+	out = out.replace(/<i>obtener<\/i> <i>una<\/i> <i>traduccion<\/i> <i>de<\/i> <i>esta<\/i> <i>carta<\/i><i>\.<\/i>/g, '<i>obtener una traduccion de esta carta.</i>');
+	// Combine all Spanish italic text - match the full phrase and fix it
+	out = out.replace(/(<i>Si necesita asistencia con la traduccion o servicios de acceso al idioma, llamenos al<\/i>)\s*\{\[plsMatrix\.CSPhoneNumber\]\}\s*<i>\.<\/i>\s*<i>Se<\/i>\s*<i>puede obtener<\/i>\s*<i>una traduccion<\/i>\s*<i>de esta<\/i>\s*<i>carta<\/i><i>\.<\/i>/g, '$1 {[plsMatrix.CSPhoneNumber]} <i>. Se puede obtener una traduccion de esta carta.</i>');
 	// Only remove isolated italic tags that are clearly field names (not Spanish words)
 	// Pattern: <i>TAG</i> where TAG looks like a field name (all caps, numbers, etc.)
 	out = out.replace(/<i>([A-Z][A-Z0-9]+)<\/i>/g, '$1'); // Remove isolated italic tags that are field names (all caps)
-	out = out.replace(/<i> <\/i><i>\.<\/i><i> <\/i><i>Se<\/i><i> <\/i><i>puede<\/i>/g, '<i>. Se puede</i>');
-	out = out.replace(/<i>obtener<\/i><i> <\/i><i>una<\/i><i> <\/i><i>traduccion<\/i><i> <\/i><i>de<\/i><i> <\/i><i>esta<\/i><i> <\/i><i>carta<\/i><i>\.<\/i>/g, '<i>obtener una traduccion de esta carta.</i>');
 	
 	// UNIVERSAL RULE: Fix salutation patterns - convert "Dear {[M558]} & {[M559]}" to "Dear {[Salutation]}"
 	// This works for any document with name fields in salutation
+	// Handle both with and without spaces in placeholders: # M559# -> {[M559]}
 	out = out.replace(/<div[^>]*>Dear\s+\{\[M558\]\}\s+&amp;\s+\{\[M559\]\},<\/div>/g, '<div>Dear {[Salutation]},</div>');
 	out = out.replace(/<div[^>]*>Dear\s+\{\[M558\]\}\s+&amp;\s+#\s*\{\[M559\]\},<\/div>/g, '<div>Dear {[Salutation]},</div>');
+	out = out.replace(/<div[^>]*>Dear\s+\{\[M558\]\}\s+&amp;\s+#\s*M559\s*#,<\/div>/g, '<div>Dear {[Salutation]},</div>');
+	
+	// UNIVERSAL RULE: Add Font and Header directives at the beginning if missing (do this EARLY)
+	// Check if document starts with <div> (not Font/Header directives)
+	const hasFontDirective = out.includes('{Font(') || out.trim().startsWith('{Font(');
+	if (!hasFontDirective && out.trim().startsWith('<div')) {
+		// Add Font and Header before the first <div>
+		out = '{Font(Calibri|10Pt)}\n{Header(NMLSID)}\n<br>\n' + out;
+	}
 	
 	// UNIVERSAL RULE: Remove font-size from divs if Font directive exists at document start
 	// If document has {Font(...)} directive, font-size should only be in that directive, not in individual divs
@@ -1887,7 +1941,57 @@ function cleanupHtml(html) {
 	
 	// UNIVERSAL RULE: Fix conditional blocks around foreclosure paragraphs
 	// Pattern: "It is possible that your loan may be foreclosed upon" should be wrapped in conditional
-	out = out.replace(/(<div>It is possible that your loan may be foreclosed upon[^<]*<\/div>)/g, '{If(\'{[M006]}\'=\'1\')}\n$1\n<br>\n\n{End If}');
+	// Handle both with and without font-size
+	out = out.replace(/(<div[^>]*>It is possible that your loan may be foreclosed upon[^<]*<\/div>)/g, '{If(\'{[M006]}\'=\'1\')}\n$1\n<br>\n\n{End If}');
+	
+	// UNIVERSAL RULE: Fix bullet table cells - add valign="top" and remove width="97%" from second column
+	// Pattern: <td width="3%" style="text-align: center">•</td> followed by <td width="97%">
+	out = out.replace(/(<td width="3%")(\s+style="text-align:\s*center">•<\/td>\s*<\/tr><tr>\s*)(<td width="97%">)/g, '$1 valign="top"$2<td>');
+	out = out.replace(/(<td width="3%")(\s+style="text-align:\s*center">•<\/td>\s*<\/tr><tr>\s*)(<td width="97%">)/g, '$1 valign="top"$2<td>');
+	// Also handle cases where valign might already be missing
+	out = out.replace(/(<td width="3%")(\s+style="text-align:\s*center">•<\/td>)/g, '$1 valign="top"$2');
+	out = out.replace(/<td width="97%">/g, '<td>');
+	
+	// UNIVERSAL RULE: Fix missing spaces in text (e.g., "Services,please" -> "Services, please")
+	// But be careful not to break placeholders or HTML tags
+	out = out.replace(/([a-zA-Z]),([a-zA-Z])/g, '$1, $2');
+	// Fix specific case: "Services,please" -> "Services, please" (but not inside HTML tags)
+	out = out.replace(/Services,please/g, 'Services, please');
+	
+	// UNIVERSAL RULE: Fix Spanish text wrapping - split long centered text into multiple divs
+	// Pattern: Long div with Spanish text should be split at natural break points
+	// Match the entire div more flexibly - look for the key phrases (match everything including tags)
+	out = out.replace(/(<div style="text-align: center[^"]*">For homeowners who require any translation assistance or Language Access Services[^,]*,\s*please\s*contact\s*us\s*at\s*\{\[plsMatrix\.CSPhoneNumber\]\}\.\s*A\s*translation\s*of\s*this\s*letter\s*into\s*a\s*language\s*other\s*than\s*English\s*may\s*be\s*obtained\.\s*[\s\S]*?<\/div>)/g, (match) => {
+		// Extract Spanish text parts - they may be broken across multiple <i> tags
+		// Reconstruct the proper format
+		return '<div style="text-align: center">For homeowners who require any translation assistance or Language Access Services, please contact</div>\n<div style="text-align: center">us at {[plsMatrix.CSPhoneNumber]}. A translation of this letter into a language other than English may be</div>\n<div style="text-align: center">obtained. <i>Si necesita asistencia con la traduccion o servicios de acceso al idioma, llamenos al</i></div>\n<div style="text-align: center"><i>{[plsMatrix.CSPhoneNumber]}. Se puede obtener una traduccion de esta carta.</i></div>';
+	});
+	
+	// Font directive already added earlier, so skip here
+	
+	// UNIVERSAL RULE: Remove leading space from "Owner of Loan/Assignee" underline
+	out = out.replace(/&nbsp;<u>\s*Owner of Loan\/Assignee<\/u>/g, '<u>Owner of Loan/Assignee</u>');
+	
+	// UNIVERSAL RULE: Fix spacing around header elements - remove extra <br> tags
+	// Pattern: Owner of Loan/Assignee should be followed by {[H131]} on next line (no <br> between them)
+	out = out.replace(/(<div style="text-align: right"><u>Owner of Loan\/Assignee<\/u><\/div>)\s*<br>\s*(<div style="text-align: right">\{\[H131\]\}<\/div>)/g, '$1\n$2');
+	// Pattern: {[H131]} should be followed by <br>, then {[L001]}, then mailingAddress (no <br> between L001 and mailingAddress)
+	out = out.replace(/(<div style="text-align: right">\{\[H131\]\}<\/div>)\s*<br>\s*(<div style="text-align: right">\{\[L001\]\}<\/div>)\s*<br>\s*(<div>\{\[mailingAddress\]\}<\/div>)/g, '$1\n<br>\n$2\n$3');
+	// Pattern: Remove extra <br> before RE table (after mailingAddress blank lines)
+	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>\n<br><br><br><br><br>\n\n)\s*<br>\s*(<div><table)/g, '$1$2');
+	
+	// UNIVERSAL RULE: Remove extra spaces in div tags (<div > -> <div>)
+	out = out.replace(/<div\s+>/g, '<div>');
+	
+	// UNIVERSAL RULE: Add bold tags around placeholders in Mitigation Team paragraph
+	// Handle both with and without bold on "Mitigation Team"
+	out = out.replace(/(Mitigation Team at )(\{\[plsMatrix\.LossMitPh\]\})( during)/g, '$1<b>$2</b>$3');
+	out = out.replace(/(<b>Mitigation Team<\/b> at )(\{\[plsMatrix\.LossMitPh\]\})( during)/g, '$1<b>$2</b>$3');
+	out = out.replace(/(business hours )(\{\[plsMatrix\.HoursOfOperation\]\})( to review)/g, '$1<b>$2</b>$3');
+	
+	// UNIVERSAL RULE: Fix blank line between Mitigation Department and CompanyLongName
+	// Expected: Mitigation Department on one line, CompanyLongName on next (no <br> between)
+	out = out.replace(/(<div[^>]*>Mitigation Department<\/div>)\s*<br>\s*(<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}<\/div>)/g, '$1\n$2');
 	
 	return out;
 }

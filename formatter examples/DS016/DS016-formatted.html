@@ -1,0 +1,80 @@
+{Font(Calibri|10Pt)}
+{Header(NMLSID)}
+<br>
+<div style="text-align: right"><u>Owner of Loan/Assignee</u></div>
+<div style="text-align: right">{[H131]}</div>
+<br>
+<div style="text-align: right">{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+
+
+
+
+<div><table width="100%"><tbody><tr>
+  <td width="17%">RE: Loan No. </td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M568]})}</td>
+</tr></tbody></table></div>
+<br>
+<div style="text-align: center">For homeowners who require any translation assistance or Language Access Services, please contact</div>
+<div style="text-align: center">us at {[plsMatrix.CSPhoneNumber]}. A translation of this letter into a language other than English may be</div>
+<div style="text-align: center">obtained. <i>Si necesita asistencia con la traduccion o servicios de acceso al idioma, llamenos al</i></div>
+<div style="text-align: center"><i>{[plsMatrix.CSPhoneNumber]}. Se puede obtener una traduccion de esta carta.</i></div>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>As your mortgage loan servicer for the above-referenced account, {[plsMatrix.CompanyLongName]} {[plsMatrix.CoShortNameParen]} is writing to you regarding the Trial Period Plan you entered into with Planet as a requirement for your available home retention option to assist you with bringing your account current. Our records indicate that you have not made the required payments under the terms of the Trial Period Plan or have not provided the required attestation listed in the trial agreement as required by the owner of the loan.</div>
+<br>
+<div>As a result, we regret to inform you that your Trial Plan has been terminated and your application for loss mitigation assistance has been denied because the owner of the loan requires that a successful Trial Period Plan be completed in a timely manner.</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Reporting negative information to the credit bureaus</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Assessment of late fees</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Potential initiation of foreclosure proceedings</td>
+</tr></tbody></table></div>
+<br>
+<div>We want to try to avoid this outcome and strongly encourage you to contact us as soon as possible to discuss available alternatives. Depending on your eligibility and owner/investor guidelines, the following <b>home retention options</b> may be available:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Establishing a repayment plan</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Loan modification</td>
+</tr></tbody></table></div>
+<br>
+<div>If retaining your home is not possible, there may be non-retention options available to help prevent foreclosure, such as:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Sale of your property</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed-in-lieu of foreclosure</td>
+</tr></tbody></table></div>
+<br>
+<div>We are committed to working with you to resolve this matter. Please contact our <b>Mitigation Team</b> at <b>{[plsMatrix.LossMitPh]}</b> during our normal business hours <b>{[plsMatrix.HoursOfOperation]}</b> to review your options, ask questions, or obtain more information about our Homeowner Assistance Programs.</div>
+<br>
+{If('{[M006]}'='1')}
+<div>It is possible that your loan may be foreclosed upon if it is not brought current or if loss mitigation is not viable, unsuccessful, denied, or unable to be considered (due to the Borrower's failure to fully respond to the Mortgagee's request for additional information).</div>
+<br>
+{End If}
+<br>
+<div>Sincerely,</div>
+<br>
+<div>{[0336]}</div>
+<br>
+<div>Mitigation Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+<br>
+<div>{[L003]} {[L004]} {[L005]}</div>
+<br>
+<div>{[plsMatrix.SeeReverse]}</div>

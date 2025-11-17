@@ -942,6 +942,117 @@ function cleanupHtml(html, ir) {
 	// Expected: Mitigation Department on one line, CompanyLongName on next (no <br> between)
 	out = out.replace(/(<div[^>]*>Mitigation Department<\/div>)\s*<br>\s*(<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}<\/div>)/g, '$1\n$2');
 	
+	// UNIVERSAL RULE: Fix RE table structure for LM150 (3-column table with RE:, Loan Number:, Property Address:)
+	// Pattern: Table with "RE:" in first column, or separate divs with "RE: Loan Number:"
+	out = out.replace(/<table[^>]*><tbody><tr>\s*<td[^>]*width="20%"[^>]*valign="top"[^>]*>RE:<\/td>\s*<td>\{Compress\(\{\[M594\]\}\)\}<\/td>\s*<\/tr><\/tbody><\/table>/g, '<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td width="3%">RE:</td>\n  <td width="20%">Loan Number:</td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td width="3%"></td>\n  <td width="20%" valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table></div>');
+	// Pattern: Separate divs with "RE: Loan Number:" followed by Property Address
+	out = out.replace(/<div[^>]*>RE:\s*Loan Number:\s*\t+\{\[M594\]\}<\/div>\s*<br>\s*<div[^>]*>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\s*Property Address:\s*\t+\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M568\]\}<\/div>/g, '<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td width="3%">RE:</td>\n  <td width="20%">Loan Number:</td>\n  <td>{[M594]}</td>\n  </tr><tr>\n  <td width="3%"></td>\n  <td width="20%" valign="top">Property Address:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table></div>');
+	
+	// UNIVERSAL RULE: Fix corrupted Math expressions
+	// Pattern: $ {[C001E6 + M585E6 – M013E6]} -> {Math({[C001]}+{[M585]}-{[M013]}|Money)}
+	out = out.replace(/\$\s*\{\[C001E6\s*\+\s*M585E6\s*–\s*M013E6\]\}/g, '{Math({[C001]}+{[M585]}-{[M013]}|Money)}');
+	out = out.replace(/\$\s*\{\[C001E6\s*\+\s*M585E6\s*-\s*M013E6\]\}/g, '{Math({[C001]}+{[M585]}-{[M013]}|Money)}');
+	
+	// UNIVERSAL RULE: Fix corrupted DateAdd expressions
+	// Pattern: {[L001E7 + 14 Days]} -> {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}
+	out = out.replace(/\{\[L001E7\s*\+\s*14\s*Days\]\}/g, '{DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}');
+	
+	// UNIVERSAL RULE: Fix corrupted placeholder references with E suffixes
+	// Pattern: [L001E7] -> {[L001]}
+	out = out.replace(/\[L001E7\]/g, '{[L001]}');
+	
+	// UNIVERSAL RULE: Fix Compress for address - convert bullet table to centered div
+	// Pattern: Bullet table with address components should be Compress in centered div
+	// Match bullet table with "Attn: Loss Mitigation", "922 Walnut", "Suite 1100", "Mail-Stop: TB11-CM3", "Kansas City, MO 64106"
+	out = out.replace(/<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\s*<td width="3%" valign="top" style="text-align: center">•<\/td>\s*<td>Attn:\s*Loss Mitigation<\/td>\s*<\/tr><tr>\s*<td width="3%" valign="top" style="text-align: center">•<\/td>\s*<td>922 Walnut<\/td>\s*<\/tr><tr>\s*<td width="3%" valign="top" style="text-align: center">•<\/td>\s*<td>Suite 1100<\/td>\s*<\/tr><tr>\s*<td width="3%" valign="top" style="text-align: center">•<\/td>\s*<td>Mail-Stop: TB11-CM3<\/td>\s*<\/tr><tr>\s*<td width="3%" valign="top" style="text-align: center">•<\/td>\s*<td>Kansas City, MO 64106\s*<\/td>\s*<\/tr><\/tbody><\/table><\/div>/g, '<div style="text-align: center">{Compress({[plsMatrix.CompanyShortName]}|Attn: Loss Mitigation|922 Walnut|Suite 1100|Mail-Stop: TB11-CM3|Kansas City, MO 64106)}</div>');
+	
+	// UNIVERSAL RULE: Fix corrupted conditional logic
+	// Pattern: {[O276]} ( If {O276]} is blank, produce {[O296]}. If neither {[O276]} and {[O296]} are present, produce {[SPOCContactPhone]}) -> {If('{[O276]}'&lt;&lt;&gt;'')}{[O276]}{Else If('{[O296]}'&lt;&lt;&gt;'')}{[O296]}{Else}{[plsMatrix.SPOCContactPhone]}{End If}
+	out = out.replace(/\{\[O276\]\}\s*\(\s*If\s+\{O276\]\}\s*is\s+blank,\s*produce\s+\{\[O296\]\}\.\s*If\s+neither\s+\{\[O276\]\}\s*and\s+\{\[O296\]\}\s*are\s+present,\s*produce\s+\{\[SPOCContactPhone\]\}\)/g, '{If(\'{[O276]}\'&lt;&lt;&gt;\'\')}{[O276]}{Else If(\'{[O296]}\'&lt;&lt;&gt;\'\')}{[O296]}{Else}{[plsMatrix.SPOCContactPhone]}{End If}');
+	
+	// UNIVERSAL RULE: Fix corrupted placeholder references
+	// Pattern: {[HoursOfOperation]} -> {[plsMatrix.HoursOfOperation]}
+	out = out.replace(/\{\[HoursOfOperation\]\}/g, '{[plsMatrix.HoursOfOperation]}');
+	out = out.replace(/\{\[Company Short Name\]\}/g, '{[plsMatrix.CompanyShortName]}');
+	
+	// UNIVERSAL RULE: Fix corrupted Q189 placeholder
+	// Pattern: {[Q189]} -> {Q189V2()}
+	out = out.replace(/\{\[Q189\]\}/g, '{Q189V2()}');
+	
+	// UNIVERSAL RULE: Remove extra header placeholders (H002, H003, H004) and extra "Dear" lines
+	// Pattern: Remove {Insert(H003 TagHeader)} and extra header divs
+	out = out.replace(/\{Insert\(H003 TagHeader\)\}\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>\{Insert\(H003 TagHeader\)\}<\/div>\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>\{\[H002\]\}<\/div>\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>\{\[H003\]\}<\/div>\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>\{\[H004\]\}<\/div>\s*<br>\s*/g, '');
+	// Remove extra "Dear" lines with various placeholders
+	out = out.replace(/<div[^>]*>Dear\s+\{\[H[0-9]+\]\}\s*and\s+\{\[H[0-9]+\]\},<\/div>\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>Dear\s+\{\[H[0-9]+\]\},<\/div>\s*<br>\s*/g, '');
+	// Remove extra co-borrower and non-borrower address fields
+	out = out.replace(/<div[^>]*>\{\[M928\]\}<\/div>\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>\{\[M929\]\}<\/div>\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>Co-borrower[^<]*<\/div>\s*<br>\s*/g, '');
+	out = out.replace(/<div[^>]*>Non-borrower[^<]*<\/div>\s*<br>\s*/g, '');
+	
+	// UNIVERSAL RULE: Fix header directive - should be {[tagHeader]} not {Insert(H003 TagHeader)}
+	// If document starts with {Insert(H003 TagHeader)} and has {[tagHeader]} placeholder, remove the directive
+	if (out.includes('{[tagHeader]}')) {
+		out = out.replace(/\{Insert\(H003 TagHeader\)\}\s*<br>\s*/g, '');
+	}
+	
+	// UNIVERSAL RULE: Fix conditional at end - add {If('{[M007]}'='48')} around Wisconsin notice
+	// Pattern: Wisconsin Property Owners notice should be wrapped in conditional
+	out = out.replace(/(<div[^>]*><u>Wisconsin Property Owners<\/u>[^<]*<\/div>)/g, '{If(\'{[M007]}\'=\'48\')}\n$1\n{End If}');
+	out = out.replace(/(<div[^>]*><u><b>Wisconsin Property Owners<\/b><\/u>[^<]*<\/div>)/g, '{If(\'{[M007]}\'=\'48\')}\n$1\n{End If}');
+	
+	// UNIVERSAL RULE: Fix spacing issues in text (e.g., "p lan" -> "plan", "i nitial" -> "initial")
+	out = out.replace(/\bp\s+lan\b/g, 'plan');
+	out = out.replace(/\bi\s+nitial\b/g, 'initial');
+	out = out.replace(/\bT\s+erms\b/g, 'Terms');
+	
+	// UNIVERSAL RULE: Fix double closing braces in placeholders
+	// Pattern: {[plsMatrix.CompanyLongName]}} -> {[plsMatrix.CompanyLongName]}
+	out = out.replace(/\{\[([^\]]+)\]\}\}/g, '{[$1]}');
+	
+	// UNIVERSAL RULE: Fix spacing between L001 and mailingAddress (no <br> between them)
+	out = out.replace(/(<div[^>]*>\{\[L001\]\}<\/div>)\s*<br>\s*(<div[^>]*>\{\[mailingAddress\]\}<\/div>)/g, '$1\n$2');
+	
+	// UNIVERSAL RULE: Add {[tagHeader]} at start if missing and document doesn't have Font/Header directives
+	if (!out.includes('{Font(') && !out.includes('{Header(') && !out.includes('{Insert(') && !out.includes('{[tagHeader]}') && out.trim().startsWith('<div')) {
+		out = '<div>{[tagHeader]}</div>\n<br>\n' + out;
+	}
+	
+	// UNIVERSAL RULE: Remove duplicate Property Address divs after RE table
+	out = out.replace(/(<div><table width="100%" style="border-collapse: collapse"><tbody><tr>[\s\S]*?Property Address:[\s\S]*?<\/tr><\/tbody><\/table><\/div>)\s*<br>\s*<div[^>]*>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\s*Property Address:[^<]*<\/div>\s*<br>\s*/g, '$1\n<br>\n');
+	
+	// UNIVERSAL RULE: Remove "(System Date)" text from date references
+	out = out.replace(/\(System Date\)/g, '');
+	// Fix extra space after date placeholders
+	out = out.replace(/\{\[L001\]\}\s+,/g, '{[L001]},');
+	
+	// UNIVERSAL RULE: Remove extra text after Math expressions
+	out = out.replace(/\{Math\([^)]+\)\}\s*\(\s*Total\s+Amt\s+Due\s+\+\s+Mortgagor\s+Recoverable\s+Corporate\s+Advance\s+Balance\s+–\s+Suspense\s+Balance\)/g, '{Math({[C001]}+{[M585]}-{[M013]}|Money)}');
+	
+	// UNIVERSAL RULE: Fix spacing issues in text (e.g., "p ayments" -> "payments", "pl an" -> "plan", "p ayment" -> "payment")
+	out = out.replace(/\bp\s+ayments\b/g, 'payments');
+	out = out.replace(/\bp\s+ayment\b/g, 'payment');
+	out = out.replace(/\bpl\s+an\b/g, 'plan');
+	
+	// UNIVERSAL RULE: Fix broken bullet table cells - combine split cells
+	// Pattern: Bullet table cell split across multiple divs with indentation
+	out = out.replace(/(<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\s*<td width="3%" valign="top" style="text-align: center">•<\/td>\s*<td>If your financial situation changes during the term of the plan, please contact us immediately to<\/td>\s*<\/tr><\/tbody><\/table><\/div>)\s*<br>\s*<div[^>]*>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reassess your situation and discuss potential alternatives\.<\/div>/g, '<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td width="3%" valign="top" style="text-align: center">•</td>\n  <td>If your financial situation changes during the term of the plan, please contact us immediately to reassess your situation and discuss potential alternatives.</td>\n</tr></tbody></table></div>');
+	out = out.replace(/(<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\s*<td width="3%" valign="top" style="text-align: center">•<\/td>\s*<td>At least 30 days prior to the end of the plan, you must contact us to provide updated financial<\/td>\s*<\/tr><\/tbody><\/table><\/div>)\s*<br>\s*<div[^>]*>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;information and documentation of your financial circumstances\. After we receive your updated<\/div>\s*<br>\s*<div>information, we will provide information on alternatives that may be available to you at the end of the plan term, such as a reinstatement, repayment plan, loan modification or other alternative to foreclosure\.<\/div>/g, '<div><table width="100%" style="border-collapse: collapse"><tbody><tr>\n  <td width="3%" valign="top" style="text-align: center">•</td>\n  <td>At least 30 days prior to the end of the plan, you must contact us to provide updated financial information and documentation of your financial circumstances. After we receive your updated information, we will provide information on alternatives that may be available to you at the end of the plan term, such as a reinstatement, repayment plan, loan modification or other alternative to foreclosure.</td>\n</tr></tbody></table></div>');
+	
+	// UNIVERSAL RULE: Add {Q189V2()} placeholder between "Plan Terms" and "Additional Terms"
+	out = out.replace(/(<div>Under the terms of the plan, you must make the initial and each of the remaining plan payments by the date and in the amount shown below for each of the plan payments\.<\/div>)\s*<br>\s*(<div><b>Additional Terms of the Plan:<\/b><\/div>)/g, '$1\n<br>\n<div>{Q189V2()}</div>\n<br>\n$2');
+	
+	// UNIVERSAL RULE: Add {[plsMatrix.CompanyShortName]} before "Real Estate Lending Servicing Specialist"
+	out = out.replace(/(<div>Sincerely,<\/div>)\s*<br>\s*(<div>Real Estate Lending Servicing Specialist<\/div>)/g, '$1\n<br>\n<div>{[plsMatrix.CompanyShortName]}</div>\n$2');
+	
+	// UNIVERSAL RULE: Remove extra blank lines after mailingAddress (should be exactly 5 <br> tags)
+	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>)\s*<br><br><br><br><br>\s*\n\n\s*<br><br><br><br><br>\s*\n\n\s*<br><br><br>/g, '$1\n<br><br><br><br><br>\n\n');
+	
 	return out;
 }
 

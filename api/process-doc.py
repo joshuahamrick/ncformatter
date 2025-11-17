@@ -138,6 +138,31 @@ def _extract_table_ir(table):
 
 def _build_ir_document(doc):
 	blocks = []
+	# Extract headers first (for NMLID detection)
+	# Headers are in doc.sections[].header (and first_page_header, even_page_header, etc.)
+	header_texts = []
+	try:
+		for section in doc.sections:
+			# Check all header types: default header, first page header, even page header
+			headers_to_check = []
+			if hasattr(section, 'header'):
+				headers_to_check.append(section.header)
+			if hasattr(section, 'first_page_header'):
+				headers_to_check.append(section.first_page_header)
+			if hasattr(section, 'even_page_header'):
+				headers_to_check.append(section.even_page_header)
+			
+			for header in headers_to_check:
+				try:
+					for para in header.paragraphs:
+						text = ''.join(run.text for run in para.runs if run.text)
+						if text.strip():
+							header_texts.append(text)
+				except Exception:
+					continue
+	except Exception:
+		pass  # Headers might not be accessible, continue without them
+	
 	# Iterate block items in document order: paragraphs and tables
 	# python-docx doesn't provide a direct unified iterator; iterate through document._body
 	for element in doc.element.body.iterchildren():
@@ -154,11 +179,15 @@ def _build_ir_document(doc):
 					blocks.append(_extract_table_ir(tbl))
 					break
 	# Images are not handled at this pass; can be added later if needed
+	# Store header texts in meta for header detection
 	return {
 		'blocks': blocks,
 		'source': 'docx',
 		'confidence': 1.0,
-		'images': []
+		'images': [],
+		'meta': {
+			'headerTexts': header_texts
+		}
 	}
 
 

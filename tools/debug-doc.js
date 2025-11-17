@@ -13,6 +13,11 @@ async function main() {
 	}
 	const abs = path.resolve(docPath);
 	const ir = await getIR(abs);
+	if (ir.meta && ir.meta.headerTexts) {
+		console.log('Header texts found:', ir.meta.headerTexts);
+	} else {
+		console.log('No header texts in IR meta');
+	}
 	console.log('Original paragraphs:');
 	(ir.blocks || []).forEach((block, idx) => {
 		if (block.type === 'paragraph') {

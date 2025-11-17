@@ -1210,7 +1210,7 @@ function renderIRToHtml(ir) {
 			parts.push('<div style="page-break-after:always"></div>');
 		}
 	}
-	return cleanupHtml(parts.join('\n'));
+	return cleanupHtml(parts.join('\n'), transformed);
 }
 
 // Expose renderer
@@ -1551,7 +1551,141 @@ window.NcRenderer = { renderIRToHtml };
 // ------------------------
 // Post-render generic cleanup
 // ------------------------
-function cleanupHtml(html) {
+function getDominantFont(ir) {
+	// Analyze all runs in the IR to find the most common font family and size
+	const fontCounts = new Map();
+	const sizeCounts = new Map();
+	let totalRuns = 0;
+	
+	for (const block of (ir.blocks || [])) {
+		if (block.type === 'paragraph' && block.runs) {
+			for (const run of block.runs) {
+				if (run && run.text && run.text.trim()) {
+					totalRuns++;
+					const font = run.fontFamily || 'Calibri'; // Default to Calibri if not specified
+					const size = run.fontSizePt || 11; // Default to 11pt if not specified
+					
+					const fontKey = font.toLowerCase();
+					fontCounts.set(fontKey, (fontCounts.get(fontKey) || 0) + 1);
+					sizeCounts.set(size, (sizeCounts.get(size) || 0) + 1);
+				}
+			}
+		} else if (block.type === 'table') {
+			for (const row of (block.rows || [])) {
+				for (const cell of (row.cells || [])) {
+					for (const para of (cell.content || [])) {
+						if (para.runs) {
+							for (const run of para.runs) {
+								if (run && run.text && run.text.trim()) {
+									totalRuns++;
+									const font = run.fontFamily || 'Calibri';
+									const size = run.fontSizePt || 11;
+									
+									const fontKey = font.toLowerCase();
+									fontCounts.set(fontKey, (fontCounts.get(fontKey) || 0) + 1);
+									sizeCounts.set(size, (sizeCounts.get(size) || 0) + 1);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	if (totalRuns === 0) {
+		return { fontFamily: 'Calibri', fontSizePt: 11 };
+	}
+	
+	// Find most common font
+	let dominantFont = 'Calibri';
+	let maxFontCount = 0;
+	for (const [font, count] of fontCounts.entries()) {
+		if (count > maxFontCount) {
+			maxFontCount = count;
+			dominantFont = font;
+		}
+	}
+	
+	// Find most common size
+	let dominantSize = 11;
+	let maxSizeCount = 0;
+	for (const [size, count] of sizeCounts.entries()) {
+		if (count > maxSizeCount) {
+			maxSizeCount = count;
+			dominantSize = size;
+		}
+	}
+	
+	// Capitalize first letter of font name
+	dominantFont = dominantFont.charAt(0).toUpperCase() + dominantFont.slice(1);
+	
+	return { fontFamily: dominantFont, fontSizePt: dominantSize };
+}
+
+function getHeaderType(ir, htmlOutput) {
+	// Check document content for header indicators
+	const allText = joinAllTextForHeader(ir).toLowerCase();
+	const htmlLower = (htmlOutput || '').toLowerCase();
+	
+	// Check header texts from Word document headers (extracted in Python code)
+	const headerTexts = (ir.meta && ir.meta.headerTexts) || [];
+	const headerTextCombined = headerTexts.join(' ').toLowerCase();
+	
+	// Check for H003 references (conditional logic or explicit mentions)
+	if (allText.includes('h003') || allText.includes('{insert(h003') || allText.includes('insert(h003')) {
+		return 'H003';
+	}
+	
+	// Check for NMLID/NMLSID placeholders in the document header
+	// Look for <NMLID> or <NMLSID> placeholders in Word document headers
+	// Also check for CompanyReturnAdd placeholders which indicate header structure
+	// Check header texts, IR text, and HTML output
+	const combinedText = headerTextCombined + ' ' + allText + ' ' + htmlLower;
+	if (combinedText.includes('nmlid') || combinedText.includes('nmlsid') || 
+	    combinedText.includes('companyreturnadd') || 
+	    combinedText.includes('{[plsmatrix.nmlid]}') || combinedText.includes('{[plsmatrix.nmlsid]}')) {
+		return 'NMLSID';
+	}
+	
+	// Check for H003 conditional patterns in text
+	if (allText.includes('if {[h003]}') || allText.includes('then suppress print')) {
+		return 'H003';
+	}
+	
+	// Default to TagHeader
+	return 'TagHeader';
+}
+
+function joinAllTextForHeader(ir) {
+	let s = '';
+	for (const block of (ir.blocks || [])) {
+		if (block.type === 'paragraph' && block.runs) {
+			for (const run of block.runs) {
+				if (run && run.text) {
+					s += ' ' + run.text;
+				}
+			}
+		} else if (block.type === 'table') {
+			for (const row of (block.rows || [])) {
+				for (const cell of (row.cells || [])) {
+					for (const para of (cell.content || [])) {
+						if (para.runs) {
+							for (const run of para.runs) {
+								if (run && run.text) {
+									s += ' ' + run.text;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return s;
+}
+
+function cleanupHtml(html, ir) {
 	let out = String(html);
 	// Convert # placeholder format to {[...]} format (e.g., #H131# -> {[H131]}, #L001E8# -> {[L001]})
 	// Handle all #TAG# patterns and convert to {[TAG]} format, removing E suffixes
@@ -1920,16 +2054,59 @@ function cleanupHtml(html) {
 	// UNIVERSAL RULE: Add Font and Header directives at the beginning if missing (do this EARLY)
 	// Check if document starts with <div> (not Font/Header directives)
 	const hasFontDirective = out.includes('{Font(') || out.trim().startsWith('{Font(');
-	if (!hasFontDirective && out.trim().startsWith('<div')) {
-		// Add Font and Header before the first <div>
-		out = '{Font(Calibri|10Pt)}\n{Header(NMLSID)}\n<br>\n' + out;
+	if (!hasFontDirective && out.trim().startsWith('<div') && ir) {
+		// Analyze IR to determine font and header
+		const fontInfo = getDominantFont(ir);
+		const headerType = getHeaderType(ir, out);
+		
+		// Generate Font directive only if needed:
+		// - If font is NOT Calibri 11pt, add Font directive
+		// - If font is Calibri 11pt, skip Font directive (default)
+		let fontDirective = '';
+		if (!(fontInfo.fontFamily.toLowerCase() === 'calibri' && fontInfo.fontSizePt === 11)) {
+			// Format: {Font(FontName|SizePt)} or {Font(FontName | Sizept)} - use consistent format
+			const sizeStr = Math.round(fontInfo.fontSizePt) + 'pt';
+			fontDirective = `{Font(${fontInfo.fontFamily}|${sizeStr})}\n`;
+		}
+		
+		// Generate Header directive based on header type
+		let headerDirective = '';
+		if (headerType === 'H003') {
+			headerDirective = '{Insert(H003 TagHeader)}\n';
+		} else if (headerType === 'NMLSID') {
+			headerDirective = '{Header(NMLSID)}\n';
+		} else {
+			// TagHeader - usually no header directive needed, but check if document has {[tagHeader]} placeholder
+			// If it does, we don't need to add a header directive
+			if (!out.includes('{[tagHeader]}') && !out.includes('{Insert(')) {
+				// Some documents might need {[tagHeader]} but we'll let the transformer handle that
+				// For now, don't add anything for TagHeader
+			}
+		}
+		
+		// Add directives before the first <div>
+		if (fontDirective || headerDirective) {
+			const directives = (fontDirective + headerDirective).trim();
+			if (directives) {
+				out = directives + '\n<br>\n' + out;
+			}
+		}
 	}
 	
 	// UNIVERSAL RULE: Remove font-size from divs if Font directive exists at document start
 	// If document has {Font(...)} directive, font-size should only be in that directive, not in individual divs
 	if (out.includes('{Font(')) {
-		// Remove font-size: 10pt from divs (common default that should be in Font directive)
-		out = out.replace(/font-size:\s*10pt;?\s*/g, '');
+		// Extract font size from Font directive to remove matching sizes from divs
+		const fontMatch = out.match(/\{Font\([^|]+\|(\d+)pt\)\}/i);
+		if (fontMatch) {
+			const directiveSize = fontMatch[1] + 'pt';
+			// Remove font-size that matches the Font directive size
+			const sizeRegex = new RegExp(`font-size:\\s*${directiveSize.replace('pt', 'pt')};?\\s*`, 'gi');
+			out = out.replace(sizeRegex, '');
+		} else {
+			// Fallback: remove common default sizes (10pt, 11pt) if Font directive exists
+			out = out.replace(/font-size:\s*1[01]pt;?\s*/gi, '');
+		}
 		// Clean up empty style attributes
 		out = out.replace(/style="([^"]*);\s*"/g, 'style="$1"');
 		out = out.replace(/style="\s*"/g, '');

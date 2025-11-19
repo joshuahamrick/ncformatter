@@ -947,8 +947,25 @@ def convert_aligned_label_value_pairs_to_tables(text):
         # Find all label-value pairs first
         # Pattern 1: Value on same line after tabs/spaces: <div>SUBJECT: 					Notice of Servicing Transfer</div>
         # Match label ending in colon, then whitespace (tabs/spaces), then value (anything until </div>)
+        # The pattern needs to match: SUBJECT: followed by whitespace then value
         same_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s+)([^<]+)</div>'
         same_line_matches = list(re.finditer(same_line_pattern, text, flags=re.IGNORECASE))
+        
+        # Also try a more specific pattern for label-value pairs that might have different spacing
+        # Pattern: <div>LABEL: (whitespace) VALUE</div>
+        specific_label_pattern = r'<div[^>]*>(SUBJECT|UHM LOAN NUMBER|JPMORGAN CHASE BANK, NA LOAN NUMBER|PROPERTY):\s+([^<]+)</div>'
+        specific_matches = list(re.finditer(specific_label_pattern, text, flags=re.IGNORECASE))
+        
+        # Merge matches, avoiding duplicates
+        for match in specific_matches:
+            # Check if this is already in same_line_matches
+            is_duplicate = False
+            for existing_match in same_line_matches:
+                if abs(match.start() - existing_match.start()) < 10:
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                same_line_matches.append(match)
         
         # Pattern 2: Value on next line: <div>LABEL:</div><br><div>VALUE</div>
         separate_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s*)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'

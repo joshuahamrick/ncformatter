@@ -262,6 +262,11 @@ def generate_formatted_html(paragraphs, tables, document_type):
             
         text = para['text'].strip()
         
+        # Debug: Check if this paragraph contains UHM LOAN NUMBER
+        if 'UHM LOAN NUMBER' in text or 'M594' in text:
+            # This will help us see if UHM LOAN NUMBER is being extracted
+            pass
+        
         # Create the div with proper formatting
         div_attrs = []
         
@@ -1016,12 +1021,19 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # Use .*? to match any content including HTML tags between PROPERTY: and {[M567]}
     # Match: <div>PROPERTY: ... {[M567]} ...</div><br><div>{[M583]} ...</div><br><div> ... {[M568]} ...</div>
     # Pattern 1: Find PROPERTY div with M567, then M583 div, then M568 div
-    # Match them as a sequence - need to handle HTML tags inside divs
-    # Use a pattern that matches div content including nested tags by matching everything up to </div>
-    # Match: <div>PROPERTY: ... {[M567]} ...</div><br><div>{[M583]} ...</div><br><div> ... {[M568]} ...</div>
-    # Use a recursive-like approach: match div opening, then content (including nested tags), then closing
-    property_sequence = r'<div[^>]*>PROPERTY:(?:[^<]|<(?!\/div>))*?\{\[M\s*567\]\}(?:[^<]|<(?!\/div>))*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}(?:[^<]|<(?!\/div>))*?</div>\s*<br>\s*<div[^>]*>(?:[^<]|<(?!\/div>))*?\{\[M\s*568\]\}(?:[^<]|<(?!\/div>))*?</div>'
-    text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE | re.DOTALL)
+    # Match them as a sequence - handle broken bold tags and nested HTML
+    # Strategy: Find PROPERTY div containing M567, then find M583 div, then find M568 div
+    # Use a pattern that matches the entire sequence including all content
+    # Match: <div>PROPERTY: ... {[M567]} ...</div> ... <div>{[M583]} ...</div> ... <div> ... {[M568]} ...</div>
+    # Use [\s\S] to match any character including newlines, non-greedy
+    # Also handle cases where broken bold tags might still be present
+    property_sequence = r'<div[^>]*>PROPERTY:[\s\S]*?\{\[M\s*567\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>[\s\S]*?\{\[M\s*568\]\}[\s\S]*?</div>'
+    text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE)
+    
+    # Also try matching with broken bold tags explicitly
+    # Match: <div>PROPERTY: <b>{[</b><b>M</b><b>567</b><b>]}</b> ...</div>
+    property_broken_bold = r'<div[^>]*>PROPERTY:[\s\S]*?<b>\{\[</b><b>M</b><b>567</b><b>\]\}</b>[\s\S]*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>[\s\S]*?<b>\{\[</b><b>M</b><b>568</b><b>\]\}</b>[\s\S]*?</div>'
+    text = re.sub(property_broken_bold, convert_property_multiple, text, flags=re.IGNORECASE)
     
     # Pattern 2: PROPERTY: on separate line, then M567, M583, M568 on separate lines
     property_pattern2 = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>.*?\{\[M\s*567\]\}.*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}.*?</div>\s*<br>\s*<div[^>]*>.*?\{\[M\s*568\]\}.*?</div>'
@@ -1061,6 +1073,26 @@ def convert_aligned_label_value_pairs_to_tables(text):
     
     # Try the pattern match - use DOTALL to handle newlines
     text = re.sub(subject_uhm_jpmorgan_pattern, convert_subject_uhm_jpmorgan, text, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Fallback: If UHM LOAN NUMBER is missing, still convert SUBJECT and JPMORGAN to table
+    # Pattern: SUBJECT and JPMORGAN without UHM LOAN NUMBER between them
+    subject_jpmorgan_pattern = r'<div[^>]*>SUBJECT:\s+([^<]+)</div>\s*<br>\s*<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+([^<]+)</div>'
+    def convert_subject_jpmorgan(match):
+        subj_val = match.group(1).strip()
+        jpm_val = match.group(2).strip()
+        # Only convert if UHM LOAN NUMBER is not already in a table (check if it was already converted)
+        # If the pattern matches, it means UHM LOAN NUMBER wasn't found, so create table without it
+        return f'''<table width="100%"><tbody><tr>
+  <td width="45%" valign="top">SUBJECT:</td>
+  <td>{subj_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">JPMORGAN CHASE BANK, NA LOAN NUMBER:</td>
+  <td>{jpm_val}</td>
+</tr></tbody></table>
+<br>'''
+    # Only apply if UHM LOAN NUMBER pattern didn't match (i.e., UHM LOAN NUMBER is missing)
+    if 'UHM LOAN NUMBER:' not in text or '<td width="45%" valign="top">UHM LOAN NUMBER:</td>' not in text:
+        text = re.sub(subject_jpmorgan_pattern, convert_subject_jpmorgan, text, flags=re.IGNORECASE | re.DOTALL)
     
     # Pattern to find consecutive label-value pairs
     # Handle labels with tabs/spaces: "SUBJECT: 					Notice"

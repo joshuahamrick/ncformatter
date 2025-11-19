@@ -658,39 +658,48 @@ def simple_field_cleanup(text):
     return text
 
 def fix_salutation_section(text):
-    """Clean up the salutation section to have a single clean Dear statement"""
+    """Fix the salutation section to show only one clean salutation
+    Rules:
+    - If Dear is followed by actual text like "Mortgagor(s)" or "Borrower(s)", keep it as-is
+    - If Dear is followed by tags like {[M558]} or {[M558]} and {[M559]}, convert to {[Salutation]}
+    """
     import re
     
-    # SUPER SIMPLE APPROACH: Just remove all the alternative Dear lines
-    # Remove lines like: <div style="text-align: justify">Dear {[H202]},</div>
-    text = re.sub(r'<div[^>]*>Dear \{[^}]+\},?\s*</div>\s*<br>\s*', '', text, count=0, flags=re.IGNORECASE)
+    # Pattern to match Dear with tags: Dear {[M558]} and {[M559]}, or Dear {[M558]},
+    # Match: <div>Dear {[M558]} and {[M559]},</div>
+    tag_pattern = r'<div[^>]*>Dear\s+\{\[M\d+\]\}(\s+and\s+\{\[M\d+\]\})?,?</div>'
+    tag_match = re.search(tag_pattern, text, re.IGNORECASE)
     
-    # But we need to keep at least ONE Dear line, so let's be smarter
-    # Find the FIRST "Dear" line and keep it, remove all subsequent ones
+    if tag_match:
+        # Replace with clean salutation
+        clean_salutation = '<div>Dear {[Salutation]},</div>'
+        text = text[:tag_match.start()] + clean_salutation + text[tag_match.end():]
+        return text
     
-    lines = text.split('\n')
-    found_first_dear = False
-    found_content_after_dear = False
-    result_lines = []
-    
-    for line in lines:
-        # Check if this is a Dear line
-        if 'Dear {[' in line and not found_content_after_dear:
-            if not found_first_dear:
-                # Keep the first Dear but replace with clean salutation
-                result_lines.append('<div>Dear {[Salutation]},</div>')
-                result_lines.append('<br>')
-                found_first_dear = True
-            # Skip all other Dear lines
-            continue
+    # Find the first Dear occurrence (fallback)
+    dear_match = re.search(r'<div[^>]*>Dear\s+([^<]+)</div>', text)
+    if dear_match:
+        dear_text = dear_match.group(1).strip()
         
-        # Check if we've hit the content after salutation
-        if found_first_dear and ('Thank you for contacting' in line or 'Notice is hereby given' in line):
-            found_content_after_dear = True
+        # Check if it's actual text (like "Mortgagor(s)" or "Borrower(s)") or a tag
+        is_actual_text = False
+        actual_text_patterns = [
+            r'^mortgagor',
+            r'^borrower',
+            r'^mortgager'
+        ]
         
-        result_lines.append(line)
+        for pattern in actual_text_patterns:
+            if re.match(pattern, dear_text, re.IGNORECASE):
+                is_actual_text = True
+                break
+        
+        # If it contains tags but isn't actual text, convert to {[Salutation]}
+        if not is_actual_text and ('{' in dear_text or '[' in dear_text):
+            clean_salutation = '<div>Dear {[Salutation]},</div>'
+            text = text[:dear_match.start()] + clean_salutation + text[dear_match.end():]
     
-    return '\n'.join(result_lines)
+    return text
 
 def fix_payment_information_cleanup(text):
     """Clean up remaining payment information descriptions"""

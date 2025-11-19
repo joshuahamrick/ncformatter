@@ -88,6 +88,29 @@ def process_word_document(file_bytes, file_name):
         paragraphs = []
         tables = []
         
+        # Extract headers from document sections FIRST
+        header_paragraphs = []
+        try:
+            for section in doc.sections:
+                # Check default header
+                if hasattr(section, 'header'):
+                    for para in section.header.paragraphs:
+                        para_data = extract_paragraph_formatting(para)
+                        if para_data['text'].strip():
+                            header_paragraphs.append(para_data)
+                # Check first page header
+                if hasattr(section, 'first_page_header'):
+                    for para in section.first_page_header.paragraphs:
+                        para_data = extract_paragraph_formatting(para)
+                        if para_data['text'].strip():
+                            header_paragraphs.append(para_data)
+        except Exception:
+            # If header extraction fails, continue without headers
+            pass
+        
+        # Add header paragraphs at the beginning
+        paragraphs.extend(header_paragraphs)
+        
         # Process paragraphs
         for para in doc.paragraphs:
             paragraph_data = extract_paragraph_formatting(para)
@@ -670,42 +693,75 @@ def fix_salutation_section(text):
     Rules:
     - If Dear is followed by actual text like "Mortgagor(s)" or "Borrower(s)", keep it as-is
     - If Dear is followed by tags like {[M558]} or {[M558]} and {[M559]}, convert to {[Salutation]}
+    - Remove all extra "Dear" lines (H202, H223, H244, etc.)
     """
     import re
     
-    # Pattern to match Dear with tags: Dear {[M558]} and {[M559]}, or Dear {[M558]},
-    # Match: <div>Dear {[M558]} and {[M559]},</div>
-    tag_pattern = r'<div[^>]*>Dear\s+\{\[M\d+\]\}(\s+and\s+\{\[M\d+\]\})?,?</div>'
-    tag_match = re.search(tag_pattern, text, re.IGNORECASE)
-    
-    if tag_match:
-        # Replace with clean salutation
-        clean_salutation = '<div>Dear {[Salutation]},</div>'
-        text = text[:tag_match.start()] + clean_salutation + text[tag_match.end():]
+    # First, find the first "Dear" line
+    first_dear_match = re.search(r'<div[^>]*>Dear\s+([^<]+)</div>', text, re.IGNORECASE)
+    if not first_dear_match:
         return text
     
-    # Find the first Dear occurrence (fallback)
-    dear_match = re.search(r'<div[^>]*>Dear\s+([^<]+)</div>', text)
-    if dear_match:
-        dear_text = dear_match.group(1).strip()
+    # Check if first Dear is followed by tags (like {[Salutation]}, {[M558]}, {[H202]}, etc.)
+    first_dear_text = first_dear_match.group(1).strip()
+    is_actual_text = False
+    actual_text_patterns = [
+        r'^mortgagor',
+        r'^borrower',
+        r'^mortgager'
+    ]
+    
+    for pattern in actual_text_patterns:
+        if re.match(pattern, first_dear_text, re.IGNORECASE):
+            is_actual_text = True
+            break
+    
+    # Find all "Dear" lines (including those with style attributes)
+    all_dear_matches = list(re.finditer(r'<div[^>]*>Dear\s+([^<]+)</div>', text, re.IGNORECASE))
+    
+    if len(all_dear_matches) > 1:
+        # Find where the Dear section ends (before main content)
+        first_dear_start = first_dear_match.start()
+        first_dear_end = first_dear_match.end()
         
-        # Check if it's actual text (like "Mortgagor(s)" or "Borrower(s)") or a tag
-        is_actual_text = False
-        actual_text_patterns = [
-            r'^mortgagor',
-            r'^borrower',
-            r'^mortgager'
+        # Find the last Dear line
+        last_dear_end = all_dear_matches[-1].end()
+        
+        # Look for content after Dear section (usually a paragraph that doesn't start with Dear)
+        # Search from the end of the last Dear line
+        after_dear = text[last_dear_end:]
+        end_patterns = [
+            r'<div[^>]*>The\s+servicing',
+            r'<div[^>]*>Notice\s+is\s+hereby',
+            r'<div[^>]*>If\s+you',
+            r'<div[^>]*>To\s+cure'
         ]
         
-        for pattern in actual_text_patterns:
-            if re.match(pattern, dear_text, re.IGNORECASE):
-                is_actual_text = True
+        end_pos = None
+        for pattern in end_patterns:
+            end_match = re.search(pattern, after_dear, re.IGNORECASE)
+            if end_match:
+                end_pos = last_dear_end + end_match.start()
                 break
         
-        # If it contains tags but isn't actual text, convert to {[Salutation]}
-        if not is_actual_text and ('{' in dear_text or '[' in dear_text):
+        if not end_pos:
+            # Fallback: find first non-Dear div after last Dear
+            next_content = re.search(r'<div[^>]*>(?!Dear)', after_dear[:1000], re.IGNORECASE)
+            if next_content:
+                end_pos = last_dear_end + next_content.start()
+            else:
+                end_pos = last_dear_end + 500  # Fallback
+        
+        # Replace all Dear lines with single clean salutation
+        if is_actual_text:
+            # Keep the actual text
+            clean_salutation = f'<div>Dear {first_dear_text},</div>'
+        else:
+            # Use {[Salutation]} for tags
             clean_salutation = '<div>Dear {[Salutation]},</div>'
-            text = text[:dear_match.start()] + clean_salutation + text[dear_match.end():]
+        
+        # Remove all Dear lines between first_dear_start and end_pos, replace with single salutation
+        text = text[:first_dear_start] + clean_salutation + '\n<br>\n' + text[end_pos:]
     
     return text
 
@@ -952,19 +1008,28 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # First, handle PROPERTY: with multiple address fields (M567, M583, M568) in separate divs
     # Pattern 1: PROPERTY: on same line as M567, then M583, M568 on separate lines
     # Match: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
-    property_pattern1 = r'<div[^>]*>PROPERTY:\s*\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
     def convert_property_multiple(match):
         return '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>'
-    text = re.sub(property_pattern1, convert_property_multiple, text, flags=re.IGNORECASE)
+    
+    # Pattern 1: PROPERTY: with M567 on same line (handle broken bold tags and text after), then M583, M568 on separate lines
+    # Match the sequence: PROPERTY div -> M583 div -> M568 div
+    # Use .*? to match any content including HTML tags between PROPERTY: and {[M567]}
+    # Match: <div>PROPERTY: ... {[M567]} ...</div><br><div>{[M583]} ...</div><br><div> ... {[M568]} ...</div>
+    # Pattern 1: Find PROPERTY div with M567, then M583 div, then M568 div
+    # Match them as a sequence - need to handle HTML tags inside divs
+    # Use a pattern that matches div content including nested tags by matching everything up to </div>
+    # Match: <div>PROPERTY: ... {[M567]} ...</div><br><div>{[M583]} ...</div><br><div> ... {[M568]} ...</div>
+    # Use a recursive-like approach: match div opening, then content (including nested tags), then closing
+    property_sequence = r'<div[^>]*>PROPERTY:(?:[^<]|<(?!\/div>))*?\{\[M\s*567\]\}(?:[^<]|<(?!\/div>))*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}(?:[^<]|<(?!\/div>))*?</div>\s*<br>\s*<div[^>]*>(?:[^<]|<(?!\/div>))*?\{\[M\s*568\]\}(?:[^<]|<(?!\/div>))*?</div>'
+    text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE | re.DOTALL)
     
     # Pattern 2: PROPERTY: on separate line, then M567, M583, M568 on separate lines
-    property_pattern2 = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
-    text = re.sub(property_pattern2, convert_property_multiple, text, flags=re.IGNORECASE)
+    property_pattern2 = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>.*?\{\[M\s*567\]\}.*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}.*?</div>\s*<br>\s*<div[^>]*>.*?\{\[M\s*568\]\}.*?</div>'
+    text = re.sub(property_pattern2, convert_property_multiple, text, flags=re.IGNORECASE | re.DOTALL)
     
     # Pattern 3: PROPERTY: with tabs/spaces, then M567 on same line, M583 and M568 on separate lines
-    # This handles the case where PROPERTY: has tabs before M567
-    property_pattern3 = r'<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
-    text = re.sub(property_pattern3, convert_property_multiple, text, flags=re.IGNORECASE)
+    property_pattern3 = r'<div[^>]*>PROPERTY:\s+.*?\{\[M\s*567\]\}.*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}.*?</div>\s*<br>\s*<div[^>]*>.*?\{\[M\s*568\]\}.*?</div>'
+    text = re.sub(property_pattern3, convert_property_multiple, text, flags=re.IGNORECASE | re.DOTALL)
     
     # Direct conversion for SUBJECT/UHM LOAN NUMBER/JPMORGAN pattern
     # This is a common pattern in SR121, so handle it directly
@@ -1853,47 +1918,7 @@ def add_document_title_and_re_table(text):
     
     return text
 
-def fix_salutation_section(text):
-    """Fix the salutation section to show only one clean salutation
-    Rules:
-    - If Dear is followed by actual text like "Mortgagor(s)" or "Borrower(s)", keep it as-is
-    - If Dear is followed by tags like {[M558]} or {[M558]} and {[M559]}, convert to {[Salutation]}
-    """
-    import re
-    
-    # Pattern to match Dear with tags: Dear {[M558]} and {[M559]}, or Dear {[M558]},
-    tag_pattern = r'<div[^>]*>Dear\s+\{\[M\d+\]\}(\s+and\s+\{\[M\d+\]\})?,?</div>'
-    tag_match = re.search(tag_pattern, text, re.IGNORECASE)
-    
-    if tag_match:
-        # Replace with clean salutation
-        clean_salutation = '<div>Dear {[Salutation]},</div>'
-        text = text[:tag_match.start()] + clean_salutation + text[tag_match.end():]
-    
-    # Find the first Dear occurrence (fallback)
-    dear_match = re.search(r'<div[^>]*>Dear\s+([^<]+)</div>', text)
-    if dear_match:
-        dear_text = dear_match.group(1).strip()
-        
-        # Check if it's actual text (like "Mortgagor(s)" or "Borrower(s)") or a tag
-        is_actual_text = False
-        actual_text_patterns = [
-            r'^mortgagor',
-            r'^borrower',
-            r'^mortgager'
-        ]
-        
-        for pattern in actual_text_patterns:
-            if re.match(pattern, dear_text, re.IGNORECASE):
-                is_actual_text = True
-                break
-        
-        # If it contains tags but isn't actual text, convert to {[Salutation]}
-        if not is_actual_text and ('{' in dear_text or '[' in dear_text):
-            clean_salutation = '<div>Dear {[Salutation]},</div>'
-            text = text[:dear_match.start()] + clean_salutation + text[dear_match.end():]
-    
-    return text
+# Duplicate function removed - using the improved version at line 691
 
 def fix_payment_information(text):
     """Fix payment information to be in a proper table"""

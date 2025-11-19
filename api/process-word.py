@@ -1333,8 +1333,10 @@ def remove_conditional_logic_sections(text):
     text = re.sub(r'<div[^>]*>.*?\{\[M956\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove foreign address indicator sections - match any text after the tag
-    # Pattern: <div>{[M928]} (Foreign Country Code)</div>
+    # Pattern: <div>{[M928]} (Foreign Country Code)</div> or <div><b>{[M928]}</b></div>
+    text = re.sub(r'<div[^>]*><b>\{\[M928\]\}</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>\{\[M928\]\}[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*><b>\{\[M929\]\}</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>\{\[M929\]\}[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
     # Remove business rule references - match "see" followed by business rule text

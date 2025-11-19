@@ -971,10 +971,10 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # Pattern must handle tabs/spaces between colon and value
     # Match: <div>SUBJECT: 					Notice of Servicing Transfer</div><br><div>UHM LOAN NUMBER:				{[M594]}</div><br><div>JPMORGAN CHASE BANK, NA LOAN NUMBER:	{[M614]}</div>
     # Use a more flexible pattern that matches the entire sequence with any whitespace
-    # Handle newlines, tabs, and various spacing
+    # Handle newlines, tabs, and various spacing - labels are literal strings
     subject_uhm_jpmorgan_pattern = r'<div[^>]*>SUBJECT:\s+([^<]+)</div>\s*<br>\s*' \
-                                     r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)</div>\s*<br>\s*' \
-                                     r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+([^<]+)</div>'
+                                     r'<div[^>]*>UHM LOAN NUMBER:\s+([^<]+)</div>\s*<br>\s*' \
+                                     r'<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+([^<]+)</div>'
     
     def convert_subject_uhm_jpmorgan(match):
         # Values are already captured in groups 1, 2, 3

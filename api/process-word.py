@@ -398,19 +398,24 @@ def apply_universal_formatting_rules(html_text):
         # STEP 2: MAILING ADDRESS CLEANUP - Consolidate mailing address tags into {[mailingAddress]}
         html_text = consolidate_mailing_address_tags(html_text)
         
-        # STEP 2.5: REMOVE CONDITIONAL LOGIC SECTIONS FIRST (before other processing)
-        # Remove M838, M956, M928, M929 sections early so they don't interfere
+        # STEP 2.5: REMOVE PLSID COMPLETELY FIRST (metadata, should never appear in document)
+        # This must run first to remove M838/PLSID before other processing
+        html_text = remove_plsid_references(html_text)
+        
+        # STEP 2.5.5: REMOVE CONDITIONAL LOGIC SECTIONS (before other processing)
+        # Remove M956, M928, M929 sections early so they don't interfere
         html_text = remove_conditional_logic_sections(html_text)
         
-        # STEP 2.5.5: REMOVE PLSID COMPLETELY (metadata, should never appear in document)
-        html_text = remove_plsid_references(html_text)
+        # STEP 2.5.6: DETECT UHM HEADER EARLY (before label-value conversion)
+        # We need to detect UHM before converting to tables, so check the raw text
+        has_uhm = detect_uhm_header(html_text)
         
         # STEP 2.6: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES (before header cleanup)
         html_text = convert_aligned_label_value_pairs_to_tables(html_text)
         
-        # STEP 2.7: FIX HEADER TYPE DETECTION (must run after label-value conversion to detect UHM)
-        # Check for UHM header - look for "UHM LOAN NUMBER" in the text
-        html_text = fix_header_structure_completely(html_text)
+        # STEP 2.7: FIX HEADER TYPE DETECTION (use detected UHM flag)
+        # Pass the UHM detection result to header fix function
+        html_text = fix_header_structure_completely(html_text, has_uhm=has_uhm)
         
         # STEP 3: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
         html_text = fix_salutation_section(html_text)

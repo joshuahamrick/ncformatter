@@ -423,6 +423,12 @@ def apply_universal_formatting_rules(html_text):
         # STEP 5.5: FIX DATE FORMATTING - Remove spaces in dates (1 / 2 /202 6 -> 1/2/2026)
         html_text = fix_date_formatting(html_text)
         
+        # STEP 5.6: FIX PAYMENT ADDRESS TABLE FORMATTING
+        html_text = fix_payment_address_table(html_text)
+        
+        # STEP 5.7: FIX SERVICER TABLE FORMATTING
+        html_text = fix_servicer_table_formatting(html_text)
+        
         # STEP 6: DOCUMENT TITLE AND RE TABLE - Add proper structure
         html_text = add_document_title_and_re_table(html_text)
         
@@ -1081,6 +1087,97 @@ def fix_date_formatting(text):
     text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)\s*(\d+)', r'\1/\2/\3\4', text)
     # Also handle: 1 / 2 /2026 (no space before last digit)
     text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)', r'\1/\2/\3', text)
+    
+    return text
+
+def fix_payment_address_table(text):
+    """Fix payment address formatting - convert to table with padding-left: 50px"""
+    import re
+    
+    # Pattern: Find "using the following address:" followed by address lines
+    # Match: JPMorgan Chase Bank, NA<br>Attn: Payment Processing<br>P.O. Box...<br>Philadelphia...
+    address_pattern = r'(<div>Send all payments[^<]*</div>\s*<br>\s*)'
+    address_pattern += r'(<div>JPMorgan Chase Bank, NA</div>\s*<br>\s*)'
+    address_pattern += r'(<div>Attn: Payment Processing</div>\s*<br>\s*)'
+    address_pattern += r'(<div>P\.O\. Box[^<]*</div>\s*<br>\s*)'
+    address_pattern += r'(<div>Philadelphia[^<]*</div>\s*<br>\s*)'
+    
+    def convert_to_table(match):
+        intro = match.group(1)
+        line1 = match.group(2).replace('<div>', '').replace('</div>', '').strip()
+        line2 = match.group(3).replace('<div>', '').replace('</div>', '').strip()
+        line3 = match.group(4).replace('<div>', '').replace('</div>', '').strip()
+        line4 = match.group(5).replace('<div>', '').replace('</div>', '').strip()
+        
+        table = f'''{intro}<table><tbody><tr>
+  <td style="padding-left: 50px">{line1}</td>
+</tr><tr>
+  <td style="padding-left: 50px">{line2}</td>
+</tr><tr>
+  <td style="padding-left: 50px">{line3}</td>
+</tr><tr>
+  <td style="padding-left: 50px">{line4}</td>
+</tr></tbody></table>'''
+        return table
+    
+    text = re.sub(address_pattern, convert_to_table, text, flags=re.IGNORECASE)
+    
+    return text
+
+def fix_servicer_table_formatting(text):
+    """Fix servicer table formatting - add borders, padding, and Compress functions"""
+    import re
+    
+    # Pattern: Find servicer table and fix formatting
+    # Match table with Current Servicer and New Servicer headers
+    servicer_pattern = r'(<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>)(.*?)(</td>\s*<td[^>]*>)(.*?)(</td>\s*</tr><tr>\s*<td[^>]*>)(.*?)(</td>\s*<td[^>]*>)(.*?)(</td>\s*</tr></tbody></table></div>)'
+    
+    def format_servicer_table(match):
+        header = match.group(1)
+        current_info = match.group(2).strip()
+        middle = match.group(3)
+        new_info = match.group(4).strip()
+        middle2 = match.group(5)
+        current_addr = match.group(6).strip()
+        middle3 = match.group(7)
+        new_addr = match.group(8).strip()
+        footer = match.group(9)
+        
+        # Convert current info to Compress format
+        current_lines = [line.strip() for line in current_info.split('<br>') if line.strip()]
+        current_compress = '|'.join(current_lines)
+        
+        # Convert new info to Compress format
+        new_lines = [line.strip() for line in new_info.split('<br>') if line.strip()]
+        new_compress = '|'.join(new_lines)
+        
+        # Convert addresses to Compress format
+        current_addr_lines = [line.strip() for line in current_addr.split('<br>') if line.strip()]
+        current_addr_compress = '|'.join(current_addr_lines)
+        
+        new_addr_lines = [line.strip() for line in new_addr.split('<br>') if line.strip()]
+        new_addr_compress = '|'.join(new_addr_lines)
+        
+        # Fix field references
+        current_compress = current_compress.replace('{[CSEmail]}', '{[plsMatrix.CSEmail]}')
+        current_compress = current_compress.replace('{[CorporateAddr1]}', '{[plsMatrix.CorporateAddr1]}')
+        current_compress = current_compress.replace('{[CorporateAddr 2]}', '{[plsMatrix.CorporateAddr2]}')
+        current_compress = current_compress.replace('{[CorporateAddr2]}', '{[plsMatrix.CorporateAddr2]}')
+        
+        table = f'''<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1)"><b>Current Servicer</b></td>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1)"><b>New Servicer</b></td>
+</tr><tr>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{{Compress({current_compress})}}</td>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{{Compress({new_compress})}}</td>
+</tr><tr>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{{Compress({current_addr_compress})}}</td>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{{Compress({new_addr_compress})}}</td>
+</tr></tbody></table>'''
+        
+        return f'<div>{table}</div>'
+    
+    text = re.sub(servicer_pattern, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
     
     return text
 

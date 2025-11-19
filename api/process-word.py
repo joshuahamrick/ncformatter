@@ -956,6 +956,38 @@ def convert_aligned_label_value_pairs_to_tables(text):
     property_pattern3 = r'<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
     text = re.sub(property_pattern3, convert_property_multiple, text, flags=re.IGNORECASE)
     
+    # Direct conversion for SUBJECT/UHM LOAN NUMBER/JPMORGAN pattern
+    # This is a common pattern in SR121, so handle it directly
+    subject_uhm_jpmorgan_pattern = r'(<div[^>]*>SUBJECT:\s+[^<]+</div>\s*<br>\s*)' \
+                                     r'(<div[^>]*>UHM LOAN NUMBER:\s+[^<]+</div>\s*<br>\s*)' \
+                                     r'(<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+[^<]+</div>\s*<br>\s*)'
+    
+    def convert_subject_uhm_jpmorgan(match):
+        # Extract values from each div
+        subj_match = re.search(r'SUBJECT:\s+([^<]+)', match.group(1))
+        uhm_match = re.search(r'UHM LOAN NUMBER:\s+([^<]+)', match.group(2))
+        jpm_match = re.search(r'JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+([^<]+)', match.group(3))
+        
+        if subj_match and uhm_match and jpm_match:
+            subj_val = subj_match.group(1).strip()
+            uhm_val = uhm_match.group(1).strip()
+            jpm_val = jpm_match.group(1).strip()
+            
+            return f'''<table width="100%"><tbody><tr>
+  <td width="45%" valign="top">SUBJECT:</td>
+  <td>{subj_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">UHM LOAN NUMBER:</td>
+  <td>{uhm_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">JPMORGAN CHASE BANK, NA LOAN NUMBER:</td>
+  <td>{jpm_val}</td>
+</tr></tbody></table>
+<br>'''
+        return match.group(0)
+    
+    text = re.sub(subject_uhm_jpmorgan_pattern, convert_subject_uhm_jpmorgan, text, flags=re.IGNORECASE)
+    
     # Pattern to find consecutive label-value pairs
     # Handle labels with tabs/spaces: "SUBJECT: 					Notice"
     # When there are lots of spaces/tabs, that indicates alignment intent - use tables

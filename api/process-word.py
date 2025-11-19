@@ -398,6 +398,9 @@ def apply_universal_formatting_rules(html_text):
         # STEP 2: MAILING ADDRESS CLEANUP - Consolidate mailing address tags into {[mailingAddress]}
         html_text = consolidate_mailing_address_tags(html_text)
         
+        # STEP 2.5: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES
+        html_text = convert_aligned_label_value_pairs_to_tables(html_text)
+        
         # STEP 3: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
         html_text = fix_salutation_section(html_text)
         
@@ -880,6 +883,88 @@ def detect_nmls_mention(text):
     
     return False
 
+def detect_uhm_header(text):
+    """Detect if document uses UHM Header"""
+    text_lower = text.lower()
+    uhm_patterns = [
+        r'uhm header',
+        r'insert\(uhm header\)',
+        r'\{insert\(uhm header\)\}',
+        r'uhm loan number'
+    ]
+    
+    for pattern in uhm_patterns:
+        if re.search(pattern, text_lower):
+            return True
+    
+    return False
+
+def convert_aligned_label_value_pairs_to_tables(text):
+    """Convert consecutive label-value pairs (ending with colon) into tables
+    Pattern: Multiple consecutive divs with labels ending in colon followed by values
+    Example: SUBJECT:, UHM LOAN NUMBER:, JPMORGAN CHASE BANK, NA LOAN NUMBER:
+    """
+    import re
+    
+    # Pattern to find consecutive label-value pairs
+    # Look for sequences like:
+    # <div>SUBJECT:</div><br><div>Notice of Servicing Transfer</div><br>
+    # <div>UHM LOAN NUMBER:</div><br><div>{[M594]}</div><br>
+    # <div>JPMORGAN CHASE BANK, NA LOAN NUMBER:</div><br><div>{[M614]}</div>
+    
+    # More flexible pattern that matches label ending with colon, followed by value
+    # This pattern matches one or more label-value pairs in sequence
+    label_value_sequence = r'(<div[^>]*>([A-Z][A-Z\s,\.]+:)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>\s*(?:<br>\s*)?)+'
+    
+    def convert_to_table(match):
+        full_match = match.group(0)
+        # Extract all label-value pairs from the match
+        # Pattern: <div>LABEL:</div><br><div>VALUE</div>
+        pairs = re.findall(r'<div[^>]*>([^<]+:)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>', full_match)
+        
+        if len(pairs) >= 1:
+            # Determine table width based on label length
+            # For labels like "JPMORGAN CHASE BANK, NA LOAN NUMBER:", use wider first column
+            max_label_len = max(len(pair[0]) for pair in pairs)
+            if max_label_len > 30:
+                col_width = '45%'
+            else:
+                col_width = '20%'
+            
+            # Build table rows
+            rows = []
+            for label, value in pairs:
+                # Clean up label and value
+                label = label.strip()
+                value = value.strip()
+                
+                # Handle special cases - PROPERTY should have valign="top"
+                if 'PROPERTY' in label.upper():
+                    rows.append(f'  <td width="{col_width}" valign="top">{label}</td>\n  <td>{value}</td>')
+                else:
+                    rows.append(f'  <td width="{col_width}" valign="top">{label}</td>\n  <td>{value}</td>')
+            
+            # Build table
+            table_html = '<table width="100%"><tbody><tr>\n' + '\n</tr><tr>\n'.join(rows) + '\n</tr></tbody></table>'
+            return table_html
+        
+        return full_match
+    
+    # Apply conversion - look for sequences of 2+ label-value pairs
+    # First, try to find sequences of multiple pairs
+    text = re.sub(label_value_sequence, convert_to_table, text, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Also handle single label-value pairs for PROPERTY: pattern
+    single_property_pattern = r'<div[^>]*>(PROPERTY:)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'
+    def convert_single_property(match):
+        label = match.group(1)
+        value = match.group(2)
+        return f'<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">{label}</td>\n  <td>{value}</td>\n</tr></tbody></table>'
+    
+    text = re.sub(single_property_pattern, convert_single_property, text, flags=re.IGNORECASE)
+    
+    return text
+
 def consolidate_mailing_address_tags(text):
     """Consolidate mailing address tags (M561, M562, M563, etc.) following L001 into {[mailingAddress]}
     These tags are handled by the mailingAddress backend function, so they shouldn't be wrapped in divs.
@@ -1277,12 +1362,15 @@ def apply_comprehensive_spacing(text):
 
 def fix_header_structure_completely(text):
     """Completely replace the messy header with clean structure"""
-    # Detect header type based on H003 null conditional or NMLS mention
+    # Detect header type based on H003 null conditional, NMLS mention, or UHM header
     has_h003_null = detect_h003_null_conditional(text)
     has_nmls = detect_nmls_mention(text)
+    has_uhm = detect_uhm_header(text)
     
-    # Determine header format
-    if has_nmls:
+    # Determine header format (priority: UHM > NMLS > H003 null > tagHeader)
+    if has_uhm:
+        header_line = '<div>{Insert(UHM Header)}</div>'
+    elif has_nmls:
         header_line = '<div>{Header(NMLSID)}</div>'
     elif has_h003_null:
         header_line = '<div>{Insert(H003 TagHeader)}</div>'
@@ -1558,12 +1646,15 @@ def fix_field_names(text):
 
 def create_clean_header_structure(text):
     """Create clean header structure following universal pattern"""
-    # Detect header type based on H003 null conditional or NMLS mention
+    # Detect header type based on H003 null conditional, NMLS mention, or UHM header
     has_h003_null = detect_h003_null_conditional(text)
     has_nmls = detect_nmls_mention(text)
+    has_uhm = detect_uhm_header(text)
     
-    # Determine header format
-    if has_nmls:
+    # Determine header format (priority: UHM > NMLS > H003 null > tagHeader)
+    if has_uhm:
+        header_line = '<div>{Insert(UHM Header)}</div>'
+    elif has_nmls:
         header_line = '<div>{Header(NMLSID)}</div>'
     elif has_h003_null:
         header_line = '<div>{Insert(H003 TagHeader)}</div>'

@@ -402,6 +402,9 @@ def apply_universal_formatting_rules(html_text):
         # Remove M838, M956, M928, M929 sections early so they don't interfere
         html_text = remove_conditional_logic_sections(html_text)
         
+        # STEP 2.5.5: REMOVE PLSID COMPLETELY (metadata, should never appear in document)
+        html_text = remove_plsid_references(html_text)
+        
         # STEP 2.6: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES (before header cleanup)
         html_text = convert_aligned_label_value_pairs_to_tables(html_text)
         
@@ -922,6 +925,7 @@ def detect_uhm_header(text):
         r'uhm loan number',
         r'uhm loan number:',  # More specific pattern
         r'<div[^>]*>uhm loan number:',  # In HTML div
+        r'uhm loan number:\s+\{\[m594\]\}',  # UHM LOAN NUMBER with M594 tag
     ]
     
     for pattern in uhm_patterns:
@@ -958,22 +962,20 @@ def convert_aligned_label_value_pairs_to_tables(text):
     
     # Direct conversion for SUBJECT/UHM LOAN NUMBER/JPMORGAN pattern
     # This is a common pattern in SR121, so handle it directly
-    subject_uhm_jpmorgan_pattern = r'(<div[^>]*>SUBJECT:\s+[^<]+</div>\s*<br>\s*)' \
-                                     r'(<div[^>]*>UHM LOAN NUMBER:\s+[^<]+</div>\s*<br>\s*)' \
-                                     r'(<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+[^<]+</div>\s*<br>\s*)'
+    # Pattern must handle tabs/spaces between colon and value
+    # Match: <div>SUBJECT: 					Notice of Servicing Transfer</div><br><div>UHM LOAN NUMBER:				{[M594]}</div><br><div>JPMORGAN CHASE BANK, NA LOAN NUMBER:	{[M614]}</div>
+    # Use a more flexible pattern that matches the entire sequence
+    subject_uhm_jpmorgan_pattern = r'<div[^>]*>SUBJECT:\s+([^<]+)</div>\s*<br>\s*' \
+                                     r'<div[^>]*>UHM LOAN NUMBER:\s+([^<]+)</div>\s*<br>\s*' \
+                                     r'<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+([^<]+)</div>'
     
     def convert_subject_uhm_jpmorgan(match):
-        # Extract values from each div
-        subj_match = re.search(r'SUBJECT:\s+([^<]+)', match.group(1))
-        uhm_match = re.search(r'UHM LOAN NUMBER:\s+([^<]+)', match.group(2))
-        jpm_match = re.search(r'JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+([^<]+)', match.group(3))
+        # Values are already captured in groups 1, 2, 3
+        subj_val = match.group(1).strip()
+        uhm_val = match.group(2).strip()
+        jpm_val = match.group(3).strip()
         
-        if subj_match and uhm_match and jpm_match:
-            subj_val = subj_match.group(1).strip()
-            uhm_val = uhm_match.group(1).strip()
-            jpm_val = jpm_match.group(1).strip()
-            
-            return f'''<table width="100%"><tbody><tr>
+        return f'''<table width="100%"><tbody><tr>
   <td width="45%" valign="top">SUBJECT:</td>
   <td>{subj_val}</td>
 </tr><tr>
@@ -984,7 +986,6 @@ def convert_aligned_label_value_pairs_to_tables(text):
   <td>{jpm_val}</td>
 </tr></tbody></table>
 <br>'''
-        return match.group(0)
     
     text = re.sub(subject_uhm_jpmorgan_pattern, convert_subject_uhm_jpmorgan, text, flags=re.IGNORECASE)
     
@@ -1288,16 +1289,34 @@ def fix_servicer_table_formatting(text):
     
     return text
 
+def remove_plsid_references(text):
+    """Remove all PLSID references - this is metadata and should never appear in the document"""
+    import re
+    
+    # Remove any div containing PLSID
+    text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'<div[^>]*>.*?\{\[PLSID\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Also remove PLS-CLIENT-ID references
+    text = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    return text
+
 def remove_conditional_logic_sections(text):
     """Remove conditional logic sections like '(OR" If {[M956]}...' and business rule references"""
     import re
     
     # Remove M838 PLS-CLIENT-ID sections FIRST - handle with bold tags
     # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    # Match the exact structure: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    # More flexible - match any content with M838 and PLS-CLIENT-ID
+    # More flexible - match any content with M838 and PLS-CLIENT-ID or PLSID
     text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'<div[^>]*>.*?\{\[PLSID\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Also remove any div containing PLSID
+    text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
     # Pattern: <div>( <b><u>"OR"</u></b> If {[M956]} ...)</div>
@@ -1316,6 +1335,8 @@ def remove_conditional_logic_sections(text):
     text = re.sub(r'<div[^>]*>see[^<]*Letter Library[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*SII Confirmed[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*Additional Addresses[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Also match SII Confirmed without "see"
+    text = re.sub(r'<div[^>]*>.*?SII Confirmed.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     return text
 

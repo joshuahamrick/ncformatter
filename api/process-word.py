@@ -916,16 +916,17 @@ def detect_nmls_mention(text):
     return False
 
 def detect_uhm_header(text):
-    """Detect if document uses UHM Header"""
+    """Detect if document uses UHM Header - check BEFORE label-value conversion"""
     text_lower = text.lower()
     uhm_patterns = [
         r'uhm header',
         r'insert\(uhm header\)',
         r'\{insert\(uhm header\)\}',
-        r'uhm loan number',
+        r'uhm loan number',  # This will match even if in separate divs
         r'uhm loan number:',  # More specific pattern
         r'<div[^>]*>uhm loan number:',  # In HTML div
         r'uhm loan number:\s+\{\[m594\]\}',  # UHM LOAN NUMBER with M594 tag
+        r'uhm loan number:\s*\{\[m594\]\}',  # With optional spaces
     ]
     
     for pattern in uhm_patterns:
@@ -1293,11 +1294,17 @@ def remove_plsid_references(text):
     """Remove all PLSID references - this is metadata and should never appear in the document"""
     import re
     
+    # Remove M838 PLS-CLIENT-ID sections with exact pattern matching
+    # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # More flexible patterns
+    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*>.*?\{\[PLSID\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    # Also remove PLS-CLIENT-ID references
-    text = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     return text
 
@@ -1305,25 +1312,18 @@ def remove_conditional_logic_sections(text):
     """Remove conditional logic sections like '(OR" If {[M956]}...' and business rule references"""
     import re
     
-    # Remove M838 PLS-CLIENT-ID sections FIRST - handle with bold tags
-    # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    # Match the exact structure: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    # More flexible - match any content with M838 and PLS-CLIENT-ID or PLSID
-    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r'<div[^>]*>.*?\{\[PLSID\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    # Also remove any div containing PLSID
-    text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # M838/PLSID removal is handled by remove_plsid_references() which runs earlier
+    # This function just handles the other conditional logic sections
     
     # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
     # Pattern: <div>( <b><u>"OR"</u></b> If {[M956]} ...)</div>
     # Match: <div>( <b><u>"OR"</u></b> If {[M956]} (Foreign Address Indicator) = Y)</div>
+    # Handle various HTML entity encodings for quotes
     text = re.sub(r'<div[^>]*>\([^<]*<b><u>["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     # More flexible pattern - match OR and M956 anywhere in the div
     text = re.sub(r'<div[^>]*>\([^<]*OR[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Even more flexible - just match M956 in a div
+    text = re.sub(r'<div[^>]*>.*?\{\[M956\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove foreign address indicator sections - match any text after the tag
     # Pattern: <div>{[M928]} (Foreign Country Code)</div>
@@ -1735,12 +1735,14 @@ def apply_comprehensive_spacing(text):
     
     return text
 
-def fix_header_structure_completely(text):
+def fix_header_structure_completely(text, has_uhm=None):
     """Completely replace the messy header with clean structure"""
     # Detect header type based on H003 null conditional, NMLS mention, or UHM header
     has_h003_null = detect_h003_null_conditional(text)
     has_nmls = detect_nmls_mention(text)
-    has_uhm = detect_uhm_header(text)
+    # Use passed UHM flag if provided, otherwise detect
+    if has_uhm is None:
+        has_uhm = detect_uhm_header(text)
     
     # Determine header format (priority: UHM > NMLS > H003 null > tagHeader)
     if has_uhm:

@@ -417,8 +417,11 @@ def apply_universal_formatting_rules(html_text):
         # STEP 4: HEADER STRUCTURE CLEANUP - Additional header cleanup
         html_text = fix_header_structure_cleanup(html_text)
         
-        # STEP 5: REMOVE CONDITIONAL LOGIC SECTIONS
+        # STEP 5: REMOVE CONDITIONAL LOGIC SECTIONS (must run after header detection)
         html_text = remove_conditional_logic_sections(html_text)
+        
+        # STEP 5.5: FIX DATE FORMATTING - Remove spaces in dates (1 / 2 /202 6 -> 1/2/2026)
+        html_text = fix_date_formatting(html_text)
         
         # STEP 6: DOCUMENT TITLE AND RE TABLE - Add proper structure
         html_text = add_document_title_and_re_table(html_text)
@@ -1069,28 +1072,43 @@ def convert_aligned_label_value_pairs_to_tables(text):
     
     return text
 
+def fix_date_formatting(text):
+    """Fix date formatting - remove spaces in dates like '1 / 2 /202 6' -> '1/2/2026'"""
+    import re
+    
+    # Pattern: number space / space number space / space number
+    # Match: 1 / 2 /202 6 or 12 /3 1 /202 5
+    text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)\s*(\d+)', r'\1/\2/\3\4', text)
+    # Also handle: 1 / 2 /2026 (no space before last digit)
+    text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)', r'\1/\2/\3', text)
+    
+    return text
+
 def remove_conditional_logic_sections(text):
     """Remove conditional logic sections like '(OR" If {[M956]}...' and business rule references"""
     import re
     
     # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
     # Pattern: <div>( <b><u>"OR"</u></b> If {[M956]} ...)</div>
-    text = re.sub(r'<div[^>]*>\([^<]*<b><u>["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Handle both with and without bold tags
+    text = re.sub(r'<div[^>]*>\([^<]*<b><u>["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'<div[^>]*>\([^<]*["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
-    # Remove foreign address indicator sections - more flexible pattern
-    text = re.sub(r'<div[^>]*>\{\[M928\]\}[^<]*Foreign[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*>\{\[M929\]\}[^<]*Foreign[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Remove foreign address indicator sections - match any text after the tag
+    text = re.sub(r'<div[^>]*>\{\[M928\]\}[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>\{\[M929\]\}[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
-    # Remove business rule references - more flexible pattern
+    # Remove business rule references - match "see" followed by business rule text
     text = re.sub(r'<div[^>]*>see[^<]*Letter Library[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*SII Confirmed[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*Additional Addresses[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
-    # Remove M838 PLS-CLIENT-ID sections - more flexible pattern
+    # Remove M838 PLS-CLIENT-ID sections - handle with bold tags
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
-    # Also remove standalone M838 sections
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Also remove any div containing just M838 PLS-CLIENT-ID pattern
+    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     return text
 
@@ -1587,9 +1605,20 @@ def fix_salutation_section(text):
     """Fix the salutation section to show only one clean salutation
     Rules:
     - If Dear is followed by actual text like "Mortgagor(s)" or "Borrower(s)", keep it as-is
-    - If Dear is followed by tags like {[M558]}, convert to {[Salutation]}
+    - If Dear is followed by tags like {[M558]} or {[M558]} and {[M559]}, convert to {[Salutation]}
     """
-    # Find the first Dear occurrence
+    import re
+    
+    # Pattern to match Dear with tags: Dear {[M558]} and {[M559]}, or Dear {[M558]},
+    tag_pattern = r'<div[^>]*>Dear\s+\{\[M\d+\]\}(\s+and\s+\{\[M\d+\]\})?,?</div>'
+    tag_match = re.search(tag_pattern, text, re.IGNORECASE)
+    
+    if tag_match:
+        # Replace with clean salutation
+        clean_salutation = '<div>Dear {[Salutation]},</div>'
+        text = text[:tag_match.start()] + clean_salutation + text[tag_match.end():]
+    
+    # Find the first Dear occurrence (fallback)
     dear_match = re.search(r'<div[^>]*>Dear\s+([^<]+)</div>', text)
     if dear_match:
         dear_text = dear_match.group(1).strip()
@@ -1607,35 +1636,10 @@ def fix_salutation_section(text):
                 is_actual_text = True
                 break
         
-        # Find where the salutation section ends
-        end_patterns = [
-            r'<div[^>]*>Notice is hereby given',
-            r'<div[^>]*>To cure',
-            r'<div[^>]*>You are required',
-            r'<div[^>]*>This notice',
-            r'<div[^>]*>We are writing',
-            r'<div[^>]*>As your mortgage'
-        ]
-        
-        end_pos = None
-        for pattern in end_patterns:
-            end_match = re.search(pattern, text)
-            if end_match:
-                end_pos = end_match.start()
-                break
-        
-        if end_pos:
-            # If it's a tag, convert to {[Salutation]}, otherwise keep actual text
-            if not is_actual_text and ('{' in dear_text or '[' in dear_text):
-                clean_salutation = '<div>Dear {[Salutation]},</div>\n<br>'
-                text = text[:dear_match.start()] + clean_salutation + text[end_pos:]
-            elif is_actual_text:
-                # Keep actual text but remove duplicates
-                dear_section = text[dear_match.start():end_pos]
-                dear_lines = re.findall(r'<div[^>]*>Dear[^<]*</div>', dear_section)
-                if len(dear_lines) > 1:
-                    first_dear = dear_lines[0]
-                    text = text[:dear_match.start()] + first_dear + '\n<br>\n' + text[end_pos:]
+        # If it contains tags but isn't actual text, convert to {[Salutation]}
+        if not is_actual_text and ('{' in dear_text or '[' in dear_text):
+            clean_salutation = '<div>Dear {[Salutation]},</div>'
+            text = text[:dear_match.start()] + clean_salutation + text[dear_match.end():]
     
     return text
 

@@ -911,43 +911,63 @@ def convert_aligned_label_value_pairs_to_tables(text):
     Pattern: Multiple consecutive divs with labels ending in colon followed by values
     Example: SUBJECT:, UHM LOAN NUMBER:, JPMORGAN CHASE BANK, NA LOAN NUMBER:
     Handles tabs/spaces before colon and multiple consecutive pairs
+    When there are lots of spaces/tabs, those indicate alignment intent - use tables
     """
     import re
     
     # First, handle PROPERTY: with multiple address fields (M567, M583, M568) in separate divs
     # Pattern: PROPERTY: followed by M567, then M583, then M568 in separate divs
     # Handle spaces in field names like {[M 567]} or {[M567]}
-    property_pattern = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
+    # Match: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
+    property_pattern = r'<div[^>]*>PROPERTY:\s*\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
     def convert_property_multiple(match):
         return '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>'
     text = re.sub(property_pattern, convert_property_multiple, text, flags=re.IGNORECASE)
     
+    # Also handle PROPERTY: on one line, then M567, M583, M568 on separate lines
+    property_separate_pattern = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
+    text = re.sub(property_separate_pattern, convert_property_multiple, text, flags=re.IGNORECASE)
+    
     # Pattern to find consecutive label-value pairs
-    # Handle labels with tabs/spaces before colon: "SUBJECT: 					Notice"
-    # Match pattern: <div>LABEL: (with optional tabs/spaces and value on same line or next)</div><br><div>VALUE</div>
-    # Look for sequences of 2+ consecutive pairs
+    # Handle labels with tabs/spaces: "SUBJECT: 					Notice"
+    # When there are lots of spaces/tabs, that indicates alignment intent - use tables
+    # Match pattern: <div>LABEL: (with tabs/spaces and value on same line)</div>
     def find_and_convert_sequences(text):
         # Find all label-value pairs first
-        # Pattern 1: Value on same line after tabs: <div>SUBJECT: 					Notice of Servicing Transfer</div>
-        same_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s+)([^\t<]+)</div>'
+        # Pattern 1: Value on same line after tabs/spaces: <div>SUBJECT: 					Notice of Servicing Transfer</div>
+        # Match label ending in colon, then whitespace (tabs/spaces), then value (anything until </div>)
+        same_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s+)([^<]+)</div>'
         same_line_matches = list(re.finditer(same_line_pattern, text, flags=re.IGNORECASE))
         
         # Pattern 2: Value on next line: <div>LABEL:</div><br><div>VALUE</div>
         separate_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s*)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'
         separate_line_matches = list(re.finditer(separate_line_pattern, text, flags=re.IGNORECASE))
         
-        # Combine matches, prioritizing same-line matches
+        # Combine matches, prioritizing same-line matches (they indicate alignment intent)
         all_matches = []
         used_ranges = set()
         
-        # Add same-line matches first
+        # Add same-line matches first - these are most important as they show alignment intent
         for match in same_line_matches:
             label = match.group(1).strip()
             value = match.group(2).strip()
-            if value and len(value) > 2:  # Has actual value
-                start, end = match.span()
-                all_matches.append((start, end, label, value))
-                used_ranges.add((start, end))
+            # Check if there are significant spaces/tabs between colon and value (indicates alignment intent)
+            # The value group includes the whitespace, so check if there are 3+ spaces or any tabs
+            full_match_text = match.group(0)
+            colon_pos = full_match_text.find(':')
+            if colon_pos > 0:
+                after_colon = full_match_text[colon_pos+1:colon_pos+200]  # Check first 200 chars after colon
+                # Count consecutive spaces/tabs - if 3+ spaces or any tabs, it's alignment intent
+                has_tabs = '\t' in after_colon
+                # Check for 3+ consecutive spaces
+                has_multiple_spaces = bool(re.search(r' {3,}', after_colon))
+                # Value should be non-empty and meaningful (not just whitespace)
+                if value and len(value.strip()) > 2 and (has_tabs or has_multiple_spaces):
+                    start, end = match.span()
+                    # Clean value - remove leading whitespace
+                    clean_value = value.strip()
+                    all_matches.append((start, end, label, clean_value))
+                    used_ranges.add((start, end))
         
         # Add separate line matches if not already covered
         for match in separate_line_matches:
@@ -1054,19 +1074,23 @@ def remove_conditional_logic_sections(text):
     import re
     
     # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
-    text = re.sub(r'<div[^>]*>\(.*?<b><u>["\']OR["\']</u></b>.*?If.*?\{\[M956\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Pattern: <div>( <b><u>"OR"</u></b> If {[M956]} ...)</div>
+    text = re.sub(r'<div[^>]*>\([^<]*<b><u>["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
-    # Remove foreign address indicator sections
-    text = re.sub(r'<div[^>]*>\{\[M928\]\}.*?Foreign Country Code.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*>\{\[M929\]\}.*?Foreign Postal Code.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Remove foreign address indicator sections - more flexible pattern
+    text = re.sub(r'<div[^>]*>\{\[M928\]\}[^<]*Foreign[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>\{\[M929\]\}[^<]*Foreign[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
-    # Remove business rule references
-    text = re.sub(r'<div[^>]*>see.*?Letter Library Business Rules.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*>see.*?SII Confirmed.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*>see.*?Additional Addresses.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Remove business rule references - more flexible pattern
+    text = re.sub(r'<div[^>]*>see[^<]*Letter Library[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>see[^<]*SII Confirmed[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>see[^<]*Additional Addresses[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
-    # Remove M838 PLS-CLIENT-ID sections
-    text = re.sub(r'<div[^>]*>\(.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Remove M838 PLS-CLIENT-ID sections - more flexible pattern
+    text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    
+    # Also remove standalone M838 sections
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
     return text
 

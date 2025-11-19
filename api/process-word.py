@@ -398,8 +398,12 @@ def apply_universal_formatting_rules(html_text):
         # STEP 2: MAILING ADDRESS CLEANUP - Consolidate mailing address tags into {[mailingAddress]}
         html_text = consolidate_mailing_address_tags(html_text)
         
-        # STEP 2.5: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES
+        # STEP 2.5: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES (before header cleanup)
         html_text = convert_aligned_label_value_pairs_to_tables(html_text)
+        
+        # STEP 2.6: FIX HEADER TYPE DETECTION (must run early to detect UHM)
+        # Check for UHM header early - look for "UHM LOAN NUMBER" in the text
+        html_text = fix_header_structure_completely(html_text)
         
         # STEP 3: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
         html_text = fix_salutation_section(html_text)
@@ -410,13 +414,16 @@ def apply_universal_formatting_rules(html_text):
         # STEP 3.5: ADDITIONAL CLEANUP - Clean up remaining patterns
         html_text = fix_remaining_patterns(html_text)
         
-        # STEP 4: HEADER STRUCTURE - Clean up header organization
+        # STEP 4: HEADER STRUCTURE CLEANUP - Additional header cleanup
         html_text = fix_header_structure_cleanup(html_text)
         
-        # STEP 5: DOCUMENT TITLE AND RE TABLE - Add proper structure
+        # STEP 5: REMOVE CONDITIONAL LOGIC SECTIONS
+        html_text = remove_conditional_logic_sections(html_text)
+        
+        # STEP 6: DOCUMENT TITLE AND RE TABLE - Add proper structure
         html_text = add_document_title_and_re_table(html_text)
         
-        # STEP 6: COMPREHENSIVE STRUCTURE TRANSFORMATION - Achieve 95% accuracy
+        # STEP 7: COMPREHENSIVE STRUCTURE TRANSFORMATION - Achieve 95% accuracy
         html_text = transform_to_target_format(html_text)
         
     except Exception as e:
@@ -903,65 +910,163 @@ def convert_aligned_label_value_pairs_to_tables(text):
     """Convert consecutive label-value pairs (ending with colon) into tables
     Pattern: Multiple consecutive divs with labels ending in colon followed by values
     Example: SUBJECT:, UHM LOAN NUMBER:, JPMORGAN CHASE BANK, NA LOAN NUMBER:
+    Handles tabs/spaces before colon and multiple consecutive pairs
     """
     import re
     
+    # First, handle PROPERTY: with multiple address fields (M567, M583, M568) in separate divs
+    # Pattern: PROPERTY: followed by M567, then M583, then M568 in separate divs
+    # Handle spaces in field names like {[M 567]} or {[M567]}
+    property_pattern = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
+    def convert_property_multiple(match):
+        return '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>'
+    text = re.sub(property_pattern, convert_property_multiple, text, flags=re.IGNORECASE)
+    
     # Pattern to find consecutive label-value pairs
-    # Look for sequences like:
-    # <div>SUBJECT:</div><br><div>Notice of Servicing Transfer</div><br>
-    # <div>UHM LOAN NUMBER:</div><br><div>{[M594]}</div><br>
-    # <div>JPMORGAN CHASE BANK, NA LOAN NUMBER:</div><br><div>{[M614]}</div>
-    
-    # More flexible pattern that matches label ending with colon, followed by value
-    # This pattern matches one or more label-value pairs in sequence
-    label_value_sequence = r'(<div[^>]*>([A-Z][A-Z\s,\.]+:)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>\s*(?:<br>\s*)?)+'
-    
-    def convert_to_table(match):
-        full_match = match.group(0)
-        # Extract all label-value pairs from the match
-        # Pattern: <div>LABEL:</div><br><div>VALUE</div>
-        pairs = re.findall(r'<div[^>]*>([^<]+:)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>', full_match)
+    # Handle labels with tabs/spaces before colon: "SUBJECT: 					Notice"
+    # Match pattern: <div>LABEL: (with optional tabs/spaces and value on same line or next)</div><br><div>VALUE</div>
+    # Look for sequences of 2+ consecutive pairs
+    def find_and_convert_sequences(text):
+        # Find all label-value pairs first
+        # Pattern 1: Value on same line after tabs: <div>SUBJECT: 					Notice of Servicing Transfer</div>
+        same_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s+)([^\t<]+)</div>'
+        same_line_matches = list(re.finditer(same_line_pattern, text, flags=re.IGNORECASE))
         
-        if len(pairs) >= 1:
-            # Determine table width based on label length
-            # For labels like "JPMORGAN CHASE BANK, NA LOAN NUMBER:", use wider first column
-            max_label_len = max(len(pair[0]) for pair in pairs)
-            if max_label_len > 30:
-                col_width = '45%'
+        # Pattern 2: Value on next line: <div>LABEL:</div><br><div>VALUE</div>
+        separate_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s*)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'
+        separate_line_matches = list(re.finditer(separate_line_pattern, text, flags=re.IGNORECASE))
+        
+        # Combine matches, prioritizing same-line matches
+        all_matches = []
+        used_ranges = set()
+        
+        # Add same-line matches first
+        for match in same_line_matches:
+            label = match.group(1).strip()
+            value = match.group(2).strip()
+            if value and len(value) > 2:  # Has actual value
+                start, end = match.span()
+                all_matches.append((start, end, label, value))
+                used_ranges.add((start, end))
+        
+        # Add separate line matches if not already covered
+        for match in separate_line_matches:
+            label = match.group(1).strip()
+            value = match.group(2).strip()
+            if value and len(value) > 2:
+                start, end = match.span()
+                # Check if this range overlaps with existing match
+                overlap = False
+                for used_start, used_end in used_ranges:
+                    if not (end < used_start or start > used_end):
+                        overlap = True
+                        break
+                if not overlap:
+                    all_matches.append((start, end, label, value))
+                    used_ranges.add((start, end))
+        
+        if len(all_matches) < 2:
+            return text
+        
+        # Sort by position
+        all_matches.sort(key=lambda x: x[0])
+        
+        # Group consecutive pairs together
+        sequences = []
+        current_sequence = []
+        
+        for i, (start, end, label, value) in enumerate(all_matches):
+            if i == 0:
+                current_sequence = [(start, end, label, value)]
             else:
-                col_width = '20%'
-            
-            # Build table rows
-            rows = []
-            for label, value in pairs:
-                # Clean up label and value
-                label = label.strip()
-                value = value.strip()
-                
-                # Handle special cases - PROPERTY should have valign="top"
-                if 'PROPERTY' in label.upper():
-                    rows.append(f'  <td width="{col_width}" valign="top">{label}</td>\n  <td>{value}</td>')
+                # Check if this match is consecutive (within reasonable distance)
+                prev_end = all_matches[i-1][1]
+                curr_start = start
+                # If within 300 chars, consider it consecutive
+                if curr_start - prev_end < 300:
+                    current_sequence.append((start, end, label, value))
                 else:
-                    rows.append(f'  <td width="{col_width}" valign="top">{label}</td>\n  <td>{value}</td>')
-            
-            # Build table
-            table_html = '<table width="100%"><tbody><tr>\n' + '\n</tr><tr>\n'.join(rows) + '\n</tr></tbody></table>'
-            return table_html
+                    if len(current_sequence) >= 2:
+                        sequences.append(current_sequence)
+                    current_sequence = [(start, end, label, value)]
         
-        return full_match
+        # Add last sequence
+        if len(current_sequence) >= 2:
+            sequences.append(current_sequence)
+        
+        # Convert sequences to tables (working backwards to preserve indices)
+        for sequence in reversed(sequences):
+            if len(sequence) >= 2:
+                start_pos = sequence[0][0]
+                end_pos = sequence[-1][1]
+                
+                # Extract pairs
+                pairs = []
+                for _, _, label, value in sequence:
+                    # Clean up label (remove extra spaces/tabs)
+                    label = re.sub(r'\s+', ' ', label).strip()
+                    value = value.strip()
+                    pairs.append((label, value))
+                
+                # Determine table width based on label length
+                max_label_len = max(len(pair[0]) for pair in pairs)
+                if max_label_len > 30:
+                    col_width = '45%'
+                else:
+                    col_width = '20%'
+                
+                # Build table rows
+                rows = []
+                for label, value in pairs:
+                    rows.append(f'  <td width="{col_width}" valign="top">{label}</td>\n  <td>{value}</td>')
+                
+                # Build table
+                table_html = '<table width="100%"><tbody><tr>\n' + '\n</tr><tr>\n'.join(rows) + '\n</tr></tbody></table>'
+                
+                # Replace in text
+                text = text[:start_pos] + table_html + text[end_pos:]
+        
+        return text
     
-    # Apply conversion - look for sequences of 2+ label-value pairs
-    # First, try to find sequences of multiple pairs
-    text = re.sub(label_value_sequence, convert_to_table, text, flags=re.IGNORECASE | re.MULTILINE)
+    text = find_and_convert_sequences(text)
     
-    # Also handle single label-value pairs for PROPERTY: pattern
-    single_property_pattern = r'<div[^>]*>(PROPERTY:)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'
+    # Also handle single PROPERTY: pattern (if not already converted)
+    single_property_pattern = r'<div[^>]*>(PROPERTY:\s*)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'
     def convert_single_property(match):
-        label = match.group(1)
-        value = match.group(2)
+        label = match.group(1).strip()
+        value = match.group(2).strip()
+        # Check if value contains M567, M583, M568 - if so, use Compress
+        if 'M567' in value or 'M583' in value or 'M568' in value:
+            # Extract field references
+            m567_match = re.search(r'\{\[M\s*567\]\}', value)
+            m583_match = re.search(r'\{\[M583\]\}', value)
+            m568_match = re.search(r'\{\[M\s*568\]\}', value)
+            if m567_match and m583_match and m568_match:
+                value = '{Compress({[M567]}|{[M583]}|{[M568]})}'
         return f'<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">{label}</td>\n  <td>{value}</td>\n</tr></tbody></table>'
     
     text = re.sub(single_property_pattern, convert_single_property, text, flags=re.IGNORECASE)
+    
+    return text
+
+def remove_conditional_logic_sections(text):
+    """Remove conditional logic sections like '(OR" If {[M956]}...' and business rule references"""
+    import re
+    
+    # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
+    text = re.sub(r'<div[^>]*>\(.*?<b><u>["\']OR["\']</u></b>.*?If.*?\{\[M956\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove foreign address indicator sections
+    text = re.sub(r'<div[^>]*>\{\[M928\]\}.*?Foreign Country Code.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>\{\[M929\]\}.*?Foreign Postal Code.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    
+    # Remove business rule references
+    text = re.sub(r'<div[^>]*>see.*?Letter Library Business Rules.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>see.*?SII Confirmed.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>see.*?Additional Addresses.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    
+    # Remove M838 PLS-CLIENT-ID sections
+    text = re.sub(r'<div[^>]*>\(.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     return text
 

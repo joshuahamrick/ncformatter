@@ -1049,8 +1049,28 @@ def convert_aligned_label_value_pairs_to_tables(text):
                     all_matches.append((start, end, label, value))
                     used_ranges.add((start, end))
         
+        # For specific labels (SUBJECT, UHM LOAN NUMBER, JPMORGAN), always convert if we have 2+
+        # Check if we have specific labels
+        specific_labels = ['SUBJECT', 'UHM LOAN NUMBER', 'JPMORGAN CHASE BANK, NA LOAN NUMBER']
+        has_specific_labels = any(any(sl in lbl.upper() for sl in specific_labels) for _, _, lbl, _ in all_matches)
+        
+        # If we have specific labels but less than 2 matches, still try to convert if we have at least 1
+        # But we need at least 2 for a table
         if len(all_matches) < 2:
-            return text
+            # If we have specific labels, try to find them even if spacing detection failed
+            if has_specific_labels:
+                # Re-scan for specific labels with more lenient matching
+                specific_pattern = r'<div[^>]*>(SUBJECT|UHM LOAN NUMBER|JPMORGAN CHASE BANK, NA LOAN NUMBER):\s+([^<]+)</div>'
+                specific_found = list(re.finditer(specific_pattern, text, flags=re.IGNORECASE))
+                if len(specific_found) >= 2:
+                    # Convert these to matches
+                    for match in specific_found:
+                        label = match.group(1).strip() + ':'
+                        value = match.group(2).strip()
+                        if value:
+                            all_matches.append((match.start(), match.end(), label, value))
+            else:
+                return text
         
         # Sort by position
         all_matches.sort(key=lambda x: x[0])

@@ -268,8 +268,11 @@ def process_section(paragraphs, section_type):
         return ''
     
     if section_type == 'header':
-        # Create clean header structure
-        return '''<div>{Insert(H003 TagHeader)}</div>
+        # Note: Header type detection should be done at document level, not here
+        # This is a fallback that uses H003, but the actual header type will be determined
+        # by fix_header_structure_completely() based on H003 null conditional or NMLS mention
+        # Default to tagHeader unless H003 null conditional is detected
+        return '''<div>{[tagHeader]}</div>
 <br>
 <div>{[L001]}</div>
 <br>
@@ -392,10 +395,13 @@ def apply_universal_formatting_rules(html_text):
         else:
             html_text = '<div style="color: green;">✓ Simple field cleanup worked!</div>' + html_text
         
-        # STEP 2: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
+        # STEP 2: MAILING ADDRESS CLEANUP - Consolidate mailing address tags into {[mailingAddress]}
+        html_text = consolidate_mailing_address_tags(html_text)
+        
+        # STEP 3: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
         html_text = fix_salutation_section(html_text)
         
-        # STEP 3: PAYMENT INFORMATION CLEANUP - Clean up remaining payment descriptions
+        # STEP 4: PAYMENT INFORMATION CLEANUP - Clean up remaining payment descriptions
         html_text = fix_payment_information_cleanup(html_text)
         
         # STEP 3.5: ADDITIONAL CLEANUP - Clean up remaining patterns
@@ -832,6 +838,95 @@ def fix_remaining_patterns(text):
     
     return text
 
+def detect_h003_null_conditional(text):
+    """Detect if document has H003 null conditional logic (IF H003 is null, then suppress print)
+    Returns True only if there's explicit conditional logic checking for H003 being null/empty
+    """
+    text_lower = text.lower()
+    # Check for patterns like:
+    # - "IF {[H003]} = null" or "IF {[H003]} = '*'" or "IF {[H003]} = ''"
+    # - "then suppress print" in context of H003
+    # - "(IF {[H003]} = 'NULL' or '*'; then suppress print"
+    h003_null_patterns = [
+        r'if\s*\{\[h003\]\}\s*=\s*(null|\*|\'\*\'|\'\'\'|\"\"\")',
+        r'if\s*\{\[h003\]\}\s*=\s*[\'"]\s*[\'"]',
+        r'\(if\s*\{\[h003\]\}',
+        r'h003.*null.*suppress|suppress.*h003.*null',
+        r'h003.*=.*[\'"]\*[\'"].*suppress|suppress.*h003.*=.*[\'"]\*[\'"]'
+    ]
+    
+    for pattern in h003_null_patterns:
+        if re.search(pattern, text_lower):
+            return True
+    
+    return False
+
+def detect_nmls_mention(text):
+    """Detect if document explicitly mentions NMLS/NMLID"""
+    text_lower = text.lower()
+    nmls_patterns = [
+        r'nmlsid',
+        r'nmlid',
+        r'companyreturnadd',
+        r'\{\[plsmatrix\.nmlsid\]\}',
+        r'\{\[plsmatrix\.nmlid\]\}',
+        r'<nmlid>',
+        r'<nmlsid>'
+    ]
+    
+    for pattern in nmls_patterns:
+        if re.search(pattern, text_lower):
+            return True
+    
+    return False
+
+def consolidate_mailing_address_tags(text):
+    """Consolidate mailing address tags (M561, M562, M563, etc.) following L001 into {[mailingAddress]}
+    These tags are handled by the mailingAddress backend function, so they shouldn't be wrapped in divs.
+    We need to find patterns where L001 is followed by mailing address tags and replace them with {[mailingAddress]}.
+    """
+    # Pattern 1: L001 followed by mailing address tags in separate divs
+    # Match: <div>{[L001]}</div><br>...<div>{[M561]}</div><br><div>{[M562]}</div>... etc.
+    # Replace with: <div>{[L001]}</div><br><div>{[mailingAddress]}</div>
+    
+    # Find L001 followed by mailing address tags
+    mailing_address_pattern = r'(<div[^>]*>\{\[L001\]\}</div>\s*<br>\s*)'
+    mailing_address_pattern += r'(<div[^>]*>\{\[M561\]\}</div>\s*<br>\s*)?'
+    mailing_address_pattern += r'(<div[^>]*>\{\[M562\]\}</div>\s*<br>\s*)?'
+    mailing_address_pattern += r'(<div[^>]*>\{\[M563\]\}</div>\s*<br>\s*)?'
+    mailing_address_pattern += r'(<div[^>]*>\{\[M564\]\}</div>\s*<br>\s*)?'
+    mailing_address_pattern += r'(<div[^>]*>\{\[M565\]\}</div>\s*<br>\s*)?'
+    mailing_address_pattern += r'(<div[^>]*>\{\[M566\]\}</div>\s*<br>\s*)?'
+    
+    def replace_mailing_address(match):
+        l001_part = match.group(1)
+        # Check if any mailing address tags were found
+        has_mailing_tags = any(match.group(i) for i in range(2, 8))
+        
+        if has_mailing_tags:
+            # Replace with L001 + mailingAddress
+            return l001_part + '<div>{[mailingAddress]}</div>'
+        return match.group(0)
+    
+    text = re.sub(mailing_address_pattern, replace_mailing_address, text, flags=re.IGNORECASE)
+    
+    # Pattern 2: Ensure {[mailingAddress]} is followed by 4-5 <br> tags
+    # Replace any {[mailingAddress]} followed by less than 4 <br> tags with exactly 5 <br> tags
+    text = re.sub(
+        r'(<div[^>]*>\{\[mailingAddress\]\}</div>)\s*(<br>\s*){0,3}(?!<br>)',
+        r'\1\n<br><br><br><br><br>\n',
+        text
+    )
+    
+    # Ensure consistent spacing: exactly 5 <br> tags after mailingAddress
+    text = re.sub(
+        r'(<div[^>]*>\{\[mailingAddress\]\}</div>)\s*(<br>\s*){6,}',
+        r'\1\n<br><br><br><br><br>\n',
+        text
+    )
+    
+    return text
+
 def fix_header_structure_cleanup(text):
     """Clean up header structure and organization"""
     import re
@@ -1182,12 +1277,33 @@ def apply_comprehensive_spacing(text):
 
 def fix_header_structure_completely(text):
     """Completely replace the messy header with clean structure"""
-    # Find the start of the document (first tagHeader with any content after it)
-    # More flexible pattern to handle {[tagHeader]}(Company Address Line 1)
-    start_match = re.search(r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>', text)
-    if not start_match:
-        # Try alternative pattern
-        start_match = re.search(r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>', text)
+    # Detect header type based on H003 null conditional or NMLS mention
+    has_h003_null = detect_h003_null_conditional(text)
+    has_nmls = detect_nmls_mention(text)
+    
+    # Determine header format
+    if has_nmls:
+        header_line = '<div>{Header(NMLSID)}</div>'
+    elif has_h003_null:
+        header_line = '<div>{Insert(H003 TagHeader)}</div>'
+    else:
+        header_line = '<div>{[tagHeader]}</div>'
+    
+    # Find the start of the document (first tagHeader/header with any content after it)
+    start_patterns = [
+        r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>',
+        r'<div[^>]*>\{Insert\(H003 TagHeader\)\}[^<]*</div>',
+        r'<div[^>]*>\{Header\(NMLSID\)\}[^<]*</div>',
+        r'<div[^>]*>\{\[H002\]\}[^<]*</div>',
+        r'<div[^>]*>\{\[H003\]\}[^<]*</div>'
+    ]
+    
+    start_match = None
+    for pattern in start_patterns:
+        start_match = re.search(pattern, text)
+        if start_match:
+            break
+    
     if not start_match:
         return text
     
@@ -1196,7 +1312,9 @@ def fix_header_structure_completely(text):
         r'<div[^>]*>Borrower Name:',
         r'<div[^>]*>Dear',
         r'<div[^>]*>Notice is hereby given',
-        r'<div[^>]*>To cure'
+        r'<div[^>]*>To cure',
+        r'<div[^>]*>Loan Number:',
+        r'<div[^>]*>RE:'
     ]
     
     end_pos = None
@@ -1207,12 +1325,12 @@ def fix_header_structure_completely(text):
             break
     
     if end_pos:
-        # Replace the entire header section
-        clean_header = '''<div>{Insert(H003 TagHeader)}</div>
+        # Replace the entire header section with proper format
+        clean_header = f'''{header_line}
 <br>
-<div>{[L001]}</div>
+<div>{{[L001]}}</div>
 <br>
-<div>{[mailingAddress]}</div>
+<div>{{[mailingAddress]}}</div>
 <br><br><br><br><br>'''
         
         text = text[:start_match.start()] + clean_header + text[end_pos:]
@@ -1249,15 +1367,37 @@ def add_document_title_and_re_table(text):
     return text
 
 def fix_salutation_section(text):
-    """Fix the salutation section to show only one clean salutation"""
-    # Find the first Dear and remove all the multiple options
-    dear_start = re.search(r'<div[^>]*>Dear', text)
-    if dear_start:
+    """Fix the salutation section to show only one clean salutation
+    Rules:
+    - If Dear is followed by actual text like "Mortgagor(s)" or "Borrower(s)", keep it as-is
+    - If Dear is followed by tags like {[M558]}, convert to {[Salutation]}
+    """
+    # Find the first Dear occurrence
+    dear_match = re.search(r'<div[^>]*>Dear\s+([^<]+)</div>', text)
+    if dear_match:
+        dear_text = dear_match.group(1).strip()
+        
+        # Check if it's actual text (like "Mortgagor(s)" or "Borrower(s)") or a tag
+        is_actual_text = False
+        actual_text_patterns = [
+            r'^mortgagor',
+            r'^borrower',
+            r'^mortgager'
+        ]
+        
+        for pattern in actual_text_patterns:
+            if re.match(pattern, dear_text, re.IGNORECASE):
+                is_actual_text = True
+                break
+        
         # Find where the salutation section ends
         end_patterns = [
             r'<div[^>]*>Notice is hereby given',
             r'<div[^>]*>To cure',
-            r'<div[^>]*>You are required'
+            r'<div[^>]*>You are required',
+            r'<div[^>]*>This notice',
+            r'<div[^>]*>We are writing',
+            r'<div[^>]*>As your mortgage'
         ]
         
         end_pos = None
@@ -1268,9 +1408,17 @@ def fix_salutation_section(text):
                 break
         
         if end_pos:
-            # Replace all the Dear options with a clean salutation
-            clean_salutation = '<div>Dear {[Salutation]},</div>\n<br>'
-            text = text[:dear_start.start()] + clean_salutation + text[end_pos:]
+            # If it's a tag, convert to {[Salutation]}, otherwise keep actual text
+            if not is_actual_text and ('{' in dear_text or '[' in dear_text):
+                clean_salutation = '<div>Dear {[Salutation]},</div>\n<br>'
+                text = text[:dear_match.start()] + clean_salutation + text[end_pos:]
+            elif is_actual_text:
+                # Keep actual text but remove duplicates
+                dear_section = text[dear_match.start():end_pos]
+                dear_lines = re.findall(r'<div[^>]*>Dear[^<]*</div>', dear_section)
+                if len(dear_lines) > 1:
+                    first_dear = dear_lines[0]
+                    text = text[:dear_match.start()] + first_dear + '\n<br>\n' + text[end_pos:]
     
     return text
 
@@ -1410,12 +1558,24 @@ def fix_field_names(text):
 
 def create_clean_header_structure(text):
     """Create clean header structure following universal pattern"""
+    # Detect header type based on H003 null conditional or NMLS mention
+    has_h003_null = detect_h003_null_conditional(text)
+    has_nmls = detect_nmls_mention(text)
+    
+    # Determine header format
+    if has_nmls:
+        header_line = '<div>{Header(NMLSID)}</div>'
+    elif has_h003_null:
+        header_line = '<div>{Insert(H003 TagHeader)}</div>'
+    else:
+        header_line = '<div>{[tagHeader]}</div>'
+    
     # Universal header pattern from analysis
-    header_html = '''<div>{Insert(H003 TagHeader)}</div>
+    header_html = f'''{header_line}
 <br>
-<div>{[L001]}</div>
+<div>{{[L001]}}</div>
 <br>
-<div>{[mailingAddress]}</div>
+<div>{{[mailingAddress]}}</div>
 <br><br><br><br><br>'''
     
     # Find the start of the messy header and replace everything until "Notice of Intention"
@@ -1643,41 +1803,94 @@ def create_borrower_table(text):
     return text
 
 def format_salutation_universal(text):
-    """Format salutation following universal pattern"""
-    # Find the first "Dear" and replace all multiple options with clean salutation
+    """Format salutation following universal pattern
+    Rules:
+    - If Dear is followed by actual text like "Mortgagor(s)" or "Borrower(s)", keep it as-is
+    - If Dear is followed by tags like {[M558]}, convert to {[Salutation]}
+    - Backend handles salutation logic for tags, so we use {[Salutation]} for tags
+    """
+    # Find the first "Dear" occurrence
     dear_patterns = [
-        r'<div[^>]*>Dear',
-        r'<div>Dear',
-        r'Dear'
+        r'<div[^>]*>Dear\s+([^<]+)</div>',
+        r'<div>Dear\s+([^<]+)</div>',
+        r'Dear\s+([^<]+)'
     ]
     
-    dear_start = None
+    dear_match = None
     for pattern in dear_patterns:
-        dear_start = re.search(pattern, text)
-        if dear_start:
+        dear_match = re.search(pattern, text)
+        if dear_match:
             break
     
-    if dear_start:
-        # Find where all the Dear options end (before main content)
-        end_patterns = [
-            r'<div[^>]*>Notice is hereby given',
-            r'<div[^>]*>To cure',
-            r'<div[^>]*>You are required',
-            r'<div[^>]*>This notice',
-            r'<div[^>]*>We are writing'
+    if dear_match:
+        dear_text = dear_match.group(1).strip()
+        
+        # Check if it's actual text (like "Mortgagor(s)" or "Borrower(s)") or a tag
+        is_actual_text = False
+        actual_text_patterns = [
+            r'^mortgagor',
+            r'^borrower',
+            r'^mortgager'
         ]
         
-        end_pos = None
-        for pattern in end_patterns:
-            end_match = re.search(pattern, text)
-            if end_match:
-                end_pos = end_match.start()
+        for pattern in actual_text_patterns:
+            if re.match(pattern, dear_text, re.IGNORECASE):
+                is_actual_text = True
                 break
         
-        if end_pos:
-            # Replace all the Dear options with a clean salutation
-            salutation_html = '<div>Dear {[Salutation]},</div>'
-            text = text[:dear_start.start()] + salutation_html + text[end_pos:]
+        # If it's a tag (contains {[ or }]), convert to {[Salutation]}
+        # If it's actual text, keep it as-is
+        if not is_actual_text and ('{' in dear_text or '[' in dear_text):
+            # Find where all the Dear options end (before main content)
+            end_patterns = [
+                r'<div[^>]*>Notice is hereby given',
+                r'<div[^>]*>To cure',
+                r'<div[^>]*>You are required',
+                r'<div[^>]*>This notice',
+                r'<div[^>]*>We are writing',
+                r'<div[^>]*>As your mortgage'
+            ]
+            
+            end_pos = None
+            for pattern in end_patterns:
+                end_match = re.search(pattern, text)
+                if end_match:
+                    end_pos = end_match.start()
+                    break
+            
+            if end_pos:
+                # Replace all the Dear options with a clean salutation
+                salutation_html = '<div>Dear {[Salutation]},</div>'
+                text = text[:dear_match.start()] + salutation_html + text[end_pos:]
+        # If it's actual text, we keep it but clean up any duplicates
+        elif is_actual_text:
+            # Find where all the Dear options end (before main content)
+            end_patterns = [
+                r'<div[^>]*>Notice is hereby given',
+                r'<div[^>]*>To cure',
+                r'<div[^>]*>You are required',
+                r'<div[^>]*>This notice',
+                r'<div[^>]*>We are writing',
+                r'<div[^>]*>As your mortgage'
+            ]
+            
+            end_pos = None
+            for pattern in end_patterns:
+                end_match = re.search(pattern, text)
+                if end_match:
+                    end_pos = end_match.start()
+                    break
+            
+            if end_pos:
+                # Keep the actual text but remove duplicates
+                # Find all Dear occurrences between start and end
+                dear_section = text[dear_match.start():end_pos]
+                # Remove duplicate Dear lines, keep only the first one
+                dear_lines = re.findall(r'<div[^>]*>Dear[^<]*</div>', dear_section)
+                if len(dear_lines) > 1:
+                    # Replace section with just the first Dear line
+                    first_dear = dear_lines[0]
+                    text = text[:dear_match.start()] + first_dear + '\n<br>\n' + text[end_pos:]
     
     # Also clean up any remaining broken Dear patterns
     text = re.sub(r'<div[^>]*>Dear[^<]*</div>\s*<br>\s*<div[^>]*></div>\s*<br>\s*', '', text)

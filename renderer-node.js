@@ -410,9 +410,22 @@ function getHeaderType(ir, htmlOutput) {
 	const headerTexts = (ir.meta && ir.meta.headerTexts) || [];
 	const headerTextCombined = headerTexts.join(' ').toLowerCase();
 	
-	// Check for H003 references (conditional logic or explicit mentions)
-	if (allText.includes('h003') || allText.includes('{insert(h003') || allText.includes('insert(h003')) {
-		return 'H003';
+	// IMPORTANT: Only use H003 header when checking if H003 is null (conditional logic)
+	// Check for H003 null conditional patterns (IF H003 = null, then suppress print)
+	const h003NullPatterns = [
+		/if\s*\{\[h003\]\}\s*=\s*(null|\*|'\\*'|''|""")/i,
+		/if\s*\{\[h003\]\}\s*=\s*['"]\s*['"]/i,
+		/\(if\s*\{\[h003\]\}/i,
+		/h003.*null.*suppress|suppress.*h003.*null/i,
+		/h003.*=.*['"]\*['"].*suppress|suppress.*h003.*=.*['"]\*['"]/i
+	];
+	
+	let hasH003Null = false;
+	for (const pattern of h003NullPatterns) {
+		if (pattern.test(allText) || pattern.test(htmlLower) || pattern.test(headerTextCombined)) {
+			hasH003Null = true;
+			break;
+		}
 	}
 	
 	// Check for NMLID/NMLSID placeholders in the document header
@@ -420,14 +433,28 @@ function getHeaderType(ir, htmlOutput) {
 	// Also check for CompanyReturnAdd placeholders which indicate header structure
 	// Check header texts, IR text, and HTML output
 	const combinedText = headerTextCombined + ' ' + allText + ' ' + htmlLower;
-	if (combinedText.includes('nmlid') || combinedText.includes('nmlsid') || 
-	    combinedText.includes('companyreturnadd') || 
-	    combinedText.includes('{[plsmatrix.nmlid]}') || combinedText.includes('{[plsmatrix.nmlsid]}')) {
-		return 'NMLSID';
+	const nmlsPatterns = [
+		'nmlsid',
+		'nmlid',
+		'companyreturnadd',
+		'{[plsmatrix.nmlsid]}',
+		'{[plsmatrix.nmlid]}',
+		'<nmlid>',
+		'<nmlsid>'
+	];
+	
+	let hasNMLS = false;
+	for (const pattern of nmlsPatterns) {
+		if (combinedText.includes(pattern)) {
+			hasNMLS = true;
+			break;
+		}
 	}
 	
-	// Check for H003 conditional patterns in text
-	if (allText.includes('if {[h003]}') || allText.includes('then suppress print')) {
+	// Determine header type: NMLS > H003 null conditional > TagHeader (default)
+	if (hasNMLS) {
+		return 'NMLSID';
+	} else if (hasH003Null) {
 		return 'H003';
 	}
 	

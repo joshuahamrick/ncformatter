@@ -1,0 +1,86 @@
+{Font(Calibri|11pt)}
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<div><table width="100%"><tbody><tr>
+  <td style="width: 3%">RE:</td>
+  <td style="width: 17%">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td></td>
+  <td style="vertical-align: top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table></div>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Thank you for contacting us about the mortgage. Based on a careful review of the information you provided to us, you have been approved for a Forbearance Plan due to unemployment.   This Forbearance Plan is a temporary suspension of the mortgage payments and is intended to allow you the time and flexibility to manage the financial challenges affecting your ability to pay the mortgage. As a result of making suspended payments, you will become delinquent or more delinquent on the mortgage and your credit score may be negatively impacted. It is important that you read this information in its entirety so that you completely understand the actions you need to take in connection with this forbearance plan.</div>
+<br>
+
+<div>As of {Date({[L001]}|MMMM dd, yyyy)}, the loan is due for the {Date({[M026]}|MMMM dd, yyyy)} through {DateAdd({[L009]}|-1|MMMM dd, yyyy|Month)} monthly payments and the total past due amount on the mortgage is {If({Number({[M585]})} &gt; 0)}{Math({[C001]}+{[M585]}-{[M013]}|Money)}{Else}{Math({[C001]}-{[M013]}|Money)}{End If}. This amount includes all past due payments of interest, principal and escrow (if applicable), as well as late charges and amounts that we paid on your behalf (“Servicer Advances”).</div>
+<br>
+<b><u><div>Forbearance Plan Terms:</div></u></b>
+<div>Under the terms of the plan, the payments will be suspended for a period of time, and you must make the remaining plan payments by the date and in the amount shown in the below table. After which, the Forbearance Plan will expire, unless earlier revised or terminated due to a change in your financial circumstances. You may pre-pay the delinquency at any time.</div>
+<br>
+<div>{Q189V2()}</div>
+<br>
+<div>During this time, you do not need to make any mortgage payments (“Suspended Payments”). The amount of the Suspended Payments will be added to the total amount past due.  At the end of the Forbearance Plan period, you can reapply for loss mitigation which could change the terms of the loan, or you can pay the total past due amount and reinstate the loan.</div>
+<br>
+<b><u><div>Additional Terms of the Plan:</div></u></b>
+<table class="table table-bordered" width="100%" style="margin-left: 20px"><tbody>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>If your financial situation changes during the term of the plan, please contact us immediately to reassess your situation and discuss potential alternatives.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>No additional late charges will be accessed during the forbearance plan while the borrower is performing under the terms of the agreement.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>At least 30 days prior to the end of the plan, you must contact us to provide updated financial information and documentation of your financial circumstances. After we receive your updated information, we will provide information on alternatives that may be available to you at the end of the plan term, such as a reinstatement, repayment plan, loan modification or other alternative to foreclosure.</td></tr></tbody></table>
+<br>
+<b><u><div>To Accept This Offer</div></u></b>
+<div>You must contact {[plsMatrix.CompanyLongName]} at {[plsMatrix.CSPhoneNumber]} to notify {[plsMatrix.CompanyLongName]} of your intention to accept this plan no later than {DateAdd({[L001]}|14|MMMM dd, yyyy|Day)}.</div>
+<br>
+<b><u><div>Additional Forbearance Plan Information and Legal Notices:</div></u></b>
+<b><div>We will not refer the loan to foreclosure, or proceed with foreclosure during the Forbearance Plan period, provided you are complying with its terms:</div></b>
+<br>
+<table class="table table-bordered" width="100%" style="margin-left: 20px"><tbody>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>Any pending foreclosure action or proceeding that has been suspended may be resumed if you fail to comply with the terms of the Forbearance Plan.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>This Forbearance Plan offer is contingent on your having provided accurate and complete information. We reserve the right to revoke this offer or terminate the plan following your acceptance if we learn of information that would make you ineligible for the forbearance plan.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>You agree that, in the event you make any partial payments during the Forbearance Plan period, we will hold those payments in an account until sufficient funds are in the account to pay your oldest delinquent monthly payment. You also agree that we will not owe you interest on the amounts held in the account. If any money is left in this account at the end of the Forbearance Plan and you qualify for a loan modification, those funds will be credited to the loan in accordance with the terms of your note.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>Our acceptance and posting of any payment you make during the Forbearance Plan period will not be deemed a waiver of the acceleration of your loan and related activities, including the right to resume or continue foreclosure if you fail to comply with the terms of the plan, and shall not constitute a cure of the mortgage default unless such payments are sufficient to completely cure the default.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>The current loan documents remain in effect; however, you may make the plan payments instead of the payment required under the loan documents.  </td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>You agree that all terms and provisions of the current mortgage note, and mortgage security instrument remain in full force and effect and you will comply with those terms; and that nothing in the Forbearance Plan shall be understood or construed to be a satisfaction or release in whole or in part of the obligations contained in the loan documents.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>Additionally, the mortgage security instrument must be and remain as a first and superior lien on the property.</td></tr>
+  <tr valign="top">
+    <td width="3%">•</td>
+    <td>Should liens, encumbrances or other matters jeopardize or threaten the validity or priority of the lien of our mortgage security instrument, we may revoke or terminate the plan.</td></tr></tbody></table>
+<br>
+<div>If you have any questions regarding the plan, please contact us at {If('{[O276]}' &lt;&gt; '')}{[O276]}{Else If('{[O296]}' &lt;&gt; '')}{[O296]}{Else}{[plsMatrix.SPOCContactPhone]}{End If}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>{[plsMatrix.CompanyShortName]}</div>
+<div>Real Estate Lending Servicing Specialist</div>
+<div>Phone: 800-821-0083 EXT 27150</div>
+<div>Fax: 816-234-2479</div>
+<div>Email: <u>MortgageDefault@CommerceBank.com</u></div>
+{If('{[M007]}' = '48')}
+<br>
+<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information.</div>{End If}

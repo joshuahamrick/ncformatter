@@ -49,7 +49,6 @@
 
 **Deployment:**
 - **Vercel**: Serverless hosting with Python runtime
-- **Netlify**: Alternative deployment option
 
 ### Architecture Pattern: Intermediate Representation (IR)
 

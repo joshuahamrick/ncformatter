@@ -58,7 +58,6 @@ The application uses an **Intermediate Representation (IR)** pattern to separate
 
 ### Deployment
 - **Vercel** - Serverless hosting with Python runtime
-- **Netlify** - Alternative deployment option
 
 ## 🚀 Quick Start
 
@@ -321,16 +320,6 @@ Sample documents are located in `formatter examples/`:
    - Vercel automatically detects `api/` folder as serverless functions
    - Python runtime is configured in `vercel.json`
 
-### Netlify (Alternative)
-
-1. **Connect repository** to Netlify
-2. **Configure build settings**:
-   - Build command: (leave empty)
-   - Publish directory: `.`
-   - Functions directory: `netlify/functions`
-
-3. **Deploy**
-   - Netlify will automatically deploy Python functions
 
 ### Environment Variables
 

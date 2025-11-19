@@ -931,17 +931,21 @@ def convert_aligned_label_value_pairs_to_tables(text):
     import re
     
     # First, handle PROPERTY: with multiple address fields (M567, M583, M568) in separate divs
-    # Pattern: PROPERTY: followed by M567, then M583, then M568 in separate divs
-    # Handle spaces in field names like {[M 567]} or {[M567]}
+    # Pattern 1: PROPERTY: on same line as M567, then M583, M568 on separate lines
     # Match: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
-    property_pattern = r'<div[^>]*>PROPERTY:\s*\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
+    property_pattern1 = r'<div[^>]*>PROPERTY:\s*\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
     def convert_property_multiple(match):
         return '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>'
-    text = re.sub(property_pattern, convert_property_multiple, text, flags=re.IGNORECASE)
+    text = re.sub(property_pattern1, convert_property_multiple, text, flags=re.IGNORECASE)
     
-    # Also handle PROPERTY: on one line, then M567, M583, M568 on separate lines
-    property_separate_pattern = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
-    text = re.sub(property_separate_pattern, convert_property_multiple, text, flags=re.IGNORECASE)
+    # Pattern 2: PROPERTY: on separate line, then M567, M583, M568 on separate lines
+    property_pattern2 = r'<div[^>]*>PROPERTY:\s*</div>\s*<br>\s*<div[^>]*>\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
+    text = re.sub(property_pattern2, convert_property_multiple, text, flags=re.IGNORECASE)
+    
+    # Pattern 3: PROPERTY: with tabs/spaces, then M567 on same line, M583 and M568 on separate lines
+    # This handles the case where PROPERTY: has tabs before M567
+    property_pattern3 = r'<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\{\[M\s*568\]\}</div>'
+    text = re.sub(property_pattern3, convert_property_multiple, text, flags=re.IGNORECASE)
     
     # Pattern to find consecutive label-value pairs
     # Handle labels with tabs/spaces: "SUBJECT: 					Notice"

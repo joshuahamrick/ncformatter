@@ -906,7 +906,9 @@ def detect_uhm_header(text):
         r'uhm header',
         r'insert\(uhm header\)',
         r'\{insert\(uhm header\)\}',
-        r'uhm loan number'
+        r'uhm loan number',
+        r'uhm loan number:',  # More specific pattern
+        r'<div[^>]*>uhm loan number:',  # In HTML div
     ]
     
     for pattern in uhm_patterns:
@@ -1187,9 +1189,13 @@ def remove_conditional_logic_sections(text):
     
     # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
     # Pattern: <div>( <b><u>"OR"</u></b> If {[M956]} ...)</div>
-    # Handle both with and without bold tags
+    # Handle both with and without bold tags, and handle HTML entities
     text = re.sub(r'<div[^>]*>\([^<]*<b><u>["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*>\([^<]*["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Also handle pattern without closing </u></b> tags
+    text = re.sub(r'<div[^>]*>\([^<]*["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # More flexible pattern
+    text = re.sub(r'<div[^>]*>\([^<]*OR[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove foreign address indicator sections - match any text after the tag
     text = re.sub(r'<div[^>]*>\{\[M928\]\}[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
@@ -1639,8 +1645,10 @@ def fix_header_structure_completely(text):
     if not start_match:
         return text
     
-    # Find where the header section ends (before any borrower info or Dear)
+    # Find where the header section ends (before any borrower info, Dear, SUBJECT, or UHM LOAN NUMBER)
     end_patterns = [
+        r'<div[^>]*>SUBJECT:',
+        r'<div[^>]*>UHM LOAN NUMBER:',
         r'<div[^>]*>Borrower Name:',
         r'<div[^>]*>Dear',
         r'<div[^>]*>Notice is hereby given',
@@ -1656,12 +1664,23 @@ def fix_header_structure_completely(text):
             end_pos = end_match.start()
             break
     
+    # If no end pattern found, look for L001 and mailingAddress, then find what comes after
+    if not end_pos:
+        l001_match = re.search(r'<div[^>]*>\{\[L001\]\}</div>', text)
+        mailing_match = re.search(r'<div[^>]*>\{\[mailingAddress\]\}</div>', text)
+        if l001_match and mailing_match:
+            # Find what comes after mailingAddress (skip br tags)
+            after_mailing = text[mailing_match.end():]
+            # Look for next non-br content
+            next_content = re.search(r'<div[^>]*>[^<]+</div>', after_mailing)
+            if next_content:
+                end_pos = mailing_match.end() + next_content.start()
+    
     if end_pos:
         # Replace the entire header section with proper format
         clean_header = f'''{header_line}
 <br>
 <div>{{[L001]}}</div>
-<br>
 <div>{{[mailingAddress]}}</div>
 <br><br><br><br><br>'''
         

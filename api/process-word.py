@@ -398,11 +398,15 @@ def apply_universal_formatting_rules(html_text):
         # STEP 2: MAILING ADDRESS CLEANUP - Consolidate mailing address tags into {[mailingAddress]}
         html_text = consolidate_mailing_address_tags(html_text)
         
-        # STEP 2.5: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES (before header cleanup)
+        # STEP 2.5: REMOVE CONDITIONAL LOGIC SECTIONS FIRST (before other processing)
+        # Remove M838, M956, M928, M929 sections early so they don't interfere
+        html_text = remove_conditional_logic_sections(html_text)
+        
+        # STEP 2.6: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES (before header cleanup)
         html_text = convert_aligned_label_value_pairs_to_tables(html_text)
         
-        # STEP 2.6: FIX HEADER TYPE DETECTION (must run early to detect UHM)
-        # Check for UHM header early - look for "UHM LOAN NUMBER" in the text
+        # STEP 2.7: FIX HEADER TYPE DETECTION (must run after label-value conversion to detect UHM)
+        # Check for UHM header - look for "UHM LOAN NUMBER" in the text
         html_text = fix_header_structure_completely(html_text)
         
         # STEP 3: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
@@ -417,7 +421,7 @@ def apply_universal_formatting_rules(html_text):
         # STEP 4: HEADER STRUCTURE CLEANUP - Additional header cleanup
         html_text = fix_header_structure_cleanup(html_text)
         
-        # STEP 5: REMOVE CONDITIONAL LOGIC SECTIONS (must run after header detection)
+        # STEP 5: REMOVE CONDITIONAL LOGIC SECTIONS AGAIN (catch any missed ones)
         html_text = remove_conditional_logic_sections(html_text)
         
         # STEP 5.5: FIX DATE FORMATTING - Remove spaces in dates (1 / 2 /202 6 -> 1/2/2026)
@@ -953,6 +957,7 @@ def convert_aligned_label_value_pairs_to_tables(text):
         
         # Also try a more specific pattern for label-value pairs that might have different spacing
         # Pattern: <div>LABEL: (whitespace) VALUE</div>
+        # These specific labels should ALWAYS be converted to tables if they appear consecutively
         specific_label_pattern = r'<div[^>]*>(SUBJECT|UHM LOAN NUMBER|JPMORGAN CHASE BANK, NA LOAN NUMBER|PROPERTY):\s+([^<]+)</div>'
         specific_matches = list(re.finditer(specific_label_pattern, text, flags=re.IGNORECASE))
         
@@ -965,7 +970,13 @@ def convert_aligned_label_value_pairs_to_tables(text):
                     is_duplicate = True
                     break
             if not is_duplicate:
-                same_line_matches.append(match)
+                # For specific matches, extract label and value correctly
+                # Group 1 is the label, group 2 is the value
+                label = match.group(1).strip() + ':'
+                value = match.group(2).strip()
+                if value and len(value) > 0:
+                    # Create a new match-like object or add directly to all_matches later
+                    same_line_matches.append(match)
         
         # Pattern 2: Value on next line: <div>LABEL:</div><br><div>VALUE</div>
         separate_line_pattern = r'<div[^>]*>([A-Z][A-Z\s,\.]+:\s*)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'
@@ -977,25 +988,37 @@ def convert_aligned_label_value_pairs_to_tables(text):
         
         # Add same-line matches first - these are most important as they show alignment intent
         for match in same_line_matches:
-            label = match.group(1).strip()
-            value = match.group(2).strip()
-            # Check if there are significant spaces/tabs between colon and value (indicates alignment intent)
-            # The value group includes the whitespace, so check if there are 3+ spaces or any tabs
-            full_match_text = match.group(0)
-            colon_pos = full_match_text.find(':')
-            if colon_pos > 0:
-                after_colon = full_match_text[colon_pos+1:colon_pos+200]  # Check first 200 chars after colon
-                # Count consecutive spaces/tabs - if 3+ spaces or any tabs, it's alignment intent
-                has_tabs = '\t' in after_colon
-                # Check for 3+ consecutive spaces
-                has_multiple_spaces = bool(re.search(r' {3,}', after_colon))
-                # Value should be non-empty and meaningful (not just whitespace)
-                if value and len(value.strip()) > 2 and (has_tabs or has_multiple_spaces):
-                    start, end = match.span()
-                    # Clean value - remove leading whitespace
-                    clean_value = value.strip()
-                    all_matches.append((start, end, label, clean_value))
-                    used_ranges.add((start, end))
+            # Handle both general pattern (group 1 = label with colon, group 2 = value)
+            # and specific pattern (group 1 = label without colon, group 2 = value)
+            if len(match.groups()) >= 2:
+                label_part = match.group(1).strip()
+                value = match.group(2).strip()
+                
+                # If label doesn't end with colon, add it (for specific pattern)
+                if not label_part.endswith(':'):
+                    label = label_part + ':'
+                else:
+                    label = label_part
+                
+                # Check if there are significant spaces/tabs between colon and value (indicates alignment intent)
+                # The value group includes the whitespace, so check if there are 3+ spaces or any tabs
+                full_match_text = match.group(0)
+                colon_pos = full_match_text.find(':')
+                if colon_pos > 0:
+                    after_colon = full_match_text[colon_pos+1:colon_pos+200]  # Check first 200 chars after colon
+                    # Count consecutive spaces/tabs - if 3+ spaces or any tabs, it's alignment intent
+                    has_tabs = '\t' in after_colon
+                    # Check for 3+ consecutive spaces
+                    has_multiple_spaces = bool(re.search(r' {3,}', after_colon))
+                    # For specific labels (SUBJECT, UHM LOAN NUMBER, etc.), always convert
+                    is_specific_label = any(lbl in label.upper() for lbl in ['SUBJECT', 'UHM LOAN NUMBER', 'JPMORGAN', 'PROPERTY'])
+                    # Value should be non-empty and meaningful (not just whitespace)
+                    if value and len(value.strip()) > 0 and (has_tabs or has_multiple_spaces or is_specific_label):
+                        start, end = match.span()
+                        # Clean value - remove leading whitespace
+                        clean_value = value.strip()
+                        all_matches.append((start, end, label, clean_value))
+                        used_ranges.add((start, end))
         
         # Add separate line matches if not already covered
         for match in separate_line_matches:
@@ -1204,31 +1227,30 @@ def remove_conditional_logic_sections(text):
     """Remove conditional logic sections like '(OR" If {[M956]}...' and business rule references"""
     import re
     
+    # Remove M838 PLS-CLIENT-ID sections FIRST - handle with bold tags
+    # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # More flexible - match any content with M838 and PLS-CLIENT-ID
+    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    
     # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
     # Pattern: <div>( <b><u>"OR"</u></b> If {[M956]} ...)</div>
-    # Handle both with and without bold tags, and handle HTML entities
+    # Match: <div>( <b><u>"OR"</u></b> If {[M956]} (Foreign Address Indicator) = Y)</div>
     text = re.sub(r'<div[^>]*>\([^<]*<b><u>["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r'<div[^>]*>\([^<]*["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    # Also handle pattern without closing </u></b> tags
-    text = re.sub(r'<div[^>]*>\([^<]*["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    # More flexible pattern
+    # More flexible pattern - match OR and M956 anywhere in the div
     text = re.sub(r'<div[^>]*>\([^<]*OR[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove foreign address indicator sections - match any text after the tag
+    # Pattern: <div>{[M928]} (Foreign Country Code)</div>
     text = re.sub(r'<div[^>]*>\{\[M928\]\}[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>\{\[M929\]\}[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     
     # Remove business rule references - match "see" followed by business rule text
+    # Pattern: <div>see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS)</div>
     text = re.sub(r'<div[^>]*>see[^<]*Letter Library[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*SII Confirmed[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*Additional Addresses[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    
-    # Remove M838 PLS-CLIENT-ID sections - handle with bold tags
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    
-    # Also remove any div containing just M838 PLS-CLIENT-ID pattern
-    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     return text
 

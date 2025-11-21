@@ -1396,12 +1396,12 @@ def convert_aligned_label_value_pairs_to_tables(text):
         # First try finding them separately - this is more robust
         # Match exact patterns from incorrect output - handle tabs/spaces after colon
         # Pattern from incorrect output: <div>SUBJECT: 					Notice of Servicing Transfer</div>
-        # Need to match tabs/spaces after colon (can be many spaces or tabs)
-        # Match tabs specifically: SUBJECT: followed by tabs then value
-        subject_match = re.search(r'<div[^>]*>SUBJECT:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Need to match tabs/spaces after colon - use DOTALL to handle newlines
+        # Match tabs specifically: SUBJECT: followed by tabs/spaces then value
+        subject_match = re.search(r'<div[^>]*>SUBJECT:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         if not subject_match:
-            # Fallback: match any whitespace
-            subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+            # Fallback: match any whitespace (spaces or tabs)
+            subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         # Pattern from incorrect output: <div>UHM LOAN NUMBER:				{[M594]}</div>
         # Need to handle tabs after colon
         uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
@@ -2057,18 +2057,20 @@ def remove_plsid_references(text):
         header_section = text[:header_end_pos]
         body_section = text[header_end_pos:]
         
-        # Remove PLS fields from header - match exact patterns
-        # Pattern: <div>{[plsMatrix.CompanyLongName]}</div> (no br after)
-        header_section = re.sub(r'<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
-        header_section = re.sub(r'<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
-        # Pattern: <div>{[CorporateAddr1]}</div> (may have br after or not)
-        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr1\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
-        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr1\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
-        # Pattern: <div>{[CorporateAddr2]}</div> or <div>{[CorporateAddr 2]}</div>
-        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr2\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
-        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr\s*2\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
-        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr2\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
-        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr\s*2\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
+        # Remove PLS fields from header - match exact patterns with DOTALL for newlines
+        # Pattern from incorrect output: <div>{[plsMatrix.CompanyLongName]}</div> (may have br or newline after)
+        patterns_to_remove = [
+            (r'<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}</div>\s*<br>\s*', ''),
+            (r'<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}</div>\s*', ''),
+            (r'<div[^>]*>\{\[CorporateAddr1\]\}</div>\s*<br>\s*', ''),
+            (r'<div[^>]*>\{\[CorporateAddr1\]\}</div>\s*', ''),
+            (r'<div[^>]*>\{\[CorporateAddr2\]\}</div>\s*<br>\s*', ''),
+            (r'<div[^>]*>\{\[CorporateAddr\s*2\]\}</div>\s*<br>\s*', ''),
+            (r'<div[^>]*>\{\[CorporateAddr2\]\}</div>\s*', ''),
+            (r'<div[^>]*>\{\[CorporateAddr\s*2\]\}</div>\s*', ''),
+        ]
+        for pattern, replacement in patterns_to_remove:
+            header_section = re.sub(pattern, replacement, header_section, flags=re.IGNORECASE | re.DOTALL)
         
         text = header_section + body_section
     

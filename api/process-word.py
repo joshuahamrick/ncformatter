@@ -487,6 +487,34 @@ def generate_formatted_html(paragraphs, tables, document_type):
         
         html_parts.append(f'<div{div_style}>{formatted_text}</div>')
     
+    # Process tables from Word document
+    # Add tables to HTML output - they will be formatted by fix_servicer_table_formatting if needed
+    for table_data in tables:
+        if table_data and table_data.get('rows'):
+            # Check if this looks like a servicer table (has "Current Servicer" and "New Servicer")
+            is_servicer_table = False
+            for row in table_data.get('rows', []):
+                row_text = ' '.join([cell.get('text', '') for cell in row.get('cells', [])])
+                if 'Current Servicer' in row_text and 'New Servicer' in row_text:
+                    is_servicer_table = True
+                    break
+            
+            # Generate HTML table from Word document table
+            table_html = '<div><table width="100%" style="border-collapse: collapse"><tbody>'
+            for row in table_data.get('rows', []):
+                table_html += '<tr>'
+                for cell in row.get('cells', []):
+                    cell_text = cell.get('text', '').strip()
+                    # Replace newlines with <br> tags
+                    cell_text = cell_text.replace('\n', '<br>')
+                    # Handle bold formatting
+                    if cell.get('bold'):
+                        cell_text = f'<b>{cell_text}</b>'
+                    table_html += f'<td>{cell_text}</td>'
+                table_html += '</tr>'
+            table_html += '</tbody></table></div>'
+            html_parts.append(table_html)
+    
     return '\n<br>\n'.join(html_parts)
 
 def process_section(paragraphs, section_type):
@@ -1805,10 +1833,12 @@ def fix_servicer_table_formatting(text):
     # Pattern: Find servicer table and fix formatting
     # Match table with Current Servicer and New Servicer headers
     # More flexible pattern to handle various table structures
-    # Pattern 1: Standard format with div wrapper
+    # Pattern 1: Standard format with div wrapper - handle various spacing/newlines
     servicer_pattern1 = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
     # Pattern 2: Without div wrapper, or with different spacing
     servicer_pattern2 = r'<table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table>'
+    # Pattern 3: Handle tables with extra whitespace/newlines between rows (like user's input)
+    servicer_pattern3 = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
     servicer_pattern = servicer_pattern1 + '|' + servicer_pattern2
     
     def format_servicer_table(match):
@@ -1837,6 +1867,52 @@ def fix_servicer_table_formatting(text):
         current_compress = current_compress.replace('{[CorporateAddr1]}', '{[plsMatrix.CorporateAddr1]}')
         current_compress = current_compress.replace('{[CorporateAddr 2]}', '{[plsMatrix.CorporateAddr2]}')
         current_compress = current_compress.replace('{[CorporateAddr2]}', '{[plsMatrix.CorporateAddr2]}')
+        # Fix HoursOfOperation
+        current_compress = current_compress.replace('{[HoursOfOperation]}', '{[plsMatrix.HoursOfOperation]}')
+        
+        # Fix address field references
+        current_addr_compress = current_addr_compress.replace('{[CorporateAddr1]}', '{[plsMatrix.CorporateAddr1]}')
+        current_addr_compress = current_addr_compress.replace('{[CorporateAddr 2]}', '{[plsMatrix.CorporateAddr2]}')
+        current_addr_compress = current_addr_compress.replace('{[CorporateAddr2]}', '{[plsMatrix.CorporateAddr2]}')
+        
+        # Remove nested Compress functions if present (handle cases where Compress is already applied)
+        # Use a more robust pattern that handles nested braces by matching balanced braces
+        def remove_nested_compress(text):
+            # Pattern to match {Compress({Compress(...)})} and replace with {Compress(...)}
+            # This handles nested braces by finding the innermost Compress first
+            while '{Compress({Compress(' in text:
+                # Find the start of nested Compress
+                start = text.find('{Compress({Compress(')
+                if start == -1:
+                    break
+                # Find the matching closing braces - count braces to find the end
+                brace_count = 0
+                pos = start + len('{Compress({Compress(')
+                found_inner = False
+                inner_start = pos
+                for i in range(pos, len(text)):
+                    if text[i] == '{':
+                        brace_count += 1
+                    elif text[i] == '}':
+                        brace_count -= 1
+                        if brace_count == -1 and not found_inner:
+                            # Found end of inner Compress
+                            inner_end = i
+                            found_inner = True
+                        elif brace_count == -2:
+                            # Found end of outer Compress
+                            outer_end = i + 1
+                            # Extract inner content
+                            inner_content = text[inner_start:inner_end]
+                            # Replace nested Compress with single Compress
+                            text = text[:start] + '{Compress(' + inner_content + ')}' + text[outer_end:]
+                            break
+            return text
+        
+        current_compress = remove_nested_compress(current_compress)
+        new_compress = remove_nested_compress(new_compress)
+        current_addr_compress = remove_nested_compress(current_addr_compress)
+        new_addr_compress = remove_nested_compress(new_addr_compress)
         
         table = f'''<table width="100%" style="border-collapse: collapse"><tbody><tr>
   <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1)"><b>Current Servicer</b></td>
@@ -1849,12 +1925,104 @@ def fix_servicer_table_formatting(text):
   <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{{Compress({new_addr_compress})}}</td>
 </tr></tbody></table>'''
         
-        return f'<div>{table}</div>'
+        # Return table without extra div wrapper - the table HTML already includes proper structure
+        # The caller will add the div wrapper if needed
+        return table
     
-    # Try pattern 1 first (with div wrapper)
-    text = re.sub(servicer_pattern1, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
+    # Try pattern 3 first (compact format - no spacing between td tags)
+    text = re.sub(servicer_pattern3, format_servicer_table, text, count=1, flags=re.IGNORECASE | re.DOTALL)
+    # Then try pattern 1 (with div wrapper and spacing)
+    text = re.sub(servicer_pattern1, format_servicer_table, text, count=1, flags=re.IGNORECASE | re.DOTALL)
     # Then try pattern 2 (without div wrapper)
-    text = re.sub(servicer_pattern2, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(servicer_pattern2, format_servicer_table, text, count=1, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Final cleanup: Remove nested Compress functions and double div wrappers
+    # Fix nested Compress: {Compress({Compress(...)})} -> {Compress(...)}
+    # Also fix malformed patterns like {Compress(...))})} -> {Compress(...)}
+    # First fix malformed patterns with extra closing parentheses
+    # Pattern: {Compress(...))} -> {Compress(...)}
+    # Need to handle braces and parentheses in content, so count them properly
+    while True:
+        # Find {Compress( in the text
+        start = text.find('{Compress(')
+        if start == -1:
+            break
+        # Find the matching closing brace by counting braces
+        brace_count = 0
+        paren_count = 0
+        content_start = start + len('{Compress(')
+        found_end = False
+        for i in range(content_start, len(text)):
+            if text[i] == '{':
+                brace_count += 1
+            elif text[i] == '}':
+                brace_count -= 1
+                if brace_count == -1 and paren_count == 0:
+                    # Found the matching closing brace for {Compress(
+                    end_pos = i + 1
+                    found_end = True
+                    break
+            elif text[i] == '(':
+                paren_count += 1
+            elif text[i] == ')':
+                paren_count -= 1
+        
+        if found_end:
+            # Check if there's an extra closing paren before the closing brace
+            # Look backwards from end_pos to find if there's ))
+            if end_pos >= 2 and text[end_pos - 2:end_pos] == '))':
+                # Extract content (everything between Compress( and the first ))
+                content = text[content_start:end_pos - 2]
+                # Replace {Compress(content))} with {Compress(content)}
+                text = text[:start] + '{Compress(' + content + ')}' + text[end_pos:]
+            else:
+                break
+        else:
+            break
+    
+    # Then fix nested Compress: {Compress({Compress(...)})} -> {Compress(...)}
+    while '{Compress({Compress(' in text:
+        # Manual replacement - find first occurrence
+        start = text.find('{Compress({Compress(')
+        if start == -1:
+            break
+        # Find the inner content (between the two Compress( calls)
+        inner_start = start + len('{Compress({Compress(')
+        # Find the matching closing braces by counting braces
+        brace_count = 0
+        inner_end = -1
+        for i in range(inner_start, len(text)):
+            if text[i] == '{':
+                brace_count += 1
+            elif text[i] == '}':
+                brace_count -= 1
+                if brace_count == -1:
+                    inner_end = i
+                    break
+        if inner_end != -1:
+            # Find outer end - should be inner_end + 1 (the }) from inner Compress) + 1 (the } from outer Compress)
+            outer_end = inner_end + 1
+            if outer_end < len(text) and text[outer_end] == '}':
+                outer_end += 1
+            else:
+                # Malformed - try to find the next }
+                for i in range(inner_end + 1, min(inner_end + 10, len(text))):
+                    if text[i] == '}':
+                        outer_end = i + 1
+                        break
+            inner_content = text[inner_start:inner_end]
+            text = text[:start] + '{Compress(' + inner_content + ')}' + text[outer_end:]
+    
+    # Fix double div wrappers
+    text = re.sub(r'<div><div><table', '<div><table', text)
+    text = re.sub(r'</table></div></div>', '</table></div>', text)
+    
+    # Final fix: Remove extra closing parentheses from Compress functions
+    # Simple approach: find )) before } and replace with )
+    # This handles cases like {Compress(...))} -> {Compress(...)}
+    # Find all occurrences of )) before a closing brace
+    while '))}' in text:
+        text = text.replace('))}', ')}', 1)
     
     return text
 

@@ -2014,22 +2014,25 @@ def remove_plsid_references(text):
     """Remove all PLSID references - this is metadata and should never appear in the document"""
     import re
     
-    # Remove M838 PLS-CLIENT-ID sections - AGGRESSIVE matching
+    # Remove M838 PLS-CLIENT-ID sections - ULTRA AGGRESSIVE matching
     # Pattern from incorrect output: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    # Must match with newlines - use DOTALL for ALL patterns
+    # Must match ANY combination of whitespace/newlines - use DOTALL for ALL patterns
+    # Try matching the EXACT structure from incorrect output first
     patterns = [
-        # Exact match with spaces and newlines
-        (r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>[\s\n]*<br>[\s\n]*', ''),
-        # Without br after
-        (r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>[\s\n]*', ''),
-        # Flexible - match any content between tags
-        (r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*=\s*\{\[PLSID\]\}[^<]*Produce[^<]*\)</b></div>[\s\n]*<br>[\s\n]*', ''),
-        # Very flexible - just match M838 and PLS-CLIENT-ID in same div
+        # Match EXACT pattern from incorrect output - handle any whitespace
+        (r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>[\s\n]*<br>[\s\n]*', ''),
+        # Without <br> after
+        (r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>[\s\n]*', ''),
+        # Match with ANY content between tags (flexible)
+        (r'<div[^>]*><b>\([\s\S]*?\{\[M838\]\}[\s\S]*?PLS-CLIENT-ID[\s\S]*?=\s*\{\[PLSID\]\}[\s\S]*?Produce[\s\S]*?\)</b></div>[\s\n]*<br>[\s\n]*', ''),
+        # Very flexible - match M838 and PLS-CLIENT-ID anywhere in div
         (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
         # Match any div with PLS-CLIENT-ID
         (r'<div[^>]*>[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
-        # Match M838 with Produce
+        # Match M838 with Produce in same div
         (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?Produce[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
+        # Final catch-all - match ANY div with M838
+        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
     ]
     for pattern, replacement in patterns:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE | re.DOTALL)

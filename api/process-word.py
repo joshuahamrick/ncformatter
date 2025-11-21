@@ -1404,27 +1404,27 @@ def convert_aligned_label_value_pairs_to_tables(text):
             subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         # Pattern from incorrect output: <div>UHM LOAN NUMBER:				{[M594]}</div>
         # Need to handle tabs after colon
-        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         # Also try without requiring spaces between words (more flexible)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         # Pattern from incorrect output: <div>JPMORGAN CHASE BANK, NA LOAN NUMBER:	{[M614]}</div>
-        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         if not jpmorgan_match:
-            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         # Also try without requiring spaces between words
         if not jpmorgan_match:
-            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         if not jpmorgan_match:
-            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         if not jpmorgan_match:
-            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE | re.DOTALL)
         
         # If all three are found, build the table
         if subject_match and uhm_match and jpmorgan_match:

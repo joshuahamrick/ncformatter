@@ -2336,6 +2336,10 @@ def fix_sr121_specific_formatting(text):
     """Fix SR121-specific formatting issues"""
     import re
     
+    # Fix indented <br> tags after mailingAddress
+    # Pattern: <div>{[mailingAddress]}</div><br><br><br><br><br> should become indented
+    text = re.sub(r'(<div>\{\[mailingAddress\]\}</div>)\s*<br><br><br><br><br>', r'\1\n<br>\n  <br>\n    <br>\n      <br>\n        <br>', text, flags=re.IGNORECASE)
+    
     # Fix "Important note about insurance" - remove <br> between title and content
     text = re.sub(r'(<div><b>Important note about insurance</b></div>)\s*<br>\s*(<div>If you have)', r'\1\n\2', text, flags=re.IGNORECASE)
     

@@ -1371,18 +1371,28 @@ def convert_aligned_label_value_pairs_to_tables(text):
     if has_uhm_loan:
         # First try finding them separately - this is more robust
         # Match exact patterns from incorrect output - handle tabs/spaces after colon
+        # Pattern from incorrect output: <div>SUBJECT: 					Notice of Servicing Transfer</div>
+        # Need to match tabs/spaces after colon (can be many spaces or tabs)
         subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
-        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Pattern from incorrect output: <div>UHM LOAN NUMBER:				{[M594]}</div>
+        # Need to handle tabs after colon
+        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        if not uhm_match:
+            uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Also try without requiring spaces between words (more flexible)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
-        # Also try with tabs/spaces (most flexible - matches actual output)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         if not uhm_match:
             uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
-        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Pattern from incorrect output: <div>JPMORGAN CHASE BANK, NA LOAN NUMBER:	{[M614]}</div>
+        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        if not jpmorgan_match:
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Also try without requiring spaces between words
+        if not jpmorgan_match:
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
         if not jpmorgan_match:
             jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         if not jpmorgan_match:
@@ -1979,7 +1989,10 @@ def remove_plsid_references(text):
     # Remove M838 PLS-CLIENT-ID sections with exact pattern matching
     # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
     # Match the exact pattern from incorrect output: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    # Handle variations with spaces/tabs
     text = re.sub(r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Also match without strict spacing
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*=\s*\{\[PLSID\]\}[^<]*Produce[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     # More flexible patterns - match any div with M838 and PLS-CLIENT-ID
@@ -2015,11 +2028,18 @@ def remove_plsid_references(text):
         header_section = text[:header_end_pos]
         body_section = text[header_end_pos:]
         
-        # Remove PLS fields from header
+        # Remove PLS fields from header - match exact patterns
+        # Pattern: <div>{[plsMatrix.CompanyLongName]}</div> (no br after)
         header_section = re.sub(r'<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+        header_section = re.sub(r'<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
+        # Pattern: <div>{[CorporateAddr1]}</div> (may have br after or not)
         header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr1\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr1\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
+        # Pattern: <div>{[CorporateAddr2]}</div> or <div>{[CorporateAddr 2]}</div>
         header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr2\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
         header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr\s*2\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr2\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
+        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr\s*2\]\}</div>\s*', '', header_section, flags=re.IGNORECASE)
         
         text = header_section + body_section
     
@@ -2465,6 +2485,7 @@ def fix_sr121_specific_formatting(text):
     text = re.sub(r'(<div>\{\[mailingAddress\]\}</div>)\s*<br><br><br><br><br>', r'\1\n<br>\n  <br>\n    <br>\n      <br>\n        <br>', text, flags=re.IGNORECASE)
     
     # Fix "Important note about insurance" - remove <br> between title and content (if present)
+    # Pattern from incorrect output: <div><b>Important note about insurance</b></div><br><div>If you have...
     text = re.sub(r'(<div><b>Important note about insurance</b></div>)\s*<br>\s*(<div>If you have)', r'\1\n\2', text, flags=re.IGNORECASE)
     # Also ensure no <br> if missing
     text = re.sub(r'(<div><b>Important note about insurance</b></div>)\s*(<div>If you have)', r'\1\n\2', text, flags=re.IGNORECASE)

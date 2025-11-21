@@ -960,6 +960,13 @@ def fix_salutation_section(text):
     
     # Check if first Dear is followed by tags (like {[Salutation]}, {[M558]}, {[H202]}, etc.)
     first_dear_text = first_dear_match.group(1).strip()
+    
+    # CRITICAL: If Dear contains {[M558]} and {[M559]}, always replace with {[Salutation]}
+    if '{[M558]}' in first_dear_text and '{[M559]}' in first_dear_text:
+        salutation_replacement = '<div>Dear {[Salutation]},</div>'
+        text = text[:first_dear_match.start()] + salutation_replacement + '\n<br>\n' + text[first_dear_match.end():]
+        return text
+    
     is_actual_text = False
     actual_text_patterns = [
         r'^mortgagor',
@@ -974,6 +981,16 @@ def fix_salutation_section(text):
     
     # Find all "Dear" lines (including those with style attributes)
     all_dear_matches = list(re.finditer(r'<div[^>]*>Dear\s+([^<]+)</div>', text, re.IGNORECASE))
+    
+    # Also check if single Dear line has tags like {[M558]} and {[M559]} - should convert to {[Salutation]}
+    if first_dear_match and ('{[M558]}' in first_dear_text or '{[M559]}' in first_dear_text):
+        # Replace with {[Salutation]}
+        salutation_replacement = '<div>Dear {[Salutation]},</div>'
+        text = text[:first_dear_match.start()] + salutation_replacement + '\n<br>\n' + text[first_dear_match.end():]
+        # Re-find first dear match after replacement
+        first_dear_match = re.search(r'<div[^>]*>Dear\s+([^<]+)</div>', text, re.IGNORECASE)
+        if first_dear_match:
+            all_dear_matches = list(re.finditer(r'<div[^>]*>Dear\s+([^<]+)</div>', text, re.IGNORECASE))
     
     if len(all_dear_matches) > 1:
         # Find where the Dear section ends (before main content)
@@ -1014,7 +1031,11 @@ def fix_salutation_section(text):
             clean_salutation = f'<div>Dear {first_dear_text},</div>'
         else:
             # Use {[Salutation]} for tags
-            clean_salutation = '<div>Dear {[Salutation]},</div>'
+            # If it contains {[M558]} and {[M559]}, replace with {[Salutation]}
+            if '{[M558]}' in first_dear_text and '{[M559]}' in first_dear_text:
+                clean_salutation = '<div>Dear {[Salutation]},</div>'
+            else:
+                clean_salutation = '<div>Dear {[Salutation]},</div>'
         
         # Remove all Dear lines between first_dear_start and end_pos, replace with single salutation
         text = text[:first_dear_start] + clean_salutation + '\n<br>\n' + text[end_pos:]
@@ -1987,12 +2008,13 @@ def remove_plsid_references(text):
     import re
     
     # Remove M838 PLS-CLIENT-ID sections with exact pattern matching
-    # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    # Match the exact pattern from incorrect output: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    # Handle variations with spaces/tabs
-    text = re.sub(r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    # Also match without strict spacing
+    # Pattern from incorrect output: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    # Match EXACT pattern with spaces: ( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)
+    text = re.sub(r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
+    # Also match without strict spacing (flexible)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*=\s*\{\[PLSID\]\}[^<]*Produce[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Also match without <br> after
+    text = re.sub(r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     # More flexible patterns - match any div with M838 and PLS-CLIENT-ID
@@ -2518,6 +2540,13 @@ def fix_sr121_specific_formatting(text):
   <td style="border-top: 2px solid rgba(0, 0, 0, 1)"></td>
 </tr></tbody></table>'''
         text = text.rstrip() + '\n' + end_border_table
+    
+    # Fix visit URL - pattern from incorrect output: "visit." (no space, just period)
+    text = re.sub(r'visit\.\s*</div>', r'visit <u>www.chase.com</u>.</div>', text, flags=re.IGNORECASE)
+    text = re.sub(r'visit\.', r'visit <u>www.chase.com</u>.', text, flags=re.IGNORECASE)
+    
+    # Fix "first" underline in SR121 - pattern from goal: "your <u>first</u> payment"
+    text = re.sub(r'your\s+first\s+payment', r'your <u>first</u> payment', text, flags=re.IGNORECASE)
     
     return text
 

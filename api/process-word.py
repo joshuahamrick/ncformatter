@@ -1315,10 +1315,13 @@ def convert_aligned_label_value_pairs_to_tables(text):
     
     # Pattern 1: PROPERTY: with M567 on same line (handle broken bold tags and text after), then M583, M568 on separate lines
     # Match the sequence: PROPERTY div -> M583 div -> M568 div
-    # Use .*? to match any content including HTML tags between PROPERTY: and {[M567]}
-    # Match: <div>PROPERTY: ... {[M567]} ...</div><br><div>{[M583]} ...</div><br><div> ... {[M568]} ...</div>
-    # Pattern 1: Find PROPERTY div with M567, then M583 div, then M568 div
-    # Match them as a sequence - handle broken bold tags and nested HTML
+    # Pattern from incorrect output: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
+    # Match tabs after PROPERTY:, space in M 567, tabs before M 568
+    property_sequence = r'<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}</div>'
+    text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE)
+    # Also try more flexible pattern - match any whitespace
+    property_sequence_flexible = r'<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\{\[M\s*568\]\}</div>'
+    text = re.sub(property_sequence_flexible, convert_property_multiple, text, flags=re.IGNORECASE)
     # Strategy: Find PROPERTY div containing M567, then find M583 div, then find M568 div
     # Use a pattern that matches the entire sequence including all content
     # Match: <div>PROPERTY: ... {[M567]} ...</div> ... <div>{[M583]} ...</div> ... <div> ... {[M568]} ...</div>
@@ -1394,7 +1397,11 @@ def convert_aligned_label_value_pairs_to_tables(text):
         # Match exact patterns from incorrect output - handle tabs/spaces after colon
         # Pattern from incorrect output: <div>SUBJECT: 					Notice of Servicing Transfer</div>
         # Need to match tabs/spaces after colon (can be many spaces or tabs)
-        subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Match tabs specifically: SUBJECT: followed by tabs then value
+        subject_match = re.search(r'<div[^>]*>SUBJECT:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        if not subject_match:
+            # Fallback: match any whitespace
+            subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Pattern from incorrect output: <div>UHM LOAN NUMBER:				{[M594]}</div>
         # Need to handle tabs after colon
         uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)

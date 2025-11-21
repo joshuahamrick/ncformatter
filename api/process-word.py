@@ -137,7 +137,16 @@ def process_word_document(file_bytes, file_name):
             pass
         
         # Apply universal formatting rules
-        formatted_html = apply_universal_formatting_rules(formatted_html)
+        # DEBUG: Add marker BEFORE calling cleanup rules
+        formatted_html = '<!-- BEFORE CLEANUP -->' + formatted_html
+        try:
+            formatted_html = apply_universal_formatting_rules(formatted_html)
+        except Exception as e:
+            # If cleanup rules fail, add error but keep HTML
+            formatted_html = f'<!-- CLEANUP RULES FAILED: {str(e)} -->' + formatted_html
+        
+        # DEBUG: Add marker AFTER cleanup rules
+        formatted_html = formatted_html + '<!-- AFTER CLEANUP -->'
         
         return {
             'success': True,
@@ -631,7 +640,12 @@ def apply_universal_formatting_rules(html_text):
     """Apply universal formatting rules to any document - ENHANCED VERSION"""
     
     # CRITICAL: Always add debug marker FIRST so we know rules are running
-    html_text = '<!-- CLEANUP RULES STARTED v2 -->' + html_text
+    # This MUST appear in the output - if it doesn't, rules aren't running
+    html_text = '<!-- CLEANUP RULES STARTED v3 -->' + html_text
+    
+    # DEBUG: Check what we're receiving
+    if '{[M838]}' in html_text:
+        html_text = '<!-- FOUND M838 IN INPUT -->' + html_text
     
     try:
         

@@ -317,8 +317,34 @@ def analyze_visual_layout(paragraphs):
                 else:
                     break
             
+            # Special handling for PROPERTY - it might span multiple paragraphs
+            # If we found PROPERTY label, look ahead for value parts that might be in separate paragraphs
+            if 'PROPERTY' in label.upper() and len(aligned_pairs) == 1:
+                # PROPERTY value might be split across multiple paragraphs
+                # Look ahead for paragraphs that might be part of PROPERTY value
+                # Pattern: paragraphs starting with just field tags like {[M567]}, {[M583]}, {[M568]}
+                property_value_parts = [value]
+                k = j
+                while k < len(paragraphs) and k < j + 5:  # Look ahead up to 5 paragraphs
+                    next_para = paragraphs[k]
+                    next_text = next_para['text'].strip()
+                    # Check if this looks like a PROPERTY value part (field tag or indented text)
+                    if re.match(r'^\{\[M\d+\]\}', next_text) or (next_text.startswith(' ') and '{[M' in next_text):
+                        property_value_parts.append(next_text.strip())
+                        k += 1
+                    else:
+                        break
+                
+                # If we found multiple PROPERTY value parts, combine them
+                if len(property_value_parts) > 1:
+                    # Combine all value parts with | separator for Compress
+                    combined_value = '|'.join(property_value_parts)
+                    aligned_pairs[0]['value'] = f'{{Compress({combined_value})}}'
+                    j = k  # Skip all the value paragraphs we just processed
+            
             # If we found 2+ aligned pairs, convert to table structure
-            if len(aligned_pairs) >= 2:
+            # OR if we found PROPERTY (even single), convert to table structure
+            if len(aligned_pairs) >= 2 or ('PROPERTY' in aligned_pairs[0]['label'].upper()):
                 # Create a special "table" paragraph that will be converted to HTML table
                 table_para = {
                     'text': '',  # Empty text, we'll use the table_data
@@ -1814,11 +1840,14 @@ def remove_plsid_references(text):
     
     # Remove M838 PLS-CLIENT-ID sections with exact pattern matching
     # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    # More flexible patterns
+    # More aggressive - match any div containing M838 and PLS-CLIENT-ID
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # More flexible patterns - match any div with M838 and PLS-CLIENT-ID
     text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Also match M838 alone if it's in a div with PLS or Produce
+    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?Produce.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)

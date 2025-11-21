@@ -630,9 +630,10 @@ def process_text_with_formatting(runs):
 def apply_universal_formatting_rules(html_text):
     """Apply universal formatting rules to any document - ENHANCED VERSION"""
     
+    # CRITICAL: Always add debug marker FIRST so we know rules are running
+    html_text = '<!-- CLEANUP RULES STARTED v2 -->' + html_text
+    
     try:
-        # DEBUG: Add marker to show rules are running
-        html_text = '<!-- CLEANUP RULES STARTED -->' + html_text
         
         # STEP 0: FIX BROKEN BOLD TAGS - Reconstruct field names broken by bold tags
         html_text = fix_broken_bold_tags(html_text)
@@ -2072,13 +2073,38 @@ def remove_plsid_references(text):
         
         # Final check - if M838 is STILL there, use even more aggressive removal
         if '{[M838]}' in text or 'PLS-CLIENT-ID' in text:
-            # Remove ANY occurrence of M838 or PLS-CLIENT-ID using string replace
+            # NUCLEAR OPTION: Remove ANY occurrence of M838 or PLS-CLIENT-ID using string replace
+            # This MUST work - direct string replacement
             text = text.replace('{[M838]}', '')
             text = text.replace('PLS-CLIENT-ID', '')
             text = text.replace('{[PLSID]}', '')
+            text = text.replace('{[PLSID]}', '')
+            # Remove the entire div line if it's mostly empty or contains Produce
+            lines = text.split('\n')
+            text = '\n'.join([line for line in lines if 'Produce' not in line or '{[M838]}' not in line or 'PLS-CLIENT-ID' not in line])
             # Remove empty divs
             text = re.sub(r'<div[^>]*></div>', '', text, flags=re.IGNORECASE)
             text = re.sub(r'<div[^>]*><b>\s*\([^)]*Produce[^)]*\)</b></div>', '', text, flags=re.IGNORECASE | re.DOTALL)
+            
+    # FINAL NUCLEAR CHECK: If M838 still exists, remove it character by character
+    if '{[M838]}' in text:
+        # This should NEVER happen, but if it does, force remove it
+        while '{[M838]}' in text:
+            idx = text.find('{[M838]}')
+            if idx > 0:
+                # Find the start of the div containing this
+                div_start = text.rfind('<div', 0, idx)
+                if div_start >= 0:
+                    # Find the end of this div
+                    div_end = text.find('</div>', idx)
+                    if div_end > 0:
+                        text = text[:div_start] + text[div_end + 6:]
+                    else:
+                        text = text[:idx] + text[idx + 8:]
+                else:
+                    text = text[:idx] + text[idx + 8:]
+            else:
+                break
     
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)

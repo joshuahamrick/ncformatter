@@ -488,17 +488,9 @@ def generate_formatted_html(paragraphs, tables, document_type):
         html_parts.append(f'<div{div_style}>{formatted_text}</div>')
     
     # Process tables from Word document
-    # Add tables to HTML output - they will be formatted by fix_servicer_table_formatting if needed
+    # Add tables to HTML output - they will be formatted and repositioned by fix_servicer_table_formatting if needed
     for table_data in tables:
         if table_data and table_data.get('rows'):
-            # Check if this looks like a servicer table (has "Current Servicer" and "New Servicer")
-            is_servicer_table = False
-            for row in table_data.get('rows', []):
-                row_text = ' '.join([cell.get('text', '') for cell in row.get('cells', [])])
-                if 'Current Servicer' in row_text and 'New Servicer' in row_text:
-                    is_servicer_table = True
-                    break
-            
             # Generate HTML table from Word document table
             table_html = '<div><table width="100%" style="border-collapse: collapse"><tbody>'
             for row in table_data.get('rows', []):
@@ -720,6 +712,9 @@ def apply_universal_formatting_rules(html_text):
         
         # STEP 5.7: FIX SERVICER TABLE FORMATTING
         html_text = fix_servicer_table_formatting(html_text)
+        
+        # STEP 5.8: FIX ALL TABLE FORMATTING - Apply proper indentation globally
+        html_text = fix_table_formatting_globally(html_text)
         
         # STEP 6: DOCUMENT TITLE AND RE TABLE - Add proper structure (only for BR010)
         # Don't add BR010 content to SR121 or other documents
@@ -1308,8 +1303,13 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # Match: <div>PROPERTY: ... {[M567]} ...</div> ... <div>{[M583]} ...</div> ... <div> ... {[M568]} ...</div>
     # Use [\s\S] to match any character including newlines, non-greedy
     # Also handle cases where broken bold tags might still be present
-    property_sequence = r'<div[^>]*>PROPERTY:[\s\S]*?\{\[M\s*567\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>[\s\S]*?\{\[M\s*568\]\}[\s\S]*?</div>'
+    # Match exact pattern from incorrect output: PROPERTY with tabs/spaces, then M567, M583, M568 in separate divs
+    # Pattern: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
+    property_sequence = r'<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}</div>'
     text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE)
+    # Also try more flexible pattern
+    property_sequence2 = r'<div[^>]*>PROPERTY:[\s\S]*?\{\[M\s*567\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>[\s\S]*?\{\[M\s*568\]\}[\s\S]*?</div>'
+    text = re.sub(property_sequence2, convert_property_multiple, text, flags=re.IGNORECASE)
     
     # Also try matching with broken bold tags explicitly
     # Match: <div>PROPERTY: <b>{[</b><b>M</b><b>567</b><b>]}</b> ...</div>
@@ -1370,16 +1370,21 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # Try finding them separately first (more reliable than pattern matching)
     if has_uhm_loan:
         # First try finding them separately - this is more robust
-        subject_match = re.search(r'<div[^>]*>SUBJECT:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
-        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Match exact patterns from incorrect output - handle tabs/spaces after colon
+        subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Also try without requiring spaces between words (more flexible)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
-        # Also try with just the colon pattern (most flexible)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Also try with tabs/spaces (most flexible - matches actual output)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER\s*:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
-        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        if not uhm_match:
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Also try without requiring spaces between words
+        if not jpmorgan_match:
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         if not jpmorgan_match:
             jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
         
@@ -1495,17 +1500,21 @@ def convert_aligned_label_value_pairs_to_tables(text):
     if has_uhm_loan and not uhm_pattern_matched:
         # Try to find SUBJECT, UHM LOAN NUMBER, and JPMORGAN separately
         # Pattern for each: <div>LABEL: ... VALUE</div>
-        # Use more flexible patterns that handle any whitespace
-        subject_match = re.search(r'<div[^>]*>SUBJECT:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
-        # Try multiple patterns to catch UHM LOAN NUMBER
-        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Use more flexible patterns that handle tabs/spaces after colon (matches actual output)
+        subject_match = re.search(r'<div[^>]*>SUBJECT:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Try multiple patterns to catch UHM LOAN NUMBER - handle tabs/spaces
+        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        if not uhm_match:
+            uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Also try without requiring spaces between words (more flexible)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Also try with just the colon pattern (most flexible)
         if not uhm_match:
-            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER\s*:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
-        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+\t+([^<]+)</div>', text, flags=re.IGNORECASE)
+        if not jpmorgan_match:
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s+([^<]+)</div>', text, flags=re.IGNORECASE)
         # Also try without requiring spaces between words
         if not jpmorgan_match:
             jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
@@ -1813,7 +1822,8 @@ def fix_payment_address_table(text):
   <td style="padding-left: 50px">{line3}</td>
 </tr><tr>
   <td style="padding-left: 50px">{line4}</td>
-</tr></tbody></table>'''
+</tr></tbody></table>
+<br>'''
         return table
     
     text = re.sub(address_pattern, convert_to_table, text, flags=re.IGNORECASE)
@@ -1833,12 +1843,10 @@ def fix_servicer_table_formatting(text):
     # Pattern: Find servicer table and fix formatting
     # Match table with Current Servicer and New Servicer headers
     # More flexible pattern to handle various table structures
-    # Pattern 1: Standard format with div wrapper - handle various spacing/newlines
+    # Pattern 1: Standard format with div wrapper
     servicer_pattern1 = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
     # Pattern 2: Without div wrapper, or with different spacing
     servicer_pattern2 = r'<table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table>'
-    # Pattern 3: Handle tables with extra whitespace/newlines between rows (like user's input)
-    servicer_pattern3 = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
     servicer_pattern = servicer_pattern1 + '|' + servicer_pattern2
     
     def format_servicer_table(match):
@@ -1869,50 +1877,13 @@ def fix_servicer_table_formatting(text):
         current_compress = current_compress.replace('{[CorporateAddr2]}', '{[plsMatrix.CorporateAddr2]}')
         # Fix HoursOfOperation
         current_compress = current_compress.replace('{[HoursOfOperation]}', '{[plsMatrix.HoursOfOperation]}')
+        # Fix CompanyLongName (might appear as {[CompanyLongName]} in table)
+        current_compress = current_compress.replace('{[CompanyLongName]}', '{[plsMatrix.CompanyLongName]}')
         
         # Fix address field references
         current_addr_compress = current_addr_compress.replace('{[CorporateAddr1]}', '{[plsMatrix.CorporateAddr1]}')
         current_addr_compress = current_addr_compress.replace('{[CorporateAddr 2]}', '{[plsMatrix.CorporateAddr2]}')
         current_addr_compress = current_addr_compress.replace('{[CorporateAddr2]}', '{[plsMatrix.CorporateAddr2]}')
-        
-        # Remove nested Compress functions if present (handle cases where Compress is already applied)
-        # Use a more robust pattern that handles nested braces by matching balanced braces
-        def remove_nested_compress(text):
-            # Pattern to match {Compress({Compress(...)})} and replace with {Compress(...)}
-            # This handles nested braces by finding the innermost Compress first
-            while '{Compress({Compress(' in text:
-                # Find the start of nested Compress
-                start = text.find('{Compress({Compress(')
-                if start == -1:
-                    break
-                # Find the matching closing braces - count braces to find the end
-                brace_count = 0
-                pos = start + len('{Compress({Compress(')
-                found_inner = False
-                inner_start = pos
-                for i in range(pos, len(text)):
-                    if text[i] == '{':
-                        brace_count += 1
-                    elif text[i] == '}':
-                        brace_count -= 1
-                        if brace_count == -1 and not found_inner:
-                            # Found end of inner Compress
-                            inner_end = i
-                            found_inner = True
-                        elif brace_count == -2:
-                            # Found end of outer Compress
-                            outer_end = i + 1
-                            # Extract inner content
-                            inner_content = text[inner_start:inner_end]
-                            # Replace nested Compress with single Compress
-                            text = text[:start] + '{Compress(' + inner_content + ')}' + text[outer_end:]
-                            break
-            return text
-        
-        current_compress = remove_nested_compress(current_compress)
-        new_compress = remove_nested_compress(new_compress)
-        current_addr_compress = remove_nested_compress(current_addr_compress)
-        new_addr_compress = remove_nested_compress(new_addr_compress)
         
         table = f'''<table width="100%" style="border-collapse: collapse"><tbody><tr>
   <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1)"><b>Current Servicer</b></td>
@@ -1925,104 +1896,79 @@ def fix_servicer_table_formatting(text):
   <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{{Compress({new_addr_compress})}}</td>
 </tr></tbody></table>'''
         
-        # Return table without extra div wrapper - the table HTML already includes proper structure
-        # The caller will add the div wrapper if needed
-        return table
+        return f'<div>{table}</div>'
     
-    # Try pattern 3 first (compact format - no spacing between td tags)
-    text = re.sub(servicer_pattern3, format_servicer_table, text, count=1, flags=re.IGNORECASE | re.DOTALL)
-    # Then try pattern 1 (with div wrapper and spacing)
-    text = re.sub(servicer_pattern1, format_servicer_table, text, count=1, flags=re.IGNORECASE | re.DOTALL)
+    # Try pattern 1 first (with div wrapper)
+    text = re.sub(servicer_pattern1, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
     # Then try pattern 2 (without div wrapper)
-    text = re.sub(servicer_pattern2, format_servicer_table, text, count=1, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(servicer_pattern2, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
     
-    # Final cleanup: Remove nested Compress functions and double div wrappers
-    # Fix nested Compress: {Compress({Compress(...)})} -> {Compress(...)}
-    # Also fix malformed patterns like {Compress(...))})} -> {Compress(...)}
-    # First fix malformed patterns with extra closing parentheses
-    # Pattern: {Compress(...))} -> {Compress(...)}
-    # Need to handle braces and parentheses in content, so count them properly
-    while True:
-        # Find {Compress( in the text
-        start = text.find('{Compress(')
-        if start == -1:
-            break
-        # Find the matching closing brace by counting braces
-        brace_count = 0
-        paren_count = 0
-        content_start = start + len('{Compress(')
-        found_end = False
-        for i in range(content_start, len(text)):
-            if text[i] == '{':
-                brace_count += 1
-            elif text[i] == '}':
-                brace_count -= 1
-                if brace_count == -1 and paren_count == 0:
-                    # Found the matching closing brace for {Compress(
-                    end_pos = i + 1
-                    found_end = True
-                    break
-            elif text[i] == '(':
-                paren_count += 1
-            elif text[i] == ')':
-                paren_count -= 1
+    # If servicer table exists, move it to the correct position (after "If you have any questions..." and before "Under Federal law...")
+    # Find the position where servicer table should be inserted
+    questions_match = re.search(r'(<div>If you have any questions[^<]*</div>)\s*<br>\s*', text, flags=re.IGNORECASE)
+    federal_law_match = re.search(r'(<div>Under Federal law[^<]*</div>)', text, flags=re.IGNORECASE)
+    servicer_table_match = re.search(r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>[\s\S]*?</tbody></table></div>', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    if questions_match and federal_law_match and servicer_table_match:
+        # Extract servicer table
+        servicer_table = servicer_table_match.group(0)
+        # Remove it from current position
+        text = text[:servicer_table_match.start()] + text[servicer_table_match.end():]
+        # Insert it after "If you have any questions..." with proper spacing
+        insert_pos = questions_match.end()
+        text = text[:insert_pos] + '\n  <br>\n' + servicer_table + '\n<br>\n  <br>\n' + text[insert_pos:]
+    
+    return text
+
+def fix_table_formatting_globally(text):
+    """Apply proper table formatting with indentation globally - GLOBAL RULE"""
+    import re
+    
+    # First, fix payment address table - ensure <br> after it
+    # Pattern: payment address table followed directly by div (missing <br>)
+    text = re.sub(r'(</tbody></table>)(<div>If you have any questions)', r'\1\n<br>\n\2', text, flags=re.IGNORECASE)
+    
+    # Pattern to match any table: <table...><tbody><tr>...</tr></tbody></table>
+    # This will format all tables with proper 2-space indentation
+    def format_table(match):
+        table_content = match.group(0)
         
-        if found_end:
-            # Check if there's an extra closing paren before the closing brace
-            # Look backwards from end_pos to find if there's ))
-            if end_pos >= 2 and text[end_pos - 2:end_pos] == '))':
-                # Extract content (everything between Compress( and the first ))
-                content = text[content_start:end_pos - 2]
-                # Replace {Compress(content))} with {Compress(content)}
-                text = text[:start] + '{Compress(' + content + ')}' + text[end_pos:]
-            else:
-                break
-        else:
-            break
+        # If table is already properly formatted (has newlines and indentation), skip
+        if '\n  <td' in table_content or '\n  <tr' in table_content:
+            return table_content
+        
+        # Format: <tr> <td>...</td> <td>...</td> </tr>
+        # Should become: <tr>\n  <td>...</td>\n  <td>...</td>\n</tr>
+        
+        # Step 1: Put <tr> on its own line
+        table_content = re.sub(r'<tr>\s*', r'<tr>\n  ', table_content)
+        # Step 2: Put each <td> on new line with 2-space indent
+        table_content = re.sub(r'\s*<td', r'\n  <td', table_content)
+        # Step 3: Put </tr> on new line
+        table_content = re.sub(r'\s*</tr>', r'\n</tr>', table_content)
+        # Step 4: Ensure <tbody> is on new line after <table>
+        table_content = re.sub(r'<table([^>]*)><tbody>', r'<table\1><tbody>', table_content)
+        # Step 5: Ensure first <tr> after <tbody> is on new line
+        table_content = re.sub(r'<tbody>\s*<tr>', r'<tbody><tr>', table_content)
+        # Step 6: Ensure </tbody></table> has proper format
+        table_content = re.sub(r'</tbody></table>', r'\n</tbody></table>', table_content)
+        # Step 7: Clean up excessive whitespace but preserve structure
+        table_content = re.sub(r'[ \t]+', ' ', table_content)  # Collapse multiple spaces/tabs to single space
+        table_content = re.sub(r'\n[ \t]+', '\n', table_content)  # Remove spaces at start of lines
+        # Step 8: Re-add proper indentation for <td> tags
+        table_content = re.sub(r'\n<td', r'\n  <td', table_content)
+        # Step 9: Ensure <tr> has proper spacing
+        table_content = re.sub(r'<tr>\s*', r'<tr>\n  ', table_content)
+        
+        return table_content
     
-    # Then fix nested Compress: {Compress({Compress(...)})} -> {Compress(...)}
-    while '{Compress({Compress(' in text:
-        # Manual replacement - find first occurrence
-        start = text.find('{Compress({Compress(')
-        if start == -1:
-            break
-        # Find the inner content (between the two Compress( calls)
-        inner_start = start + len('{Compress({Compress(')
-        # Find the matching closing braces by counting braces
-        brace_count = 0
-        inner_end = -1
-        for i in range(inner_start, len(text)):
-            if text[i] == '{':
-                brace_count += 1
-            elif text[i] == '}':
-                brace_count -= 1
-                if brace_count == -1:
-                    inner_end = i
-                    break
-        if inner_end != -1:
-            # Find outer end - should be inner_end + 1 (the }) from inner Compress) + 1 (the } from outer Compress)
-            outer_end = inner_end + 1
-            if outer_end < len(text) and text[outer_end] == '}':
-                outer_end += 1
-            else:
-                # Malformed - try to find the next }
-                for i in range(inner_end + 1, min(inner_end + 10, len(text))):
-                    if text[i] == '}':
-                        outer_end = i + 1
-                        break
-            inner_content = text[inner_start:inner_end]
-            text = text[:start] + '{Compress(' + inner_content + ')}' + text[outer_end:]
+    # Match tables with or without div wrapper
+    table_pattern = r'<table[^>]*><tbody>[\s\S]*?</tbody></table>'
+    text = re.sub(table_pattern, format_table, text)
     
-    # Fix double div wrappers
-    text = re.sub(r'<div><div><table', '<div><table', text)
-    text = re.sub(r'</table></div></div>', '</table></div>', text)
-    
-    # Final fix: Remove extra closing parentheses from Compress functions
-    # Simple approach: find )) before } and replace with )
-    # This handles cases like {Compress(...))} -> {Compress(...)}
-    # Find all occurrences of )) before a closing brace
-    while '))}' in text:
-        text = text.replace('))}', ')}', 1)
+    # Also handle tables wrapped in divs
+    div_table_pattern = r'<div><table[^>]*><tbody>[\s\S]*?</tbody></table></div>'
+    text = re.sub(div_table_pattern, format_table, text)
     
     return text
 
@@ -2032,7 +1978,8 @@ def remove_plsid_references(text):
     
     # Remove M838 PLS-CLIENT-ID sections with exact pattern matching
     # Pattern: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    # More aggressive - match any div containing M838 and PLS-CLIENT-ID
+    # Match the exact pattern from incorrect output: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    text = re.sub(r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     # More flexible patterns - match any div with M838 and PLS-CLIENT-ID
@@ -2087,8 +2034,8 @@ def remove_conditional_logic_sections(text):
     
     # Remove "(OR" If {[M956]} (Foreign Address Indicator) = Y)" sections
     # Pattern: <div>( <b><u>"OR"</u></b> If {[M956]} ...)</div>
-    # Match: <div>( <b><u>"OR"</u></b> If {[M956]} (Foreign Address Indicator) = Y)</div>
-    # Handle various HTML entity encodings for quotes
+    # Match exact pattern from incorrect output: <div>( <b><u>"OR"</u></b> If {[M956]} (Foreign Address Indicator) = Y)</div>
+    text = re.sub(r'<div[^>]*>\(\s*<b><u>["\']OR["\']</u></b>\s*If\s*\{\[M956\]\}\s*\(Foreign Address Indicator\)\s*=\s*Y\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>\([^<]*<b><u>["\']OR["\']</u></b>[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     # More flexible pattern - match OR and M956 anywhere in the div
     text = re.sub(r'<div[^>]*>\([^<]*OR[^<]*If[^<]*\{\[M956\]\}[^<]*\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
@@ -2104,6 +2051,8 @@ def remove_conditional_logic_sections(text):
     
     # Remove business rule references - match "see" followed by business rule text
     # Pattern: <div>see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS)</div>
+    # Match exact pattern from incorrect output: <div>see "SII Confirmed" on Letter Library Business Rules for Additional Addresses in BKFS)</div>
+    text = re.sub(r'<div[^>]*>see\s*["\']SII Confirmed["\']\s*on\s*Letter Library Business Rules for Additional Addresses in BKFS\)</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*Letter Library[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*SII Confirmed[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<div[^>]*>see[^<]*Additional Addresses[^<]*</div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
@@ -2515,8 +2464,10 @@ def fix_sr121_specific_formatting(text):
     # Pattern: <div>{[mailingAddress]}</div><br><br><br><br><br> should become indented
     text = re.sub(r'(<div>\{\[mailingAddress\]\}</div>)\s*<br><br><br><br><br>', r'\1\n<br>\n  <br>\n    <br>\n      <br>\n        <br>', text, flags=re.IGNORECASE)
     
-    # Fix "Important note about insurance" - remove <br> between title and content
+    # Fix "Important note about insurance" - remove <br> between title and content (if present)
     text = re.sub(r'(<div><b>Important note about insurance</b></div>)\s*<br>\s*(<div>If you have)', r'\1\n\2', text, flags=re.IGNORECASE)
+    # Also ensure no <br> if missing
+    text = re.sub(r'(<div><b>Important note about insurance</b></div>)\s*(<div>If you have)', r'\1\n\2', text, flags=re.IGNORECASE)
     
     # Remove "(Letter ID)" from L003
     text = re.sub(r'(\{\[L003\]\})\s*\(Letter ID\)', r'\1', text, flags=re.IGNORECASE)

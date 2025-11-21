@@ -631,17 +631,18 @@ def apply_universal_formatting_rules(html_text):
     """Apply universal formatting rules to any document - ENHANCED VERSION"""
     
     try:
+        # DEBUG: Add marker to show rules are running
+        html_text = '<!-- CLEANUP RULES STARTED -->' + html_text
+        
         # STEP 0: FIX BROKEN BOLD TAGS - Reconstruct field names broken by bold tags
         html_text = fix_broken_bold_tags(html_text)
         
         # STEP 1: FIELD CLEANUP - Direct string replacements that we know work
         html_text = simple_field_cleanup(html_text)
         
-        # Add debug message
-        if '(Company Address Line 1)' in html_text:
-            html_text = '<div style="color: red;">❌ Simple field cleanup did NOT work</div>' + html_text
-        else:
-            html_text = '<div style="color: green;">✓ Simple field cleanup worked!</div>' + html_text
+        # DEBUG: Mark that we got past simple cleanup
+        if '{[tagHeader]}' in html_text or '{[M838]}' in html_text or 'PLS-CLIENT-ID' in html_text:
+            html_text = '<!-- ISSUES DETECTED: tagHeader or M838 still present -->' + html_text
         
         # STEP 2: MAILING ADDRESS CLEANUP - Consolidate mailing address tags into {[mailingAddress]}
         html_text = consolidate_mailing_address_tags(html_text)
@@ -2016,26 +2017,41 @@ def remove_plsid_references(text):
     
     # Remove M838 PLS-CLIENT-ID sections - ULTRA AGGRESSIVE matching
     # Pattern from incorrect output: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    # Must match ANY combination of whitespace/newlines - use DOTALL for ALL patterns
-    # Try matching the EXACT structure from incorrect output first
+    # The EXACT HTML structure from incorrect output:
+    # <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+    # <br>
+    
+    # Try the SIMPLEST possible pattern first - match div with M838 anywhere
+    # This MUST work - if it doesn't, something is very wrong
+    if '{[M838]}' in text or 'PLS-CLIENT-ID' in text:
+        # DEBUG: Mark that we found M838
+        text = '<!-- FOUND M838/PLSID - attempting removal -->' + text
+    
+    # Pattern 1: Match the EXACT structure - div with b tag containing the text
+    # Handle newlines between tags: <div><b>...</b></div>\n<br>
     patterns = [
-        # Match EXACT pattern from incorrect output - handle any whitespace
-        (r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>[\s\n]*<br>[\s\n]*', ''),
+        # Exact match: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div> followed by <br>
+        (r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>[\s\n\r]*<br>[\s\n\r]*', ''),
+        # More flexible - match with any whitespace
+        (r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>[\s\n\r]*<br>[\s\n\r]*', ''),
         # Without <br> after
-        (r'<div[^>]*><b>\(\s*\{\[M838\]\}\s*PLS-CLIENT-ID\s*=\s*\{\[PLSID\]\}\s*Produce\)</b></div>[\s\n]*', ''),
-        # Match with ANY content between tags (flexible)
-        (r'<div[^>]*><b>\([\s\S]*?\{\[M838\]\}[\s\S]*?PLS-CLIENT-ID[\s\S]*?=\s*\{\[PLSID\]\}[\s\S]*?Produce[\s\S]*?\)</b></div>[\s\n]*<br>[\s\n]*', ''),
-        # Very flexible - match M838 and PLS-CLIENT-ID anywhere in div
-        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
-        # Match any div with PLS-CLIENT-ID
-        (r'<div[^>]*>[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
-        # Match M838 with Produce in same div
-        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?Produce[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
-        # Final catch-all - match ANY div with M838
-        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
+        (r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>[\s\n\r]*', ''),
+        # Match ANY div containing M838 and PLS-CLIENT-ID - ULTRA flexible
+        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n\r]*<br>[\s\n\r]*', ''),
+        # Match any div with just PLS-CLIENT-ID
+        (r'<div[^>]*>[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n\r]*<br>[\s\n\r]*', ''),
+        # Match any div with M838
+        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?</div>[\s\n\r]*<br>[\s\n\r]*', ''),
     ]
+    original_text = text
     for pattern, replacement in patterns:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE | re.DOTALL)
+    
+    # DEBUG: Check if we actually removed anything
+    if '{[M838]}' not in text and '{[M838]}' in original_text:
+        text = '<!-- M838 REMOVED SUCCESSFULLY -->' + text
+    elif '{[M838]}' in text:
+        text = '<!-- M838 STILL PRESENT AFTER REMOVAL ATTEMPT -->' + text
     
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)

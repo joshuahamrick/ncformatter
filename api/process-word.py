@@ -2049,30 +2049,36 @@ def remove_plsid_references(text):
     
     # FALLBACK: If regex didn't work, use simple string replacement
     # This MUST work - it's the nuclear option
+    # Check if M838 is still present after regex attempts
     if '{[M838]}' in text or 'PLS-CLIENT-ID' in text:
-        # Try to find and remove the entire div containing M838
-        # Look for the pattern: <div><b>( {[M838]} ... Produce)</b></div>
+        # NUCLEAR OPTION: Split by lines and remove any line containing M838 or PLS-CLIENT-ID
         lines = text.split('\n')
         new_lines = []
-        skip_next_br = False
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            # Check if this line contains M838 or PLS-CLIENT-ID
-            if '{[M838]}' in line or 'PLS-CLIENT-ID' in line:
-                # Skip this line (the div with M838)
-                skip_next_br = True
-                i += 1
+        skip_next = False
+        for i, line in enumerate(lines):
+            # Check if this line contains M838 or PLS-CLIENT-ID (case insensitive)
+            line_lower = line.lower()
+            if '{[m838]}' in line_lower or 'pls-client-id' in line_lower or 'plsid' in line_lower:
+                # Skip this line entirely
+                skip_next = True
                 continue
-            # Check if this is a <br> tag that should be skipped
-            if skip_next_br and line.strip() == '<br>':
-                skip_next_br = False
-                i += 1
+            # Check if this is a <br> tag after a skipped line
+            if skip_next and line.strip() in ('<br>', '<br />', ''):
+                skip_next = False
                 continue
-            skip_next_br = False
+            skip_next = False
             new_lines.append(line)
-            i += 1
         text = '\n'.join(new_lines)
+        
+        # Final check - if M838 is STILL there, use even more aggressive removal
+        if '{[M838]}' in text or 'PLS-CLIENT-ID' in text:
+            # Remove ANY occurrence of M838 or PLS-CLIENT-ID using string replace
+            text = text.replace('{[M838]}', '')
+            text = text.replace('PLS-CLIENT-ID', '')
+            text = text.replace('{[PLSID]}', '')
+            # Remove empty divs
+            text = re.sub(r'<div[^>]*></div>', '', text, flags=re.IGNORECASE)
+            text = re.sub(r'<div[^>]*><b>\s*\([^)]*Produce[^)]*\)</b></div>', '', text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)

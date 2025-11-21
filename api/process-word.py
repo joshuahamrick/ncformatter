@@ -2014,21 +2014,25 @@ def remove_plsid_references(text):
     """Remove all PLSID references - this is metadata and should never appear in the document"""
     import re
     
-    # Remove M838 PLS-CLIENT-ID sections with exact pattern matching
+    # Remove M838 PLS-CLIENT-ID sections - AGGRESSIVE matching
     # Pattern from incorrect output: <div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
-    # Match EXACT pattern with spaces: ( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)
-    text = re.sub(r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE)
-    # Also match without strict spacing (flexible)
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*=\s*\{\[PLSID\]\}[^<]*Produce[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    # Also match without <br> after
-    text = re.sub(r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\{\[PLSID\]\}[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*\)</b></div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    # More flexible patterns - match any div with M838 and PLS-CLIENT-ID
-    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
-    # Also match M838 alone if it's in a div with PLS or Produce
-    text = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?Produce.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Must match with newlines - use DOTALL for ALL patterns
+    patterns = [
+        # Exact match with spaces and newlines
+        (r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>[\s\n]*<br>[\s\n]*', ''),
+        # Without br after
+        (r'<div[^>]*><b>\(\s+\{\[M838\]\}\s+PLS-CLIENT-ID\s+=\s+\{\[PLSID\]\}\s+Produce\)</b></div>[\s\n]*', ''),
+        # Flexible - match any content between tags
+        (r'<div[^>]*><b>\([^<]*\{\[M838\]\}[^<]*PLS-CLIENT-ID[^<]*=\s*\{\[PLSID\]\}[^<]*Produce[^<]*\)</b></div>[\s\n]*<br>[\s\n]*', ''),
+        # Very flexible - just match M838 and PLS-CLIENT-ID in same div
+        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
+        # Match any div with PLS-CLIENT-ID
+        (r'<div[^>]*>[\s\S]*?PLS-CLIENT-ID[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
+        # Match M838 with Produce
+        (r'<div[^>]*>[\s\S]*?\{\[M838\]\}[\s\S]*?Produce[\s\S]*?</div>[\s\n]*<br>[\s\n]*', ''),
+    ]
+    for pattern, replacement in patterns:
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE | re.DOTALL)
     
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)

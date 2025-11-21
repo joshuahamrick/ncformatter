@@ -2281,6 +2281,226 @@ function cleanupHtml(html, ir) {
 	// UNIVERSAL RULE: Remove extra blank lines after mailingAddress (should be exactly 5 <br> tags)
 	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>)\s*<br><br><br><br><br>\s*\n\n\s*<br><br><br><br><br>\s*\n\n\s*<br><br><br>/g, '$1\n<br><br><br><br><br>\n\n');
 	
+	// ===================================================================
+	// SR121 CLEANUP RULES - Apply universal formatting rules
+	// ===================================================================
+	// These rules must run AFTER all other cleanup to ensure they work
+	// CRITICAL: Remove M838/PLSID sections FIRST
+	if (out.includes('{[M838]}') || out.includes('PLS-CLIENT-ID')) {
+		// NUCLEAR OPTION: Remove lines containing M838 or PLS-CLIENT-ID
+		const lines = out.split('\n');
+		const newLines = [];
+		let skipNext = false;
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			const lineLower = line.toLowerCase();
+			if (lineLower.includes('{[m838]}') || lineLower.includes('pls-client-id') || lineLower.includes('plsid')) {
+				skipNext = true;
+				continue;
+			}
+			if (skipNext && (line.trim() === '<br>' || line.trim() === '')) {
+				skipNext = false;
+				continue;
+			}
+			skipNext = false;
+			newLines.push(line);
+		}
+		out = newLines.join('\n');
+		
+		// Final string replacement if line removal didn't work
+		if (out.includes('{[M838]}') || out.includes('PLS-CLIENT-ID')) {
+			out = out.replace(/\{[M838]\}/g, '');
+			out = out.replace(/PLS-CLIENT-ID/g, '');
+			out = out.replace(/\{\[PLSID\]\}/g, '');
+			// Remove empty divs
+			out = out.replace(/<div[^>]*><\/div>/gi, '');
+			// Remove divs with just Produce
+			out = out.replace(/<div[^>]*><b>\s*\([^)]*Produce[^)]*\)<\/b><\/div>/gi, '');
+		}
+	}
+	
+	// Remove CorporateAddr from header section (before L001/mailingAddress/SUBJECT)
+	const headerEndMarkers = ['<div>SUBJECT:', '<div>UHM LOAN NUMBER:', '<div>{[L001]}', '<div>{[mailingAddress]}', '<div>Dear'];
+	let headerEndPos = out.length;
+	for (const marker of headerEndMarkers) {
+		const pos = out.indexOf(marker);
+		if (pos >= 0 && pos < headerEndPos) {
+			headerEndPos = pos;
+		}
+	}
+	
+	if (headerEndPos < out.length) {
+		const headerSection = out.substring(0, headerEndPos);
+		const bodySection = out.substring(headerEndPos);
+		
+		// Remove CorporateAddr and CompanyLongName from header only
+		let cleanedHeader = headerSection;
+		const lines = cleanedHeader.split('\n');
+		const newLines = [];
+		let skipNext = false;
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			// Skip lines with CompanyLongName or CorporateAddr (but not if they're part of L001/mailingAddress)
+			if ((line.includes('{[plsMatrix.CompanyLongName]}') || line.includes('{[CorporateAddr1]}') || line.includes('{[CorporateAddr2]}') || line.includes('{[CorporateAddr 2]}')) 
+			    && !line.includes('{[L001]}') && !line.includes('{[mailingAddress]}')) {
+				skipNext = true;
+				continue;
+			}
+			if (skipNext && (line.trim() === '<br>' || line.trim() === '')) {
+				skipNext = false;
+				continue;
+			}
+			skipNext = false;
+			newLines.push(line);
+		}
+		cleanedHeader = newLines.join('\n');
+		out = cleanedHeader + bodySection;
+	}
+	
+	// Remove foreign address conditionals (M956, M928, M929, SII Confirmed)
+	const conditionalPatterns = [
+		/<div[^>]*>\([^<]*<b><u>["']OR["']<\/u><\/b>[^<]*If\s*\{\[M956\]\}[^<]*\)<\/div>\s*<br>\s*/gi,
+		/<div[^>]*>.*?\{\[M956\]\}.*?<\/div>\s*<br>\s*/gi,
+		/<div[^>]*>.*?\{\[M928\]\}.*?<\/div>\s*<br>\s*/gi,
+		/<div[^>]*>.*?\{\[M929\]\}.*?<\/div>\s*<br>\s*/gi,
+		/<div[^>]*>see[^<]*SII Confirmed[^<]*<\/div>\s*<br>\s*/gi,
+		/<div[^>]*>see[^<]*Letter Library[^<]*<\/div>\s*<br>\s*/gi,
+	];
+	for (const pattern of conditionalPatterns) {
+		out = out.replace(pattern, '');
+	}
+	
+	// Convert SUBJECT/UHM/JPMORGAN to table
+	if (out.includes('SUBJECT:') && out.includes('UHM LOAN NUMBER:')) {
+		// Find SUBJECT, UHM, and JPMORGAN divs
+		const subjectMatch = out.match(/<div[^>]*>SUBJECT:\s+([^<]+)<\/div>/i);
+		const uhmMatch = out.match(/<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)<\/div>/i);
+		const jpmMatch = out.match(/<div[^>]*>JPMORGAN\s+CHASE\s+BANK[^<]*LOAN\s+NUMBER:\s+([^<]+)<\/div>/i);
+		
+		if (subjectMatch && uhmMatch && jpmMatch) {
+			const subjVal = subjectMatch[1].trim();
+			const uhmVal = uhmMatch[1].trim();
+			const jpmVal = jpmMatch[1].trim();
+			
+			// Find where SUBJECT starts and where JPMORGAN ends
+			const subjectStart = subjectMatch.index;
+			const jpmEnd = jpmMatch.index + jpmMatch[0].length;
+			// Find the <br> after JPMORGAN
+			const afterJpm = out.substring(jpmEnd);
+			const brMatch = afterJpm.match(/^\s*<br>\s*/);
+			const jpmEndWithBr = brMatch ? jpmEnd + brMatch[0].length : jpmEnd;
+			
+			// Build table
+			const tableHtml = `<table width="100%"><tbody><tr>
+  <td width="45%" valign="top">SUBJECT:</td>
+  <td>${subjVal}</td>
+</tr><tr>
+  <td width="45%" valign="top">UHM LOAN NUMBER:</td>
+  <td>${uhmVal}</td>
+</tr><tr>
+  <td width="45%" valign="top">JPMORGAN CHASE BANK, NA LOAN NUMBER:</td>
+  <td>${jpmVal}</td>
+</tr></tbody></table>
+<br>`;
+			
+			// Replace the entire section
+			out = out.substring(0, subjectStart) + tableHtml + out.substring(jpmEndWithBr);
+		}
+	}
+	
+	// Convert PROPERTY to table with Compress
+	if (out.includes('PROPERTY:') && out.includes('{[M567]}')) {
+		// Match: PROPERTY: {[M567]}</div><br><div>{[M583]}</div><br><div>{[M568]}</div>
+		const propertyPattern = /<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\{\[M\s*568\]\}<\/div>/i;
+		const match = out.match(propertyPattern);
+		if (match) {
+			const tableHtml = `<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">PROPERTY:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>`;
+			out = out.replace(propertyPattern, tableHtml);
+		}
+	}
+	
+	// Fix header: {[tagHeader]} -> {Insert(UHM Header)} if UHM LOAN NUMBER exists
+	if (out.includes('{[tagHeader]}') && (out.includes('UHM LOAN NUMBER') || out.includes('{[M594]}'))) {
+		out = out.replace(/\{\[tagHeader\]\}/g, '{Insert(UHM Header)}');
+	}
+	
+	// Fix salutation: Dear {[M558]} and {[M559]}, -> Dear {[Salutation]},
+	out = out.replace(/Dear\s+\{\[M558\]\}\s+and\s+\{\[M559\]\},/gi, 'Dear {[Salutation]},');
+	
+	// Fix date formatting: Remove spaces in dates
+	out = out.replace(/(\d+)\s+\/\s+(\d+)\s+\/\s+(\d+)\s+(\d+)/g, '$1/$2/$3$4');
+	out = out.replace(/(\d+)\s+\/\s+(\d+)\s+\/\s+(\d+)/g, '$1/$2/$3');
+	out = out.replace(/P\.O\.\s+Box\s+(\d+)\s+(\d+)/gi, 'P.O. Box $1$2');
+	
+	// Fix word breaks
+	out = out.replace(/us\s+ing/gi, 'using');
+	out = out.replace(/JPMor\s+gan/gi, 'JPMorgan');
+	
+	// Fix payment address table formatting
+	const addressPattern = /(<div>Send[^<]*address:)<\/div>\s*<br>\s*<div>JPMorgan Chase Bank, NA<\/div>\s*<br>\s*<div>Attn: Payment Processing<\/div>\s*<br>\s*<div>P\.O\. Box[^<]*<\/div>\s*<br>\s*<div>Philadelphia[^<]*<\/div>/i;
+	if (addressPattern.test(out)) {
+		const addressTable = `$1</div>
+<br>
+<table><tbody><tr>
+  <td style="padding-left: 50px">JPMorgan Chase Bank, NA</td>
+</tr><tr>
+  <td style="padding-left: 50px">Attn: Payment Processing</td>
+</tr><tr>
+  <td style="padding-left: 50px">P.O. Box 71244</td>
+</tr><tr>
+  <td style="padding-left: 50px">Philadelphia, PA 19176-6244</td>
+</tr></tbody></table>
+<br>`;
+		out = out.replace(addressPattern, addressTable);
+	}
+	
+	// SR121-specific fixes
+	// Remove <br> between "Important note about insurance" title and content
+	out = out.replace(/(<div><b>Important note about insurance<\/b><\/div>)\s*<br>\s*(<div>If you have)/gi, '$1\n$2');
+	
+	// Remove "(Letter ID)" from L003
+	out = out.replace(/(\{\[L003\]\})\s*\(Letter ID\)/gi, '$1');
+	
+	// Fix Customer Care Department section - remove <br> between lines
+	out = out.replace(/(<div>Customer Care Department<\/div>)\s*<br>\s*(<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>)\s*<br>\s*(<div>\{\[L003\]\}[^<]*<\/div>)/gi, '$1\n$2\n$3');
+	
+	// Add <hr> after L003 if not present
+	if (out.includes('{[L003]}</div>') && !out.includes('{[L003]}</div>\n<hr>')) {
+		out = out.replace(/(<div>\{\[L003\]\}<\/div>)\s*(?!<hr>)/g, '$1\n<hr>');
+	}
+	
+	// Fix visit URL
+	out = out.replace(/visit\.\s*<\/div>/gi, 'visit <u>www.chase.com</u>.</div>');
+	
+	// Fix "first" underline
+	out = out.replace(/your\s+first\s+payment/gi, 'your <u>first</u> payment');
+	
+	// Add border table before "IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT" if not present
+	if (out.includes('IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT') && !out.includes('border-top: 2px solid')) {
+		const borderTable = `\n<br>
+<table width="100%"><tbody><tr>
+  <td style="border-top: 2px solid rgba(0, 0, 0, 1)"></td>
+</tr></tbody></table>
+<br>
+  <br>
+`;
+		out = out.replace(/(<div>\{\[L003\]\}<\/div>\s*<hr>\s*<br>\s*)(<div style="text-align: center"><b>IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT<\/b><\/div>)/gi, `$1${borderTable}$2`);
+	}
+	
+	// Add border table at end if not present
+	if (!out.trim().endsWith('border-top: 2px solid')) {
+		const endBorder = `
+<br>
+<table width="100%"><tbody><tr>
+  <td style="border-top: 2px solid rgba(0, 0, 0, 1)"></td>
+</tr></tbody></table>`;
+		// Add before the last </div> or at the very end
+		out = out.trim() + endBorder;
+	}
+	
 	return out;
 }
 

@@ -124,6 +124,10 @@ def process_word_document(file_bytes, file_name):
         # Detect document type and apply specific processing
         document_type = detect_document_type(paragraphs)
         
+        # Analyze visual/spatial layout to detect aligned label-value pairs
+        # This converts space-aligned pairs to table structures BEFORE HTML generation
+        paragraphs = analyze_visual_layout(paragraphs)
+        
         # Generate the formatted HTML
         formatted_html = generate_formatted_html(paragraphs, tables, document_type)
         
@@ -201,6 +205,144 @@ def extract_paragraph_formatting(paragraph):
     
     return para_data
 
+def analyze_visual_layout(paragraphs):
+    """
+    Analyze visual/spatial layout to detect label-value pairs aligned with spaces.
+    Converts space-aligned pairs to table structures before HTML generation.
+    
+    Detects patterns like:
+    - "LABEL:                VALUE" (substantial spaces between label and value)
+    - Multiple consecutive lines with similar alignment patterns
+    - Labels ending with colons followed by substantial whitespace
+    """
+    import re
+    
+    if not paragraphs:
+        return paragraphs
+    
+    result = []
+    i = 0
+    
+    while i < len(paragraphs):
+        para = paragraphs[i]
+        text = para['text']  # Use raw text, don't strip - we need to detect spacing
+        
+        # Skip empty paragraphs
+        if not text or not text.strip():
+            result.append(para)
+            i += 1
+            continue
+        
+        # Debug: Check for SUBJECT/UHM LOAN NUMBER - these should always be converted to tables
+        # Even if pattern doesn't match spacing, we should catch these common labels
+        is_common_label = False
+        if re.match(r'^(SUBJECT|UHM\s+LOAN\s+NUMBER|JPMORGAN\s+CHASE\s+BANK|PROPERTY):', text, re.IGNORECASE):
+            is_common_label = True
+        
+        # Check if this paragraph matches a label-value pattern with substantial spacing
+        # Pattern: LABEL: followed by substantial whitespace (3+ spaces/tabs) then VALUE
+        # Handle both spaces and tabs - tabs are common in Word documents for alignment
+        match = None
+        
+        # Pattern 1: LABEL: followed by 3+ spaces/tabs then VALUE (most common)
+        # This matches: "SUBJECT:\t\t\tNotice" or "SUBJECT:   Notice"
+        label_value_pattern1 = r'^([^:]+:)([\s\t]{3,})(.+)$'
+        match = re.match(label_value_pattern1, text)
+        
+        # Pattern 2: LABEL: followed by 2+ spaces/tabs then VALUE (more flexible)
+        if not match:
+            label_value_pattern2 = r'^([^:]+:\s*)(\s{2,}|\t+)(.+)$'
+            match = re.match(label_value_pattern2, text)
+        
+        # Pattern 3: Check for common label patterns - these should always be tables
+        # Even without substantial spacing, these labels should be converted to tables
+        if not match:
+            # Common labels that should always be in tables: SUBJECT, UHM LOAN NUMBER, JPMORGAN, PROPERTY
+            # Match with any amount of whitespace after colon
+            common_labels = r'^(SUBJECT|UHM\s+LOAN\s+NUMBER|JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER|PROPERTY):\s*(.+)$'
+            common_match = re.match(common_labels, text, re.IGNORECASE)
+            if common_match:
+                # Split label and value - value might have leading whitespace
+                label_part = common_match.group(1)
+                value_part = common_match.group(2).strip()
+                # Create a match-like structure
+                class FakeMatch:
+                    def __init__(self):
+                        self.groups_result = (label_part + ':', '', value_part)
+                    def group(self, n):
+                        return self.groups_result[n-1] if n <= len(self.groups_result) else ''
+                match = FakeMatch()
+        
+        if match:
+            # Found a potential label-value pair
+            # Extract label and value - handle different match structures
+            if hasattr(match, 'groups_result'):
+                # FakeMatch from Pattern 3
+                label = match.group(1).strip()
+                value = match.group(3).strip()
+            else:
+                # Regular match from Pattern 1 or 2
+                label = match.group(1).strip()
+                value = match.group(3).strip()
+            
+            aligned_pairs = [{'label': label, 'value': value, 'para': para}]
+            j = i + 1
+            
+            # Look ahead for more aligned pairs (up to 5 consecutive)
+            while j < len(paragraphs) and j < i + 6:
+                next_para = paragraphs[j]
+                next_text = next_para['text']
+                
+                # Try all patterns for next paragraph
+                next_match = re.match(label_value_pattern1, next_text)
+                if not next_match:
+                    next_match = re.match(label_value_pattern2, next_text)
+                if not next_match:
+                    common_match = re.match(common_labels, next_text, re.IGNORECASE)
+                    if common_match:
+                        class FakeMatch:
+                            def __init__(self):
+                                self.groups_result = (common_match.group(1) + ':', '', common_match.group(2).strip())
+                            def group(self, n):
+                                return self.groups_result[n-1] if n <= len(self.groups_result) else ''
+                        next_match = FakeMatch()
+                
+                if next_match:
+                    aligned_pairs.append({
+                        'label': next_match.group(1).strip(),
+                        'value': next_match.group(3).strip(),
+                        'para': next_para
+                    })
+                    j += 1
+                else:
+                    break
+            
+            # If we found 2+ aligned pairs, convert to table structure
+            if len(aligned_pairs) >= 2:
+                # Create a special "table" paragraph that will be converted to HTML table
+                table_para = {
+                    'text': '',  # Empty text, we'll use the table_data
+                    'alignment': 'left',
+                    'fontSize': None,
+                    'bold': False,
+                    'underline': False,
+                    'italic': False,
+                    'runs': [],
+                    'table_data': {
+                        'type': 'aligned_pairs',
+                        'rows': aligned_pairs
+                    }
+                }
+                result.append(table_para)
+                i = j  # Skip the paragraphs we just processed
+                continue
+        
+        # Not a label-value pair, keep as-is
+        result.append(para)
+        i += 1
+    
+    return result
+
 def extract_table_formatting(table):
     """Extract formatting information from a table"""
     
@@ -262,7 +404,34 @@ def generate_formatted_html(paragraphs, tables, document_type):
     
     # Process each paragraph individually but with smart replacements
     for para in paragraphs:
-        if not para['text'].strip():
+        # Check if this is a table structure from visual layout analysis FIRST
+        # This must be checked before checking if text is empty
+        if 'table_data' in para and para['table_data'].get('type') == 'aligned_pairs':
+            rows = para['table_data']['rows']
+            # Generate HTML table from aligned pairs
+            table_html = '<table width="100%"><tbody>'
+            for row in rows:
+                label = row['label']
+                value = row['value']
+                # Determine column width based on label length
+                # Common patterns: SUBJECT/UHM LOAN NUMBER/JPMORGAN use 45%, PROPERTY uses 20%
+                if 'PROPERTY' in label.upper():
+                    width = '20%'
+                else:
+                    width = '45%'
+                # Process the value to handle formatting tags properly
+                # Remove "(Loan Number – No Dash)" type suffixes if present
+                import re
+                value = re.sub(r'\s*\(Loan Number[^)]*\)', '', value)
+                value = re.sub(r'\s*\(New Servicer[^)]*\)', '', value)
+                # Format table row with proper indentation to match expected output
+                table_html += f'<tr>\n  <td width="{width}" valign="top">{label}</td>\n  <td>{value}</td>\n</tr>'
+            table_html += '</tbody></table>'
+            html_parts.append(table_html)
+            continue
+        
+        # Skip empty paragraphs (but not table_data paragraphs which have empty text)
+        if not para.get('text', '').strip() and 'table_data' not in para:
             continue
             
         text = para['text'].strip()
@@ -461,6 +630,18 @@ def apply_universal_formatting_rules(html_text):
         
         # STEP 2.7: FIX HEADER STRUCTURE
         html_text = fix_header_structure_completely(html_text)
+        
+        # STEP 2.7.5: FINAL DUPLICATE HEADER REMOVAL - Remove any remaining duplicates
+        # This ensures duplicates are removed even if they were added during processing
+        import re
+        duplicate_patterns_final = [
+            (r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>', '<div>{Insert(UHM Header)}</div>'),
+            (r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>', '<div>{[tagHeader]}</div>'),
+            (r'<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>', '<div>{Insert(H003 TagHeader)}</div>'),
+            (r'<div[^>]*>\{Header\(NMLSID\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Header\(NMLSID\)\}</div>', '<div>{Header(NMLSID)}</div>'),
+        ]
+        for pattern, replacement in duplicate_patterns_final:
+            html_text = re.sub(pattern, replacement, html_text, flags=re.MULTILINE | re.DOTALL)
         
         # STEP 3: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
         html_text = fix_salutation_section(html_text)
@@ -1002,6 +1183,9 @@ def detect_nmls_mention(text):
 def detect_uhm_header(text):
     """Detect if document uses UHM Header - check BEFORE label-value conversion"""
     text_lower = text.lower()
+    text_upper = text.upper()
+    
+    # Check for UHM Header patterns
     uhm_patterns = [
         r'uhm header',
         r'insert\(uhm header\)',
@@ -1016,6 +1200,14 @@ def detect_uhm_header(text):
     for pattern in uhm_patterns:
         if re.search(pattern, text_lower):
             return True
+    
+    # Also check for M594 tag which is specific to UHM documents
+    if '{[M594]}' in text or '{[m594]}' in text_lower:
+        return True
+    
+    # Check for UHM LOAN NUMBER in uppercase (more reliable)
+    if 'UHM LOAN NUMBER' in text_upper:
+        return True
     
     return False
 
@@ -2116,10 +2308,14 @@ def fix_header_structure_completely(text):
             break
         text = new_text
     
-    # Detect header type based on H003 null conditional or NMLS mention
+    # Detect header type based on H003 null conditional, NMLS mention, or UHM Header
     has_h003_null = detect_h003_null_conditional(text)
     has_nmls = detect_nmls_mention(text)
     has_uhm = detect_uhm_header(text)
+    
+    # Also explicitly check for UHM LOAN NUMBER or M594 tag (strong indicators)
+    if 'UHM LOAN NUMBER' in text.upper() or '{[M594]}' in text:
+        has_uhm = True
     
     # Determine header format (NMLS > H003 null > UHM Header > tagHeader)
     if has_nmls:
@@ -2186,22 +2382,26 @@ def fix_header_structure_completely(text):
                 start_match = re.search(r'<div[^>]*>\{Insert\(UHM Header\)\}[^<]*</div>', text)
         
         # Remove duplicates BEFORE processing end_pos
-        # Remove duplicates at start
-        duplicate_header_pattern = r'^(<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*){2,}'
+        # Remove duplicates at start - match any header type followed by same header type
+        duplicate_header_pattern = r'^(<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Header\(NMLSID\)\}</div>[\s\n]*<br>[\s\n]*){2,}'
         if re.search(duplicate_header_pattern, text, re.MULTILINE | re.DOTALL):
             text = re.sub(duplicate_header_pattern, header_line + '\n<br>\n', text, flags=re.MULTILINE | re.DOTALL)
         
-        # Also remove duplicates anywhere (not just at start) - handle both tagHeader and UHM Header
-        duplicate_pattern1 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
-        duplicate_pattern2 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
-        duplicate_pattern3 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
-        duplicate_pattern4 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
+        # Also remove duplicates anywhere (not just at start) - handle all header types
+        # Match any header type followed by same header type
+        duplicate_patterns = [
+            (r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>', header_line),
+            (r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>', header_line),
+            (r'<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>', header_line),
+            (r'<div[^>]*>\{Header\(NMLSID\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Header\(NMLSID\)\}</div>', header_line),
+            # Cross-type duplicates
+            (r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>', header_line),
+            (r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>', header_line),
+        ]
         while True:
             new_text = text
-            new_text = re.sub(duplicate_pattern1, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
-            new_text = re.sub(duplicate_pattern2, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
-            new_text = re.sub(duplicate_pattern3, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
-            new_text = re.sub(duplicate_pattern4, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            for pattern, replacement in duplicate_patterns:
+                new_text = re.sub(pattern, replacement, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
             if new_text == text:
                 break
             text = new_text
@@ -2248,22 +2448,27 @@ def fix_header_structure_completely(text):
             text = text[:start_match.start()] + header_section + text[end_pos:]
         
         # After replacing header type, remove any duplicate headers unconditionally
-        # Remove duplicates at start
-        duplicate_header_pattern = r'^(<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*){2,}'
+        # Remove duplicates at start - match any header type followed by same header type
+        # Pattern: Match header div, br, then same header div
+        duplicate_header_pattern = r'^(<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Header\(NMLSID\)\}</div>[\s\n]*<br>[\s\n]*){2,}'
         if re.search(duplicate_header_pattern, text, re.MULTILINE | re.DOTALL):
             text = re.sub(duplicate_header_pattern, header_line + '\n<br>\n', text, flags=re.MULTILINE | re.DOTALL)
         
-        # Also remove duplicates anywhere (not just at start) - handle both tagHeader and UHM Header
-        duplicate_pattern1 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
-        duplicate_pattern2 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
-        duplicate_pattern3 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
-        duplicate_pattern4 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
+        # Also remove duplicates anywhere (not just at start) - handle all header types
+        # Match any header type followed by same header type
+        duplicate_patterns = [
+            (r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>', header_line),
+            (r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>', header_line),
+            (r'<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>', header_line),
+            (r'<div[^>]*>\{Header\(NMLSID\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Header\(NMLSID\)\}</div>', header_line),
+            # Cross-type duplicates
+            (r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>', header_line),
+            (r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>', header_line),
+        ]
         while True:
             new_text = text
-            new_text = re.sub(duplicate_pattern1, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
-            new_text = re.sub(duplicate_pattern2, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
-            new_text = re.sub(duplicate_pattern3, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
-            new_text = re.sub(duplicate_pattern4, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            for pattern, replacement in duplicate_patterns:
+                new_text = re.sub(pattern, replacement, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
             if new_text == text:
                 break
             text = new_text

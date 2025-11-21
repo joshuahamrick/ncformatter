@@ -16,11 +16,11 @@ I've attached a detailed proposal outlining this vision, with the Letter Templat
 
 I'll be honest with you: I don't feel like my expertise is being used to its full potential in my current position. I see opportunities to improve our processes and profitability here at New Course, but I've felt unable to speak openly about this to management. I'm reaching out to you because I feel we share a similar mindset around growth and innovation. This company moves in ways that feel archaic at times, and I've seen solution after solution with no opportunity to implement them.
 
-I'm passionate about improving this company through software solutions, and I believe I could be a real asset if given the chance. With my AI expertise—which I consider one of my strongest skills—I can accelerate the production of these solutions significantly. I operate at a high level and can deliver products that might take a team a month in a week. I'm not saying this to boast, but to be transparent about what I believe I can contribute when given the right opportunity.
+I'm passionate about improving this company through software solutions, and I believe I could be a real asset if given the chance. With my AI expertise—which I consider one of my strongest skills—I can accelerate the production of these solutions significantly. I operate at a high level and can deliver products that might take a team months in weeks. I'm not saying this to boast, but to be transparent about what I believe I can contribute when given the right opportunity.
 
 I'm eager to build my career as a developer, whether by driving the automation that strengthens our software and day-to-day workflows or serving as a core member of the software team. I'm eager to contribute wherever my skills can have the greatest impact on the company's success.
 
-So, humbly, I come to you and ask that you consider me for any position you see fit. I'm ready to help us move faster and make it easier for our clients and teams to succeed.
+I'd be happy to work in any position you need, especially as you're implementing new technologies. I may be more useful getting things rolling there instead of automating the workflow initially. So, humbly, I come to you and ask that you consider me for any position you see fit. I'm ready to help us move faster and make it easier for our clients and teams to succeed.
 
 Thank you for your time and leadership. I'm looking forward to the possibility of working together.
 

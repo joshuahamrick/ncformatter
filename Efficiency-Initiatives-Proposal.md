@@ -79,25 +79,19 @@ These foundational improvements support Phase 1 efficiency gains and enable Phas
 
 - When daily reports are created, automatically order QCs by link of CRF number (from SharePoint or its successor) to the relevant file/letter in NcConnect. Eliminates manual searching and ordering.
 
+#### Knowledge Base & AI-Powered Support Chatbot
+
+- **What**: Build an AI-integrated chatbot (or intelligent knowledge base system) that can answer team questions instantly by drawing from our documentation and accumulated Q&A knowledge.
+- **Impact**: 
+  - Alleviates management resources and time spent answering routine questions
+  - Eliminates wasted time siphoning through documentation or asking colleagues (saving the colleagues time as well)
+  - Provides instant responses to technical questions
+- **Why now**: This addresses a hidden productivity drain—time spent searching for answers or waiting on responses. It also frees up management's time by reducing the tedious task of answering questions.
+
 #### Infrastructure Considerations
 
 - Add capacity and tuning so sample processing is consistently fast (reduce the current multi‑minute waits).
 - Improve observability and error transparency (clear reasons for suppressed files and actionable error codes surfaced in UI/logs).
-
-#### Knowledge Base & AI-Powered Support Chatbot
-
-- **What**: Build an AI-integrated chatbot (or intelligent knowledge base system) that can answer team questions instantly by drawing from our documentation and accumulated Q&A knowledge.
-- **How it works**: 
-  - Train the system on our existing documentation (which needs improvement and iteration—we don't even have all our functions documented)
-  - Feed it questions and answers that currently require management intervention or peer consultation
-  - Continuously improve documentation as part of this initiative, ensuring all functions and processes are captured
-- **Impact**: 
-  - Alleviates management resources and time spent answering routine questions
-  - Eliminates wasted time siphoning through documentation or asking colleagues
-  - Provides instant, human-readable responses to common questions
-  - Creates a living knowledge base that improves as questions are answered
-  - Surfaces documentation gaps, driving iterative improvement of our internal docs
-- **Why now**: This addresses a hidden productivity drain—time spent searching for answers or waiting on management responses. It also creates a forcing function to improve our documentation, which is currently incomplete.
 
 ---
 

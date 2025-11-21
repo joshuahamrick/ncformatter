@@ -1,0 +1,88 @@
+<div>{[tagHeader]}</div>
+<br>
+<div><b>( {[M838]} PLS-CLIENT-ID = {[PLSID]} Produce)</b></div>
+<br>
+<div>{[plsMatrix.CompanyLongName]}</div>
+<div>{[CorporateAddr1]}</div>
+<br>
+<div>{[CorporateAddr2]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+
+<br>
+<div>( <b><u>“OR”</u></b> If {[M956]} (Foreign Address Indicator) = Y)</div>
+<br>
+<div>{[M928]} (Foreign Country Code)</div>
+<br>
+<div>{[M929]} (Foreign Postal Code)</div>
+<br>
+<div>see “SII Confirmed” on Letter Library Business Rules for Additional Addresses in BKFS)</div>
+<br>
+<div>SUBJECT: 					Notice of Servicing Transfer</div>
+<br>
+<div>UHM LOAN NUMBER:				{[M594]}</div>
+<br>
+<div>JPMORGAN CHASE BANK, NA LOAN NUMBER:	{[M614]}</div>
+<br>
+<div>PROPERTY:		{[M 567]}</div>
+<br>
+<div>{[M583]}</div>
+<br>
+<div>			{[M 568]}</div>
+<br>
+<div style="text-align: center"><b>NOTICE OF SERVICING TRANSFER</b></div>
+<br>
+<div>Dear {[M558]} and {[M559]},</div>
+<br>
+<div>The servicing of your mortgage loan is being transferred, effective 1 / 2 /202 6. This means that after this date, a new mortgage servicer will be collecting your mortgage loan payments. Nothing else about your mortgage loan will change.</div>
+<br>
+<div>{[plsMatrix.CompanyLongName]} is now collecting your payments. {[plsMatrix.CompanyLongName]} will stop accepting payments received from you after 12 /3 1 /202 5.</div>
+<br>
+<div>JPMorgan Chase Bank, NA, will collect your payments in the future. JPMorgan Chase Bank, NA, will start accepting payments received from you on 1 / 2 /202 6.</div>
+<br>
+<div>Send all payments due on or after 1 / 2 /202 6 to JPMorgan Chase Bank, NA, us ing the following address:</div>
+<br>
+<div>JPMorgan Chase Bank, NA</div>
+<br>
+<div>Attn: Payment Processing</div>
+<br>
+<div>P.O. Box 7 1244</div>
+<br>
+<div>Philadelphia, PA 19176-6244</div>
+<br>
+<div>If you have any questions for your current servicer, {[plsMatrix.CompanyLongName]}, or your new servicer, JPMorgan Chase Bank, NA, about your mortgage loan or this transfer, please contact them using the information below:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td><b>Current Servicer</b></td>
+  <td><b>New Servicer</b></td>
+    </tr><tr>
+  <td>{[plsMatrix.CompanyLongName]}<br>Customer Care Department<br>{[plsMatrix.HoursOfOperation]}<br>{[plsMatrix.CSPhoneNumber]}<br>{[CSEmail]}</td>
+  <td>JPMorgan Chase Bank, NA<br>Customer Service Department<br>8:00 a.m. to 8:00 p.m. ET, Monday-Friday<br>9:00 a.m. to 6:00 p.m. ET, Saturday<br>( 800) 282-5744</td>
+    </tr><tr>
+  <td>{[CorporateAddr1]}<br>{[CorporateAddr 2]}</td>
+  <td>JPMorgan Chase Bank, NA<br>C/O Chase, Mail Code LA4-6475<br>700 Kansas Lane<br>Monroe, LA 71203</td>
+</tr></tbody></table></div>
+<br>
+<div>Under Federal law, during the 60-day period following the effective date of transfer of the loan servicing, a loan payment received by your current servicer on or before its due date may not be treated by the new servicer as late, and a late fee may not be imposed upon you.</div>
+<br>
+<div><b>Important note about insurance</b></div>
+<br>
+<div>If you have mortgage life or disability insurance, or any other type of optional insurance, the transfer of servicing rights may affect your insurance. Premiums for these insurances, if applicable, are not included in your escrow account. You are responsible for maintaining the insurance and paying the premiums when due.  To maintain coverage, continue to pay your premiums when due directly to the requisite insurance company.</div>
+<br>
+<div>Customer Care Department</div>
+<br>
+<div>{[plsMatrix.CompanyLongName]}</div>
+<div>{[L003]}</div>
+<br>
+<div style="text-align: center"><b>IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT</b></div>
+<br>
+<div>If your mortgage payments are being made through an automatic draft with {[plsMatrix.CompanyLongName]}, this service will continue with JPMorgan Chase Bank, NA using the bank account set up with {[plsMatrix.CompanyLongName]}. Please note that your first payment scheduled for automatic draft at JPMorgan Chase Bank, NA, may be delayed by up to 10 days, but there will not be any late fees or credit impact.</div>
+<br>
+<div>If you would like to modify your automatic draft with JPMor gan Chase Bank, NA, after the loan transfer, visit.</div>
+<br>
+<div style="text-align: center"><b>IMPORTANT PAYMENT INFORMATION FOR CUSTOMERS USING OTHER ONLINE BANKING SERVICES</b></div>
+<br>
+<div>If you are currently using an online banking service to make your mortgage payments, {[plsMatrix.CompanyLongName]} will no longer accept those payments after 12 /3 1 /202 5. Please update the payee to JPMorgan Chase Bank, NA for payments scheduled for 1 / 2 /202 6 and beyond.</div>
+<br>

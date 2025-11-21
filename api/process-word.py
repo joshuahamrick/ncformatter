@@ -127,6 +127,11 @@ def process_word_document(file_bytes, file_name):
         # Generate the formatted HTML
         formatted_html = generate_formatted_html(paragraphs, tables, document_type)
         
+        # Debug: Check if UHM LOAN NUMBER is in initial HTML
+        if 'UHM LOAN NUMBER' in formatted_html or 'M594' in formatted_html:
+            # UHM LOAN NUMBER is present in initial HTML
+            pass
+        
         # Apply universal formatting rules
         formatted_html = apply_universal_formatting_rules(formatted_html)
         
@@ -434,16 +439,28 @@ def apply_universal_formatting_rules(html_text):
         # Remove M956, M928, M929 sections early so they don't interfere
         html_text = remove_conditional_logic_sections(html_text)
         
-        # STEP 2.5.6: DETECT UHM HEADER EARLY (before label-value conversion)
-        # We need to detect UHM before converting to tables, so check the raw text
-        has_uhm = detect_uhm_header(html_text)
-        
         # STEP 2.6: CONVERT ALIGNED LABEL-VALUE PAIRS TO TABLES (before header cleanup)
+        # Convert based on visual alignment/spacing, not Word markup
+        # Debug: Check if UHM LOAN NUMBER exists before conversion
+        has_uhm_before = 'UHM LOAN NUMBER:' in html_text or 'uhm loan number:' in html_text.lower() or '{[M594]}' in html_text
+        if has_uhm_before:
+            # UHM LOAN NUMBER exists - try to find it
+            uhm_pos = html_text.find('UHM LOAN NUMBER') if 'UHM LOAN NUMBER' in html_text else html_text.find('M594')
+            if uhm_pos > 0:
+                # Print context around UHM LOAN NUMBER
+                context = html_text[max(0, uhm_pos-200):min(len(html_text), uhm_pos+300)]
+                # This will help debug
+                pass
         html_text = convert_aligned_label_value_pairs_to_tables(html_text)
+        # Debug: Check if UHM LOAN NUMBER exists after conversion
+        has_uhm_after = 'UHM LOAN NUMBER:' in html_text or 'uhm loan number:' in html_text.lower() or '{[M594]}' in html_text
+        if has_uhm_before and not has_uhm_after:
+            # UHM LOAN NUMBER was removed by convert_aligned_label_value_pairs_to_tables - this shouldn't happen!
+            # It should have been converted to a table
+            pass
         
-        # STEP 2.7: FIX HEADER TYPE DETECTION (use detected UHM flag)
-        # Pass the UHM detection result to header fix function
-        html_text = fix_header_structure_completely(html_text, has_uhm=has_uhm)
+        # STEP 2.7: FIX HEADER STRUCTURE
+        html_text = fix_header_structure_completely(html_text)
         
         # STEP 3: SALUTATION CLEANUP - Replace multiple Dear options with clean salutation
         html_text = fix_salutation_section(html_text)
@@ -469,8 +486,9 @@ def apply_universal_formatting_rules(html_text):
         # STEP 5.7: FIX SERVICER TABLE FORMATTING
         html_text = fix_servicer_table_formatting(html_text)
         
-        # STEP 6: DOCUMENT TITLE AND RE TABLE - Add proper structure
-        html_text = add_document_title_and_re_table(html_text)
+        # STEP 6: DOCUMENT TITLE AND RE TABLE - Add proper structure (only for BR010)
+        # Don't add BR010 content to SR121 or other documents
+        # html_text = add_document_title_and_re_table(html_text)  # Disabled - was adding BR010 content to all docs
         
         # STEP 7: COMPREHENSIVE STRUCTURE TRANSFORMATION - Achieve 95% accuracy
         html_text = transform_to_target_format(html_text)
@@ -1049,9 +1067,13 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # Match: <div>SUBJECT: 					Notice of Servicing Transfer</div><br><div>UHM LOAN NUMBER:				{[M594]}</div><br><div>JPMORGAN CHASE BANK, NA LOAN NUMBER:	{[M614]}</div>
     # Use a more flexible pattern that matches the entire sequence with any whitespace
     # Handle newlines, tabs, and various spacing - labels are literal strings
-    subject_uhm_jpmorgan_pattern = r'<div[^>]*>SUBJECT:\s+([^<]+)</div>\s*<br>\s*' \
-                                     r'<div[^>]*>UHM LOAN NUMBER:\s+([^<]+)</div>\s*<br>\s*' \
-                                     r'<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+([^<]+)</div>'
+    # Use [\s\n]* to match any whitespace including newlines between divs and br tags
+    # Use \s* to match any whitespace (spaces, tabs) after colon - more flexible
+    # Pattern must handle tabs/spaces between colon and value, and newlines between divs
+    # Use [\s\S]*? to match any whitespace including newlines non-greedily
+    subject_uhm_jpmorgan_pattern = r'<div[^>]*>SUBJECT:\s*([^<]+)</div>[\s\S]*?<br>[\s\S]*?' \
+                                    r'<div[^>]*>UHM LOAN NUMBER:\s*([^<]+)</div>[\s\S]*?<br>[\s\S]*?' \
+                                    r'<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s*([^<]+)</div>'
     
     def convert_subject_uhm_jpmorgan(match):
         # Values are already captured in groups 1, 2, 3
@@ -1071,18 +1093,214 @@ def convert_aligned_label_value_pairs_to_tables(text):
 </tr></tbody></table>
 <br>'''
     
-    # Try the pattern match - use DOTALL to handle newlines
-    text = re.sub(subject_uhm_jpmorgan_pattern, convert_subject_uhm_jpmorgan, text, flags=re.IGNORECASE | re.DOTALL)
+    # Check if UHM LOAN NUMBER exists in text before trying to match
+    # Only apply fallback if UHM LOAN NUMBER is completely missing
+    # Check both uppercase and case-insensitive - also check for M594 tag which is the value
+    has_uhm_loan = 'UHM LOAN NUMBER:' in text or 'uhm loan number:' in text.lower() or '{[M594]}' in text
     
-    # Fallback: If UHM LOAN NUMBER is missing, still convert SUBJECT and JPMORGAN to table
-    # Pattern: SUBJECT and JPMORGAN without UHM LOAN NUMBER between them
-    subject_jpmorgan_pattern = r'<div[^>]*>SUBJECT:\s+([^<]+)</div>\s*<br>\s*<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s+([^<]+)</div>'
-    def convert_subject_jpmorgan(match):
-        subj_val = match.group(1).strip()
-        jpm_val = match.group(2).strip()
-        # Only convert if UHM LOAN NUMBER is not already in a table (check if it was already converted)
-        # If the pattern matches, it means UHM LOAN NUMBER wasn't found, so create table without it
-        return f'''<table width="100%"><tbody><tr>
+    uhm_pattern_matched = False
+    
+    # CRITICAL: If UHM LOAN NUMBER exists, we MUST convert it to a table
+    # Try multiple approaches to ensure we catch it
+    
+    # CRITICAL: If UHM LOAN NUMBER exists, we MUST convert it to a table
+    # Try finding them separately first (more reliable than pattern matching)
+    if has_uhm_loan:
+        # First try finding them separately - this is more robust
+        subject_match = re.search(r'<div[^>]*>SUBJECT:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Also try without requiring spaces between words (more flexible)
+        if not uhm_match:
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Also try with just the colon pattern (most flexible)
+        if not uhm_match:
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER\s*:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Also try without requiring spaces between words
+        if not jpmorgan_match:
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        
+        # If all three are found, build the table
+        if subject_match and uhm_match and jpmorgan_match:
+            # Check if they appear in order: SUBJECT -> UHM -> JPMORGAN
+            subj_end = subject_match.end()
+            uhm_start = uhm_match.start()
+            uhm_end = uhm_match.end()
+            jpm_start = jpmorgan_match.start()
+            
+            # They should appear in order and be reasonably close (within 1000 chars)
+            if (subj_end <= uhm_start <= uhm_end <= jpm_start and 
+                jpm_start - subj_end < 1000):
+                # Extract values
+                subj_val = subject_match.group(1).strip()
+                uhm_val = uhm_match.group(1).strip()
+                jpm_val = jpmorgan_match.group(1).strip()
+                
+                # Build table
+                table_html = f'''<table width="100%"><tbody><tr>
+  <td width="45%" valign="top">SUBJECT:</td>
+  <td>{subj_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">UHM LOAN NUMBER:</td>
+  <td>{uhm_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">JPMORGAN CHASE BANK, NA LOAN NUMBER:</td>
+  <td>{jpm_val}</td>
+</tr></tbody></table>
+<br>'''
+                
+                # Replace the entire sequence from SUBJECT to JPMORGAN
+                start_pos = subject_match.start()
+                end_pos = jpmorgan_match.end()
+                # Find any <br> tags after JPMORGAN
+                after_jpm = text[end_pos:]
+                br_match = re.match(r'[\s\n]*<br>[\s\n]*', after_jpm)
+                if br_match:
+                    end_pos += br_match.end()
+                
+                text = text[:start_pos] + table_html + text[end_pos:]
+                uhm_pattern_matched = True
+        
+        # If separate matching didn't work, try the direct pattern match as fallback
+        if not uhm_pattern_matched:
+            match_found = re.search(subject_uhm_jpmorgan_pattern, text, flags=re.IGNORECASE | re.DOTALL)
+            if match_found:
+                result = re.sub(subject_uhm_jpmorgan_pattern, convert_subject_uhm_jpmorgan, text, flags=re.IGNORECASE | re.DOTALL)
+                if result != text:
+                    text = result
+                    uhm_pattern_matched = True
+        else:
+            # Pattern didn't match - try finding them separately and building the table
+            # This is more robust and handles cases where the pattern doesn't match exactly
+            # Use simpler patterns that match the literal text (spaces are handled by \s*)
+            subject_match = re.search(r'<div[^>]*>SUBJECT:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            # Try multiple patterns to catch UHM LOAN NUMBER
+            uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            # Also try without requiring spaces between words (more flexible)
+            if not uhm_match:
+                uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            # Also try with just the colon pattern (most flexible)
+            if not uhm_match:
+                uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER\s*:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            # Also try without requiring spaces between words
+            if not jpmorgan_match:
+                jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+            
+            # If all three are found, build the table
+            if subject_match and uhm_match and jpmorgan_match:
+                # Check if they appear in order: SUBJECT -> UHM -> JPMORGAN
+                subj_end = subject_match.end()
+                uhm_start = uhm_match.start()
+                uhm_end = uhm_match.end()
+                jpm_start = jpmorgan_match.start()
+                
+                # They should appear in order and be reasonably close (within 1000 chars)
+                if (subj_end <= uhm_start < uhm_end <= jpm_start and 
+                    jpm_start - subj_end < 1000):
+                    # Extract values
+                    subj_val = subject_match.group(1).strip()
+                    uhm_val = uhm_match.group(1).strip()
+                    jpm_val = jpmorgan_match.group(1).strip()
+                    
+                    # Build table
+                    table_html = f'''<table width="100%"><tbody><tr>
+  <td width="45%" valign="top">SUBJECT:</td>
+  <td>{subj_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">UHM LOAN NUMBER:</td>
+  <td>{uhm_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">JPMORGAN CHASE BANK, NA LOAN NUMBER:</td>
+  <td>{jpm_val}</td>
+</tr></tbody></table>
+<br>'''
+                    
+                    # Replace the entire sequence from SUBJECT to JPMORGAN
+                    start_pos = subject_match.start()
+                    end_pos = jpmorgan_match.end()
+                    # Find any <br> tags after JPMORGAN
+                    after_jpm = text[end_pos:]
+                    br_match = re.match(r'[\s\n]*<br>[\s\n]*', after_jpm)
+                    if br_match:
+                        end_pos += br_match.end()
+                    
+                    text = text[:start_pos] + table_html + text[end_pos:]
+                    uhm_pattern_matched = True
+    
+    # If pattern didn't match, try finding them separately
+    if has_uhm_loan and not uhm_pattern_matched:
+        # Try to find SUBJECT, UHM LOAN NUMBER, and JPMORGAN separately
+        # Pattern for each: <div>LABEL: ... VALUE</div>
+        # Use more flexible patterns that handle any whitespace
+        subject_match = re.search(r'<div[^>]*>SUBJECT:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Try multiple patterns to catch UHM LOAN NUMBER
+        uhm_match = re.search(r'<div[^>]*>UHM\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Also try without requiring spaces between words (more flexible)
+        if not uhm_match:
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Also try with just the colon pattern (most flexible)
+        if not uhm_match:
+            uhm_match = re.search(r'<div[^>]*>UHM\s*LOAN\s*NUMBER\s*:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s+CHASE\s+BANK,\s+NA\s+LOAN\s+NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        # Also try without requiring spaces between words
+        if not jpmorgan_match:
+            jpmorgan_match = re.search(r'<div[^>]*>JPMORGAN\s*CHASE\s*BANK,\s*NA\s*LOAN\s*NUMBER:\s*([^<]+)</div>', text, flags=re.IGNORECASE)
+        
+        # If all three are found and they appear consecutively (within reasonable distance)
+        if subject_match and uhm_match and jpmorgan_match:
+            # Check if they appear in order and are close together (within 500 chars)
+            subj_end = subject_match.end()
+            uhm_start = uhm_match.start()
+            uhm_end = uhm_match.end()
+            jpm_start = jpmorgan_match.start()
+            
+            # They should appear in order: SUBJECT -> UHM -> JPMORGAN
+            # And be reasonably close (within 1000 chars of each other)
+            # Use <= instead of < to handle cases where they're adjacent
+            if (subj_end <= uhm_start <= uhm_end <= jpm_start and 
+                jpm_start - subj_end < 1000):
+                # Extract values
+                subj_val = subject_match.group(1).strip()
+                uhm_val = uhm_match.group(1).strip()
+                jpm_val = jpmorgan_match.group(1).strip()
+                
+                # Build table
+                table_html = f'''<table width="100%"><tbody><tr>
+  <td width="45%" valign="top">SUBJECT:</td>
+  <td>{subj_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">UHM LOAN NUMBER:</td>
+  <td>{uhm_val}</td>
+</tr><tr>
+  <td width="45%" valign="top">JPMORGAN CHASE BANK, NA LOAN NUMBER:</td>
+  <td>{jpm_val}</td>
+</tr></tbody></table>
+<br>'''
+                
+                # Replace the entire sequence from SUBJECT to JPMORGAN
+                # Include any <br> tags between them
+                start_pos = subject_match.start()
+                end_pos = jpmorgan_match.end()
+                # Find any <br> tags after JPMORGAN
+                after_jpm = text[end_pos:]
+                br_match = re.match(r'[\s\n]*<br>[\s\n]*', after_jpm)
+                if br_match:
+                    end_pos += br_match.end()
+                
+                text = text[:start_pos] + table_html + text[end_pos:]
+                uhm_pattern_matched = True
+    else:
+        # Fallback: If UHM LOAN NUMBER is missing from text, still convert SUBJECT and JPMORGAN to table
+        # But first check if UHM LOAN NUMBER exists but wasn't matched - might be in a different format
+        # Pattern: SUBJECT and JPMORGAN without UHM LOAN NUMBER between them
+        # Only apply this fallback if UHM LOAN NUMBER is truly missing (not just pattern didn't match)
+        if '{[M594]}' not in text and 'UHM LOAN NUMBER' not in text.upper():
+            subject_jpmorgan_pattern = r'<div[^>]*>SUBJECT:\s*([^<]+)</div>\s*<br>\s*<div[^>]*>JPMORGAN CHASE BANK, NA LOAN NUMBER:\s*([^<]+)</div>'
+            def convert_subject_jpmorgan(match):
+                subj_val = match.group(1).strip()
+                jpm_val = match.group(2).strip()
+                return f'''<table width="100%"><tbody><tr>
   <td width="45%" valign="top">SUBJECT:</td>
   <td>{subj_val}</td>
 </tr><tr>
@@ -1090,9 +1308,7 @@ def convert_aligned_label_value_pairs_to_tables(text):
   <td>{jpm_val}</td>
 </tr></tbody></table>
 <br>'''
-    # Only apply if UHM LOAN NUMBER pattern didn't match (i.e., UHM LOAN NUMBER is missing)
-    if 'UHM LOAN NUMBER:' not in text or '<td width="45%" valign="top">UHM LOAN NUMBER:</td>' not in text:
-        text = re.sub(subject_jpmorgan_pattern, convert_subject_jpmorgan, text, flags=re.IGNORECASE | re.DOTALL)
+            text = re.sub(subject_jpmorgan_pattern, convert_subject_jpmorgan, text, flags=re.IGNORECASE | re.DOTALL)
     
     # Pattern to find consecutive label-value pairs
     # Handle labels with tabs/spaces: "SUBJECT: 					Notice"
@@ -1270,7 +1486,10 @@ def convert_aligned_label_value_pairs_to_tables(text):
         
         return text
     
-    text = find_and_convert_sequences(text)
+    # General pattern matching for other label-value pairs
+    # Skip if UHM pattern already matched (to avoid overwriting)
+    if not uhm_pattern_matched:
+        text = find_and_convert_sequences(text)
     
     # Also handle single PROPERTY: pattern (if not already converted)
     single_property_pattern = r'<div[^>]*>(PROPERTY:\s*)</div>\s*<br>\s*<div[^>]*>([^<]+)</div>'
@@ -1309,6 +1528,7 @@ def fix_payment_address_table(text):
     
     # Pattern: Find "using the following address:" followed by address lines
     # Match: JPMorgan Chase Bank, NA<br>Attn: Payment Processing<br>P.O. Box...<br>Philadelphia...
+    # Also handle table format with <br> tags inside cells
     address_pattern = r'(<div>Send all payments[^<]*</div>\s*<br>\s*)'
     address_pattern += r'(<div>JPMorgan Chase Bank, NA</div>\s*<br>\s*)'
     address_pattern += r'(<div>Attn: Payment Processing</div>\s*<br>\s*)'
@@ -1335,6 +1555,12 @@ def fix_payment_address_table(text):
     
     text = re.sub(address_pattern, convert_to_table, text, flags=re.IGNORECASE)
     
+    # Also fix existing table format that has <br> tags inside cells
+    # Pattern: <table><tbody><tr> <td style="padding-left: 50px">JPMorgan Chase Bank, NA<br></td>
+    text = re.sub(r'(<td[^>]*style="padding-left: 50px">)([^<\n]+)\s*<br>\s*</td>', r'\1\2</td>', text)
+    # Also remove trailing spaces
+    text = re.sub(r'(<td[^>]*style="padding-left: 50px">)([^<\n]+)\s+</td>', r'\1\2</td>', text)
+    
     return text
 
 def fix_servicer_table_formatting(text):
@@ -1343,32 +1569,28 @@ def fix_servicer_table_formatting(text):
     
     # Pattern: Find servicer table and fix formatting
     # Match table with Current Servicer and New Servicer headers
-    servicer_pattern = r'(<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>)(.*?)(</td>\s*<td[^>]*>)(.*?)(</td>\s*</tr><tr>\s*<td[^>]*>)(.*?)(</td>\s*<td[^>]*>)(.*?)(</td>\s*</tr></tbody></table></div>)'
+    # More flexible pattern to handle various table structures
+    servicer_pattern = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
     
     def format_servicer_table(match):
-        header = match.group(1)
-        current_info = match.group(2).strip()
-        middle = match.group(3)
-        new_info = match.group(4).strip()
-        middle2 = match.group(5)
-        current_addr = match.group(6).strip()
-        middle3 = match.group(7)
-        new_addr = match.group(8).strip()
-        footer = match.group(9)
+        current_info = match.group(1).strip()
+        new_info = match.group(2).strip()
+        current_addr = match.group(3).strip()
+        new_addr = match.group(4).strip()
         
-        # Convert current info to Compress format
-        current_lines = [line.strip() for line in current_info.split('<br>') if line.strip()]
+        # Convert current info to Compress format (handle <br> tags)
+        current_lines = [line.strip() for line in re.split(r'<br\s*/?>', current_info) if line.strip()]
         current_compress = '|'.join(current_lines)
         
         # Convert new info to Compress format
-        new_lines = [line.strip() for line in new_info.split('<br>') if line.strip()]
+        new_lines = [line.strip() for line in re.split(r'<br\s*/?>', new_info) if line.strip()]
         new_compress = '|'.join(new_lines)
         
         # Convert addresses to Compress format
-        current_addr_lines = [line.strip() for line in current_addr.split('<br>') if line.strip()]
+        current_addr_lines = [line.strip() for line in re.split(r'<br\s*/?>', current_addr) if line.strip()]
         current_addr_compress = '|'.join(current_addr_lines)
         
-        new_addr_lines = [line.strip() for line in new_addr.split('<br>') if line.strip()]
+        new_addr_lines = [line.strip() for line in re.split(r'<br\s*/?>', new_addr) if line.strip()]
         new_addr_compress = '|'.join(new_addr_lines)
         
         # Fix field references
@@ -1409,6 +1631,37 @@ def remove_plsid_references(text):
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r'<div[^>]*>.*?\{\[PLSID\]\}.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove PLS fields from header section: {[plsMatrix.CompanyLongName]}, {[CorporateAddr1]}, {[CorporateAddr2]}
+    # These should only appear in the header section, not in body
+    # Pattern: Remove these if they appear before L001 or mailingAddress
+    # Find header section (before SUBJECT, Dear, etc.)
+    header_end_patterns = [
+        r'<div[^>]*>SUBJECT:',
+        r'<div[^>]*>UHM LOAN NUMBER:',
+        r'<div[^>]*>\{\[L001\]\}',
+        r'<div[^>]*>\{\[mailingAddress\]\}',
+        r'<div[^>]*>Dear',
+    ]
+    
+    header_end_pos = len(text)
+    for pattern in header_end_patterns:
+        match = re.search(pattern, text)
+        if match and match.start() < header_end_pos:
+            header_end_pos = match.start()
+    
+    # Remove PLS fields from header section only
+    if header_end_pos < len(text):
+        header_section = text[:header_end_pos]
+        body_section = text[header_end_pos:]
+        
+        # Remove PLS fields from header
+        header_section = re.sub(r'<div[^>]*>\{\[plsMatrix\.CompanyLongName\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr1\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr2\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+        header_section = re.sub(r'<div[^>]*>\{\[CorporateAddr\s*2\]\}</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+        
+        text = header_section + body_section
     
     return text
 
@@ -1841,53 +2094,275 @@ def apply_comprehensive_spacing(text):
     
     return text
 
-def fix_header_structure_completely(text, has_uhm=None):
+def fix_header_structure_completely(text):
     """Completely replace the messy header with clean structure"""
-    # Detect header type based on H003 null conditional, NMLS mention, or UHM header
+    import re
+    
+    # FIRST: Remove any duplicate header tags at the start - handle various patterns
+    # Match start of text with multiple tagHeaders - be more aggressive
+    # Pattern: Match two or more consecutive tagHeader divs at start
+    # Use a simpler approach: find all tagHeader divs at start and keep only first
+    # Remove duplicates at start - match exact structure with dotall to handle newlines
+    start_duplicate_pattern = r'^(<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>)'
+    if re.search(start_duplicate_pattern, text, re.MULTILINE | re.DOTALL):
+        text = re.sub(start_duplicate_pattern, r'<div>{[tagHeader]}</div>', text, count=1, flags=re.MULTILINE | re.DOTALL)
+    
+    # Also handle duplicates anywhere - match two consecutive tagHeaders with br/newlines between
+    duplicate_pattern = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
+    # Keep removing until no more duplicates
+    while True:
+        new_text = re.sub(duplicate_pattern, r'<div>{[tagHeader]}</div>', text, count=1, flags=re.MULTILINE | re.DOTALL)
+        if new_text == text:
+            break
+        text = new_text
+    
+    # Detect header type based on H003 null conditional or NMLS mention
     has_h003_null = detect_h003_null_conditional(text)
     has_nmls = detect_nmls_mention(text)
-    # Use passed UHM flag if provided, otherwise detect
-    if has_uhm is None:
-        has_uhm = detect_uhm_header(text)
+    has_uhm = detect_uhm_header(text)
     
-    # Determine header format (priority: UHM > NMLS > H003 null > tagHeader)
-    if has_uhm:
-        header_line = '<div>{Insert(UHM Header)}</div>'
-    elif has_nmls:
+    # Determine header format (NMLS > H003 null > UHM Header > tagHeader)
+    if has_nmls:
         header_line = '<div>{Header(NMLSID)}</div>'
     elif has_h003_null:
         header_line = '<div>{Insert(H003 TagHeader)}</div>'
+    elif has_uhm:
+        header_line = '<div>{Insert(UHM Header)}</div>'
     else:
         header_line = '<div>{[tagHeader]}</div>'
     
     # Find the start of the document (first tagHeader/header with any content after it)
+    # OR find L001 if no header tag exists
     start_patterns = [
         r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>',
         r'<div[^>]*>\{Insert\(H003 TagHeader\)\}[^<]*</div>',
         r'<div[^>]*>\{Header\(NMLSID\)\}[^<]*</div>',
         r'<div[^>]*>\{\[H002\]\}[^<]*</div>',
-        r'<div[^>]*>\{\[H003\]\}[^<]*</div>'
+        r'<div[^>]*>\{\[H003\]\}[^<]*</div>',
+        r'<div[^>]*>\{\[L001\]\}</div>'  # Fallback: use L001 as start if no header tag
+    ]
+    
+    # First check if header tag already exists (to avoid duplicates)
+    header_tag_patterns = [
+        r'<div[^>]*>\{\[tagHeader\]\}[^<]*</div>',
+        r'<div[^>]*>\{Insert\(H003 TagHeader\)\}[^<]*</div>',
+        r'<div[^>]*>\{Header\(NMLSID\)\}[^<]*</div>',
+        r'<div[^>]*>\{Insert\(UHM Header\)\}[^<]*</div>',
     ]
     
     start_match = None
-    for pattern in start_patterns:
-        start_match = re.search(pattern, text)
-        if start_match:
+    header_tag_found = False
+    
+    for pattern in header_tag_patterns:
+        match = re.search(pattern, text)
+        if match:
+            start_match = match
+            header_tag_found = True
             break
+    
+    # If header tag already found, check if it needs to be replaced with correct type
+    if header_tag_found and start_match:
+        # Check if the existing header tag matches the detected type
+        existing_header_text = text[start_match.start():start_match.end()]
+        header_tag_content = re.search(r'\{Header\(NMLSID\)\}|\{Insert\(H003 TagHeader\)\}|\{Insert\(UHM Header\)\}|\{\[tagHeader\]\}', existing_header_text)
+        
+        # If header type doesn't match detected type, replace it
+        if header_tag_content:
+            existing_type = header_tag_content.group(0)
+            if has_nmls and '{Header(NMLSID)}' not in existing_type:
+                # Replace with NMLS header
+                text = text[:start_match.start()] + header_line + text[start_match.end():]
+                # Update start_match to point to new header
+                start_match = re.search(r'<div[^>]*>\{Header\(NMLSID\)\}[^<]*</div>', text)
+            elif has_h003_null and '{Insert(H003 TagHeader)}' not in existing_type:
+                # Replace with H003 header
+                text = text[:start_match.start()] + header_line + text[start_match.end():]
+                # Update start_match to point to new header
+                start_match = re.search(r'<div[^>]*>\{Insert\(H003 TagHeader\)\}[^<]*</div>', text)
+            elif has_uhm and '{Insert(UHM Header)}' not in existing_type:
+                # Replace with UHM header
+                text = text[:start_match.start()] + header_line + text[start_match.end():]
+                # Update start_match to point to new header
+                start_match = re.search(r'<div[^>]*>\{Insert\(UHM Header\)\}[^<]*</div>', text)
+        
+        # Remove duplicates BEFORE processing end_pos
+        # Remove duplicates at start
+        duplicate_header_pattern = r'^(<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*){2,}'
+        if re.search(duplicate_header_pattern, text, re.MULTILINE | re.DOTALL):
+            text = re.sub(duplicate_header_pattern, header_line + '\n<br>\n', text, flags=re.MULTILINE | re.DOTALL)
+        
+        # Also remove duplicates anywhere (not just at start) - handle both tagHeader and UHM Header
+        duplicate_pattern1 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
+        duplicate_pattern2 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
+        duplicate_pattern3 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
+        duplicate_pattern4 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
+        while True:
+            new_text = text
+            new_text = re.sub(duplicate_pattern1, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            new_text = re.sub(duplicate_pattern2, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            new_text = re.sub(duplicate_pattern3, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            new_text = re.sub(duplicate_pattern4, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            if new_text == text:
+                break
+            text = new_text
+        
+        # Re-find start_match after duplicate removal
+        if start_match:
+            for pattern in header_tag_patterns:
+                match = re.search(pattern, text)
+                if match:
+                    start_match = match
+                    break
+        
+        # Find end position and clean up PLS fields
+        # IMPORTANT: Check for SUBJECT first, then UHM LOAN NUMBER, to ensure we don't cut off UHM LOAN NUMBER
+        # If SUBJECT is found, use it as end marker (UHM LOAN NUMBER comes before SUBJECT)
+        # If only UHM LOAN NUMBER is found, use it as end marker
+        end_patterns = [
+            r'<div[^>]*>SUBJECT:',
+            r'<table[^>]*><tbody><tr>\s*<td[^>]*>SUBJECT:',
+            r'<div[^>]*>UHM LOAN NUMBER:',
+            r'<div[^>]*>Borrower Name:',
+            r'<div[^>]*>Dear',
+        ]
+        end_pos = None
+        for pattern in end_patterns:
+            end_match = re.search(pattern, text)
+            if end_match:
+                end_pos = end_match.start()
+                break
+        
+        if end_pos and start_match:
+            header_section = text[start_match.start():end_pos]
+            # Remove PLS fields - but preserve UHM LOAN NUMBER and SUBJECT/JPMORGAN if they're in header section
+            header_section = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE | re.DOTALL)
+            header_section = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE | re.DOTALL)
+            header_section = re.sub(r'<div[^>]*>.*?\{\[plsMatrix\.CompanyLongName\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+            header_section = re.sub(r'<div[^>]*>.*?\{\[CorporateAddr1\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+            header_section = re.sub(r'<div[^>]*>.*?\{\[CorporateAddr2\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+            # IMPORTANT: If UHM LOAN NUMBER, SUBJECT, or JPMORGAN are in header section, they should NOT be removed
+            # They're part of the document content, not header metadata
+            # So we keep them in the header_section, but they'll be processed by convert_aligned_label_value_pairs_to_tables
+            # CRITICAL: end_pos points to SUBJECT, so UHM LOAN NUMBER is NOT in header_section, it's after end_pos
+            # So we need to preserve everything from end_pos onwards, including UHM LOAN NUMBER
+            text = text[:start_match.start()] + header_section + text[end_pos:]
+        
+        # After replacing header type, remove any duplicate headers unconditionally
+        # Remove duplicates at start
+        duplicate_header_pattern = r'^(<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*){2,}|^(<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*){2,}'
+        if re.search(duplicate_header_pattern, text, re.MULTILINE | re.DOTALL):
+            text = re.sub(duplicate_header_pattern, header_line + '\n<br>\n', text, flags=re.MULTILINE | re.DOTALL)
+        
+        # Also remove duplicates anywhere (not just at start) - handle both tagHeader and UHM Header
+        duplicate_pattern1 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
+        duplicate_pattern2 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
+        duplicate_pattern3 = r'<div[^>]*>\{\[tagHeader\]\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{Insert\(UHM Header\)\}</div>'
+        duplicate_pattern4 = r'<div[^>]*>\{Insert\(UHM Header\)\}</div>[\s\n]*<br>[\s\n]*<div[^>]*>\{\[tagHeader\]\}</div>'
+        while True:
+            new_text = text
+            new_text = re.sub(duplicate_pattern1, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            new_text = re.sub(duplicate_pattern2, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            new_text = re.sub(duplicate_pattern3, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            new_text = re.sub(duplicate_pattern4, header_line, new_text, count=1, flags=re.MULTILINE | re.DOTALL)
+            if new_text == text:
+                break
+            text = new_text
+        
+        return text
+    
+    # If no header tag found, look for L001
+    if not header_tag_found:
+        l001_pattern = r'<div[^>]*>\{\[L001\]\}</div>'
+        match = re.search(l001_pattern, text)
+        if match:
+            start_match = match
+    
+    # If no start found, INSERT header at the beginning
+    if not start_match:
+        # Check if header content already exists (L001, mailingAddress)
+        l001_match = re.search(r'<div[^>]*>\{\[L001\]\}</div>', text)
+        mailing_match = re.search(r'<div[^>]*>\{\[mailingAddress\]\}</div>', text)
+        
+        # Check if header tag already exists BEFORE L001
+        if l001_match:
+            before_l001 = text[:l001_match.start()]
+            existing_header = re.search(r'<div[^>]*>\{Header\(NMLSID\)\}</div>|<div[^>]*>\{Insert\(H003 TagHeader\)\}</div>|<div[^>]*>\{Insert\(UHM Header\)\}</div>|<div[^>]*>\{\[tagHeader\]\}</div>', before_l001)
+            
+            if existing_header:
+                # Header tag already exists before L001, don't insert again
+                # But still process to clean up spacing and remove PLS fields
+                start_match = re.search(r'<div[^>]*>\{\[L001\]\}</div>', text)
+                if start_match:
+                    # Find end position and clean up
+                    end_patterns = [
+                        r'<div[^>]*>SUBJECT:',
+                        r'<div[^>]*>UHM LOAN NUMBER:',
+                        r'<table[^>]*><tbody><tr>\s*<td[^>]*>SUBJECT:',
+                        r'<div[^>]*>Borrower Name:',
+                        r'<div[^>]*>Dear',
+                    ]
+                    end_pos = None
+                    for pattern in end_patterns:
+                        end_match = re.search(pattern, text)
+                        if end_match:
+                            end_pos = end_match.start()
+                            break
+                    
+                    if end_pos:
+                        header_section = text[start_match.start():end_pos]
+                        # Remove PLS fields
+                        header_section = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE | re.DOTALL)
+                        header_section = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE | re.DOTALL)
+                        header_section = re.sub(r'<div[^>]*>.*?\{\[plsMatrix\.CompanyLongName\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+                        header_section = re.sub(r'<div[^>]*>.*?\{\[CorporateAddr1\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+                        header_section = re.sub(r'<div[^>]*>.*?\{\[CorporateAddr2\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+                        # Fix spacing
+                        header_section = re.sub(r'(\{\[mailingAddress\]\}</div>)\s*<br>\s*(<br>\s*)*', r'\1\n<br>\n  <br>\n    <br>\n      <br>\n        <br>', header_section)
+                        text = text[:start_match.start()] + header_section + text[end_pos:]
+                return text
+        
+        if l001_match and mailing_match:
+            # Check if header tag already exists before L001
+            before_l001 = text[:l001_match.start()]
+            existing_header_before = re.search(r'\{Header\(NMLSID\)\}|\{Insert\(H003 TagHeader\)\}|\{Insert\(UHM Header\)\}|\{\[tagHeader\]\}', before_l001)
+            
+            if not existing_header_before:
+                # Header content exists but no header tag - insert header tag before L001
+                clean_header = f'''{header_line}
+<br>
+<div>{{[L001]}}</div>
+<div>{{[mailingAddress]}}</div>
+<br><br><br><br><br>'''
+                text = text[:l001_match.start()] + clean_header + text[l001_match.start():]
+            # Now find the end position
+            start_match = re.search(r'<div[^>]*>\{\[L001\]\}</div>', text)
+        else:
+            # No header content at all - insert complete header at beginning
+            clean_header = f'''{header_line}
+<br>
+<div>{{[L001]}}</div>
+<div>{{[mailingAddress]}}</div>
+<br><br><br><br><br>'''
+            text = clean_header + text
+            # Re-search for start position
+            start_match = re.search(r'<div[^>]*>\{\[L001\]\}</div>', text)
     
     if not start_match:
         return text
     
     # Find where the header section ends (before any borrower info, Dear, SUBJECT, or UHM LOAN NUMBER)
+    # Prioritize SR121-specific patterns first
     end_patterns = [
         r'<div[^>]*>SUBJECT:',
         r'<div[^>]*>UHM LOAN NUMBER:',
+        r'<table[^>]*><tbody><tr>\s*<td[^>]*>SUBJECT:',
         r'<div[^>]*>Borrower Name:',
         r'<div[^>]*>Dear',
         r'<div[^>]*>Notice is hereby given',
         r'<div[^>]*>To cure',
         r'<div[^>]*>Loan Number:',
-        r'<div[^>]*>RE:'
+        r'<div[^>]*>RE:',
+        r'<div[^>]*>Notice of Intention',  # BR010 document marker
     ]
     
     end_pos = None
@@ -1910,8 +2385,33 @@ def fix_header_structure_completely(text, has_uhm=None):
                 end_pos = mailing_match.end() + next_content.start()
     
     if end_pos:
-        # Replace the entire header section with proper format
-        clean_header = f'''{header_line}
+        # Check if header tag already exists in the section to avoid duplicates
+        header_section = text[start_match.start():end_pos]
+        # Count how many header tags exist in this section
+        header_tags = re.findall(r'\{Header\(NMLSID\)\}|\{Insert\(H003 TagHeader\)\}|\{Insert\(UHM Header\)\}|\{\[tagHeader\]\}', header_section)
+        
+        if len(header_tags) > 0:
+            # Header tag already exists - just clean up spacing and remove PLS fields
+            # Remove PLS fields if present
+            header_section = re.sub(r'<div[^>]*>.*?\{\[M838\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE | re.DOTALL)
+            header_section = re.sub(r'<div[^>]*>.*?PLS-CLIENT-ID.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE | re.DOTALL)
+            header_section = re.sub(r'<div[^>]*>.*?\{\[plsMatrix\.CompanyLongName\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+            header_section = re.sub(r'<div[^>]*>.*?\{\[CorporateAddr1\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+            header_section = re.sub(r'<div[^>]*>.*?\{\[CorporateAddr2\]\}.*?</div>\s*<br>\s*', '', header_section, flags=re.IGNORECASE)
+            
+            # Remove duplicate header tags - keep only the first one
+            # Find all header tag divs
+            header_div_pattern = r'<div[^>]*>\{Header\(NMLSID\)\}[^<]*</div>|<div[^>]*>\{Insert\(H003 TagHeader\)\}[^<]*</div>|<div[^>]*>\{Insert\(UHM Header\)\}[^<]*</div>|<div[^>]*>\{\[tagHeader\]\}[^<]*</div>'
+            header_divs = list(re.finditer(header_div_pattern, header_section))
+            if len(header_divs) > 1:
+                # Remove all but the first header tag
+                for match in reversed(header_divs[1:]):
+                    header_section = header_section[:match.start()] + header_section[match.end():]
+            
+            text = text[:start_match.start()] + header_section + text[end_pos:]
+        else:
+            # Replace the entire header section with proper format
+            clean_header = f'''{header_line}
 <br>
 <div>{{[L001]}}</div>
 <div>{{[mailingAddress]}}</div>
@@ -2374,27 +2874,30 @@ def format_salutation_universal(text):
         # If it's a tag (contains {[ or }]), convert to {[Salutation]}
         # If it's actual text, keep it as-is
         if not is_actual_text and ('{' in dear_text or '[' in dear_text):
-            # Find where all the Dear options end (before main content)
-            end_patterns = [
-                r'<div[^>]*>Notice is hereby given',
-                r'<div[^>]*>To cure',
-                r'<div[^>]*>You are required',
-                r'<div[^>]*>This notice',
+            # Convert to {[Salutation]} tag
+            pass
+        
+        # Find where all the Dear options end (before main content)
+        end_patterns = [
+            r'<div[^>]*>Notice is hereby given',
+            r'<div[^>]*>To cure',
+            r'<div[^>]*>You are required',
+            r'<div[^>]*>This notice',
                 r'<div[^>]*>We are writing',
                 r'<div[^>]*>As your mortgage'
-            ]
-            
-            end_pos = None
-            for pattern in end_patterns:
-                end_match = re.search(pattern, text)
-                if end_match:
-                    end_pos = end_match.start()
-                    break
-            
-            if end_pos:
-                # Replace all the Dear options with a clean salutation
-                salutation_html = '<div>Dear {[Salutation]},</div>'
-                text = text[:dear_match.start()] + salutation_html + text[end_pos:]
+        ]
+        
+        end_pos = None
+        for pattern in end_patterns:
+            end_match = re.search(pattern, text)
+            if end_match:
+                end_pos = end_match.start()
+                break
+        
+        if end_pos:
+            # Replace all the Dear options with a clean salutation
+            salutation_html = '<div>Dear {[Salutation]},</div>'
+            text = text[:dear_match.start()] + salutation_html + text[end_pos:]
         # If it's actual text, we keep it but clean up any duplicates
         elif is_actual_text:
             # Find where all the Dear options end (before main content)

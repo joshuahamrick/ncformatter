@@ -700,6 +700,9 @@ def apply_universal_formatting_rules(html_text):
         # STEP 7: COMPREHENSIVE STRUCTURE TRANSFORMATION - Achieve 95% accuracy
         html_text = transform_to_target_format(html_text)
         
+        # STEP 7.5: SR121-SPECIFIC FORMATTING FIXES
+        html_text = fix_sr121_specific_formatting(html_text)
+        
     except Exception as e:
         # If any step fails, return the original text with error info
         html_text = f'<div style="color: red;">Formatting error: {str(e)}</div>' + html_text
@@ -1040,7 +1043,9 @@ def fix_payment_information_cleanup(text):
         (' (All Promises)', ''),
         (' (First Payment Promise Date)', ''),
         (' (LETTER ID)', ''),
-        (' (LETTER SENDER ID)', '')
+        (' (LETTER SENDER ID)', ''),
+        ('{[L003]} (Letter ID)', '{[L003]}'),
+        ('<div>{[L003]} (Letter ID)</div>', '<div>{[L003]}</div>'),
     ]
     
     for old_text, new_text in replacements:
@@ -1110,6 +1115,18 @@ def fix_remaining_patterns(text):
         # Clean up the borrower name formatting
         ('<b>{</b><b>[M558]}</b> and <b>{</b><b>[M559]}</b>', '{[M558]} and {[M559]}'),
         ('<b>{</b><b>[M594]</b><b>}</b>', '{[M594]}'),
+        
+        # Fix split bold tags
+        ('<b>Important </b><b>note about insurance</b>', '<b>Important note about insurance</b>'),
+        
+        # Fix word breaks in text
+        ('us ing', 'using'),
+        ('JPMor gan', 'JPMorgan'),
+        ('JPMor gan Chase', 'JPMorgan Chase'),
+        
+        # Fix visit URL
+        ('visit .', 'visit <u>www.chase.com</u>.'),
+        ('visit.</div>', 'visit <u>www.chase.com</u>.</div>'),
         
         # Clean up remaining header template text
         ('<div style="text-align: justify">(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules for Additional Addresses in BKFS) </div>', ''),
@@ -2312,6 +2329,40 @@ def apply_comprehensive_spacing(text):
 <div><b><u>Unapplied/Suspense Funds:</u></b> {Money({[M013]})}</div>'''
     
     text = re.sub(payment_table_pattern, payment_div_replacement, text, flags=re.DOTALL)
+    
+    return text
+
+def fix_sr121_specific_formatting(text):
+    """Fix SR121-specific formatting issues"""
+    import re
+    
+    # Fix "Important note about insurance" - remove <br> between title and content
+    text = re.sub(r'(<div><b>Important note about insurance</b></div>)\s*<br>\s*(<div>If you have)', r'\1\n\2', text, flags=re.IGNORECASE)
+    
+    # Fix Customer Care Department section - remove <br> between lines
+    text = re.sub(r'(<div>Customer Care Department</div>)\s*<br>\s*(<div>\{\[plsMatrix\.CompanyLongName\]\}</div>)\s*<br>\s*(<div>\{\[L003\]\}[^<]*</div>)', r'\1\n\2\n\3', text, flags=re.IGNORECASE)
+    
+    # Add <hr> after L003 if not present
+    text = re.sub(r'(<div>\{\[L003\]\}</div>)\s*(?!<hr>)', r'\1\n<hr>', text, flags=re.IGNORECASE)
+    
+    # Add border table before "IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT" if not present
+    border_table = '''<br>
+  <br>
+<table width="100%"><tbody><tr>
+  <td style="border-top: 2px solid rgba(0, 0, 0, 1)"></td>
+</tr></tbody></table>
+<br>
+  <br>'''
+    text = re.sub(r'(<div>\{\[L003\]\}</div>\s*<hr>\s*<br>\s*)(<div style="text-align: center"><b>IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT</b></div>)', 
+                  r'\1' + border_table + r'\2', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Add border table at end if not present
+    if 'border-top: 2px solid rgba(0, 0, 0, 1)' not in text[-500:]:  # Check last 500 chars
+        end_border_table = '''<br>
+<table width="100%"><tbody><tr>
+  <td style="border-top: 2px solid rgba(0, 0, 0, 1)"></td>
+</tr></tbody></table>'''
+        text = text.rstrip() + '\n' + end_border_table
     
     return text
 

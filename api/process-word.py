@@ -1330,10 +1330,10 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # Match exact pattern from incorrect output: PROPERTY with tabs/spaces, then M567, M583, M568 in separate divs
     # Pattern: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
     property_sequence = r'<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}</div>'
-    text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE)
-    # Also try more flexible pattern
-    property_sequence2 = r'<div[^>]*>PROPERTY:[\s\S]*?\{\[M\s*567\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}[\s\S]*?</div>\s*<br>\s*<div[^>]*>[\s\S]*?\{\[M\s*568\]\}[\s\S]*?</div>'
-    text = re.sub(property_sequence2, convert_property_multiple, text, flags=re.IGNORECASE)
+    text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE | re.DOTALL)
+    # Also try more flexible pattern - match any whitespace
+    property_sequence2 = r'<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\{\[M\s*568\]\}</div>'
+    text = re.sub(property_sequence2, convert_property_multiple, text, flags=re.IGNORECASE | re.DOTALL)
     
     # Also try matching with broken bold tags explicitly
     # Match: <div>PROPERTY: <b>{[</b><b>M</b><b>567</b><b>]}</b> ...</div>

@@ -2339,10 +2339,14 @@ def fix_sr121_specific_formatting(text):
     # Fix "Important note about insurance" - remove <br> between title and content
     text = re.sub(r'(<div><b>Important note about insurance</b></div>)\s*<br>\s*(<div>If you have)', r'\1\n\2', text, flags=re.IGNORECASE)
     
+    # Remove "(Letter ID)" from L003
+    text = re.sub(r'(\{\[L003\]\})\s*\(Letter ID\)', r'\1', text, flags=re.IGNORECASE)
+    text = re.sub(r'(<div>\{\[L003\]\})\s*\(Letter ID\)</div>', r'\1</div>', text, flags=re.IGNORECASE)
+    
     # Fix Customer Care Department section - remove <br> between lines
     text = re.sub(r'(<div>Customer Care Department</div>)\s*<br>\s*(<div>\{\[plsMatrix\.CompanyLongName\]\}</div>)\s*<br>\s*(<div>\{\[L003\]\}[^<]*</div>)', r'\1\n\2\n\3', text, flags=re.IGNORECASE)
     
-    # Add <hr> after L003 if not present
+    # Add <hr> after L003 if not present (check for both with and without Letter ID)
     text = re.sub(r'(<div>\{\[L003\]\}</div>)\s*(?!<hr>)', r'\1\n<hr>', text, flags=re.IGNORECASE)
     
     # Add border table before "IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT" if not present

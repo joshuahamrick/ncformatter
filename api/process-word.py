@@ -1805,7 +1805,11 @@ def fix_servicer_table_formatting(text):
     # Pattern: Find servicer table and fix formatting
     # Match table with Current Servicer and New Servicer headers
     # More flexible pattern to handle various table structures
-    servicer_pattern = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
+    # Pattern 1: Standard format with div wrapper
+    servicer_pattern1 = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
+    # Pattern 2: Without div wrapper, or with different spacing
+    servicer_pattern2 = r'<table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table>'
+    servicer_pattern = servicer_pattern1 + '|' + servicer_pattern2
     
     def format_servicer_table(match):
         current_info = match.group(1).strip()
@@ -1847,7 +1851,10 @@ def fix_servicer_table_formatting(text):
         
         return f'<div>{table}</div>'
     
-    text = re.sub(servicer_pattern, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
+    # Try pattern 1 first (with div wrapper)
+    text = re.sub(servicer_pattern1, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
+    # Then try pattern 2 (without div wrapper)
+    text = re.sub(servicer_pattern2, format_servicer_table, text, flags=re.IGNORECASE | re.DOTALL)
     
     return text
 

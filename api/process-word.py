@@ -2047,11 +2047,32 @@ def remove_plsid_references(text):
     for pattern, replacement in patterns:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE | re.DOTALL)
     
-    # DEBUG: Check if we actually removed anything
-    if '{[M838]}' not in text and '{[M838]}' in original_text:
-        text = '<!-- M838 REMOVED SUCCESSFULLY -->' + text
-    elif '{[M838]}' in text:
-        text = '<!-- M838 STILL PRESENT AFTER REMOVAL ATTEMPT -->' + text
+    # FALLBACK: If regex didn't work, use simple string replacement
+    # This MUST work - it's the nuclear option
+    if '{[M838]}' in text or 'PLS-CLIENT-ID' in text:
+        # Try to find and remove the entire div containing M838
+        # Look for the pattern: <div><b>( {[M838]} ... Produce)</b></div>
+        lines = text.split('\n')
+        new_lines = []
+        skip_next_br = False
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # Check if this line contains M838 or PLS-CLIENT-ID
+            if '{[M838]}' in line or 'PLS-CLIENT-ID' in line:
+                # Skip this line (the div with M838)
+                skip_next_br = True
+                i += 1
+                continue
+            # Check if this is a <br> tag that should be skipped
+            if skip_next_br and line.strip() == '<br>':
+                skip_next_br = False
+                i += 1
+                continue
+            skip_next_br = False
+            new_lines.append(line)
+            i += 1
+        text = '\n'.join(new_lines)
     
     # Remove any div containing PLSID
     text = re.sub(r'<div[^>]*>.*?PLSID.*?</div>\s*<br>\s*', '', text, flags=re.IGNORECASE | re.DOTALL)
@@ -2094,6 +2115,25 @@ def remove_plsid_references(text):
         ]
         for pattern, replacement in patterns_to_remove:
             header_section = re.sub(pattern, replacement, header_section, flags=re.IGNORECASE | re.DOTALL)
+        
+        # FALLBACK: Simple string removal if regex didn't work
+        # Remove any lines containing these patterns
+        header_lines = header_section.split('\n')
+        new_header_lines = []
+        skip_next_br = False
+        for i, line in enumerate(header_lines):
+            if '{[plsMatrix.CompanyLongName]}' in line and '{[L001]}' not in line and '{[mailingAddress]}' not in line:
+                skip_next_br = True
+                continue
+            if '{[CorporateAddr1]}' in line or '{[CorporateAddr 2]}' in line or '{[CorporateAddr2]}' in line:
+                skip_next_br = True
+                continue
+            if skip_next_br and line.strip() == '<br>':
+                skip_next_br = False
+                continue
+            skip_next_br = False
+            new_header_lines.append(line)
+        header_section = '\n'.join(new_header_lines)
         
         text = header_section + body_section
     

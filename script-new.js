@@ -1653,6 +1653,21 @@ function getHeaderType(ir, htmlOutput) {
 		return 'H003';
 	}
 	
+	// Check HTML output for H003 conditional logic patterns (more reliable)
+	if (htmlLower.includes('(if {[h003]}') || htmlLower.includes('if {[h003]} =') || 
+	    htmlLower.includes('suppress print of line') || htmlLower.includes('else produce')) {
+		return 'H003';
+	}
+	
+	// Check for UHM LOAN NUMBER to determine if it's UHM Header (SR121)
+	if (htmlLower.includes('uhm loan number') || htmlLower.includes('{[m594]}')) {
+		// Only use UHM Header if it's NOT an H003 document
+		// H003 documents should use {Insert(H003 TagHeader)}
+		if (!htmlLower.includes('(if {[h003]}') && !htmlLower.includes('if {[h003]} =')) {
+			return 'UHM';
+		}
+	}
+	
 	// Default to TagHeader
 	return 'TagHeader';
 }
@@ -1731,6 +1746,24 @@ function cleanupHtml(html, ir) {
 	// Generic pattern for Math expressions
 	out = out.replace(/\$\s*\{\[([A-Za-z0-9]+)\]\}\s*\+\s*\{\[([A-Za-z0-9]+)\]\}\s*[–-]\s*\{\[([A-Za-z0-9]+)\]\}/g, '{Math({[$1]} + {[$2]} - {[$3]}|Money)}');
 	out = out.replace(/\$\s*\{\[([A-Za-z0-9\.]+)\]\}/g, '{Money({[$1]})}');
+	
+	// BR008-specific Money/Math conversions (handle comments in parentheses)
+	// Pattern: $ {[M591]}<b> </b>(Delinquent Balance) -> {Money({[M591]})}
+	out = out.replace(/\$\s+\{\[M591\]\}<b>\s*<\/b>\s*\([^)]*Delinquent Balance[^)]*\)/gi, '{Money({[M591]})}');
+	// Pattern: $ <b>{[U026]} </b>(Late Charge Fee) -> {Money({[U026]})}
+	out = out.replace(/\$\s+<b>\{\[U026\]\}\s*<\/b>\s*\([^)]*Late Charge Fee[^)]*\)/gi, '{Money({[U026]})}');
+	// Pattern: $ <b>{[C001]} </b>+ {[M585]} – {[M013]} (Total Amount Due + ...) -> {Math({[C001]} + {[M585]} - {[M013]}|Money)}
+	out = out.replace(/\$\s+<b>\{\[C001\]\}\s*<\/b>\s*\+\s+\{\[M585\]\}\s*[–-]\s+\{\[M013\]\}\s*\([^)]*Total Amount Due[^)]*\)/gi, '{Math({[C001]} + {[M585]} - {[M013]}|Money)}');
+	// Pattern: $ <b>{[M015]} </b>(Accrued Late Charge Bal) -> {Money({[M015]})}
+	out = out.replace(/\$\s+<b>\{\[M015\]\}\s*<\/b>\s*\([^)]*Accrued Late Charge Bal[^)]*\)/gi, '{Money({[M015]})}');
+	// Pattern: $ <b>{[M593]} </b>+ <b>{[C004]} </b>(NSF Balance + Other Fees) -> {Math({[M593]} + {[C004]}|Money)}
+	out = out.replace(/\$\s+<b>\{\[M593\]\}\s*<\/b>\s*\+\s+<b>\{\[C004\]\}\s*<\/b>\s*\([^)]*NSF Balance[^)]*Other Fees[^)]*\)/gi, '{Math({[M593]} + {[C004]}|Money)}');
+	// Pattern: $ <b>{[M013]} </b>(Suspense Balance) -> {Money({[M013]})}
+	out = out.replace(/\$\s+<b>\{\[M013\]\}\s*<\/b>\s*\([^)]*Suspense Balance[^)]*\)/gi, '{Money({[M013]})}');
+	// Pattern: $ {[M591]}<b> </b>(Delinquent Balance) which represents... -> {Money({[M591]})} which represents...
+	out = out.replace(/\$\s+\{\[M591\]\}<b>\s*<\/b>\s*\([^)]*Delinquent Balance[^)]*\)\s+which\s+represents/gi, '{Money({[M591]})} which represents');
+	// Pattern: {Money({[C001]})} + {[M585]} + {[M029]} – {[M013]} (Total Amount Due + ...) -> {Math({[C001]} + {[M585]} + {[M029]} - {[M013]}|Money)}
+	out = out.replace(/\{Money\(\{\[C001\]\}\)\}\s*\+\s*\{\[M585\]\}\s*\+\s*\{\[M029\]\}\s*[–-]\s*\{\[M013\]\}\s*\([^)]*Total Amount Due[^)]*\)/gi, '{Math({[C001]} + {[M585]} + {[M029]} - {[M013]}|Money)}');
 	out = out.replace(/\(\{\[([A-Za-z0-9]+)\]\}\s*\+\s*([0-9]+)\s+Days\)\s*\([^)]*\)/g, (match, tag, days) => `{DateAdd({[${tag}]}|+${days}|MM/dd/yyyy|Day)}`);
 	out = out.replace(/\)by\b/g, ') by');
 	out = out.replace(/\)\}by\b/g, ')} by');
@@ -1979,6 +2012,10 @@ function cleanupHtml(html, ir) {
 	// UNIVERSAL RULE: Consolidate mailing address lines into {[mailingAddress]} placeholder
 	// Pattern: Multiple consecutive divs with M558, M559, M560, M561, M562, M563 (and optionally M564-M566)
 	// This works for any document that has mailing address fields split across multiple divs
+	// Handle both with and without comments in parentheses: {[M558]} </b>( New Bill Line 1/ Mortgagor Name)
+	// Pattern 1: With comments in parentheses (BR008 format)
+	out = out.replace(/<div[^>]*><b>\{\[M558\]\}[^<]*<\/b>[^<]*\([^)]*\)<\/div>\s*<br>\s*<div[^>]*>\{\[M559\]\}[^<]*\([^)]*\)<\/div>\s*<br>\s*<div[^>]*>\{\[M560\]\}[^<]*\([^)]*\)<\/div>\s*<br>\s*<div[^>]*>\{\[M561\]\}[^<]*\([^)]*\)<\/div>\s*<br>\s*<div[^>]*>\{\[M562\]\}[^<]*\([^)]*\)<\/div>\s*<br>\s*<div[^>]*><b>\{\[M563\]\}[^<]*\{\[M564\]\}[^<]*\{\[M565\]\}[^<]*<\/b>\{\[M566\]\}[^<]*\([^)]*\)<\/div>/gi, '<div>{[mailingAddress]}</div>');
+	// Pattern 2: Without comments (standard format)
 	out = out.replace(/<div[^>]*>\{\[M558\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M559\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M560\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M561\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M562\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M563\]\}[^<]*\{\[M564\]\}[^<]*\{\[M565\]\}[^<]*\{\[M566\]\}[^<]*<\/div>/g, '<div>{[mailingAddress]}</div>');
 	out = out.replace(/<div[^>]*>\{\[M558\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M559\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M560\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M561\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M562\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M563\]\}[^<]*<\/div>/g, '<div>{[mailingAddress]}</div>');
 	// Ensure blank lines after mailingAddress (5 br tags) - but remove extra br before RE table
@@ -1986,6 +2023,31 @@ function cleanupHtml(html, ir) {
 	out = out.replace(/<div>\{\[mailingAddress\]\}<\/div>\s*(?!<br><br><br><br><br>)/g, '<div>{[mailingAddress]}</div>\n<br><br><br><br><br>\n\n');
 	// Remove extra <br> after mailingAddress blank lines (before RE table)
 	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>\n<br><br><br><br><br>\n\n)\s*<br>\s*(<div><table)/g, '$1$2');
+	
+	// UNIVERSAL RULE: Convert borrower summary to table format (BR008 pattern)
+	// Pattern: Borrower Name:	{[M558]} and {[M559]} followed by Mailing Address, Mortgage Loan No, Property Address
+	// Handle tabs and spacing variations
+	if (out.includes('Borrower Name:') && out.includes('{[M558]}') && !out.includes('<table[^>]*>[\s\S]*?Borrower Name:')) {
+		// Match the borrower summary section
+		const borrowerPattern = /(<div style="text-align: center"><b>Notice of Intention to Foreclose Mortgage<\/b><\/div>\s*<br>\s*)(<div>Borrower Name:\s+\{\[M558\]\}\s+and\s+\{\[M559\]\}<\/div>\s*<br>\s*<div><b>Mailing Address:<\/b><b>\s*<\/b>\{\[M561\]\}[^<]*<\/div>\s*<br>\s*<div>\{\[M562\]\}[^<]*<\/div>\s*<br>\s*<div[^>]*><b>\{\[M563\]\}[^<]*\{\[M564\]\}[^<]*\{\[M565\]\}[^<]*<\/b>\{\[M566\]\}[^<]*<\/div>\s*<br>\s*<div>Mortgage Loan No:\s+\{\[M594\]\}<\/div>\s*<br>\s*<div><b>Property Address:<\/b><b>\s*<\/b>\{\[M567\]\}[^<]*<\/div>\s*<br>\s*<div[^>]*>&nbsp;[^<]*<b>\{\[M583\]\}[^<]*<\/div>\s*<br>\s*<div[^>]*>&nbsp;[^<]*<b>\{\[M568\]\}[^<]*<\/div>)/i;
+		const match = out.match(borrowerPattern);
+		if (match) {
+			const tableHtml = `<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%"><b>Borrower Name:</b></td>
+  <td>{[M558]}{If('{[M559]}'&lt;&gt;'')} and {[M559]}{End If}</td>
+  </tr><tr>
+  <td width="20%" valign="top"><b>Mailing Address:</b></td>
+  <td>{Compress({[M561]}|{[M562]}|{[M563]}{[M564]}{[M565]}{[M566]})}</td>
+  </tr><tr>
+  <td width="20%"><b>Mortgage Loan No:</b></td>
+  <td>{[M594]}</td>
+  </tr><tr>
+  <td width="20%"><b>Property Address:</b></td>
+  <td>{Compress({[M567]}|{[M583]})}</td>
+</tr></tbody></table></div>`;
+			out = out.replace(borrowerPattern, '$1' + tableHtml);
+		}
+	}
 	
 	// UNIVERSAL RULE: Fix broken RE table - replace broken table with proper RE table structure
 	// Pattern: Broken table with just "RE:" followed by separate divs with Property Address
@@ -2073,6 +2135,8 @@ function cleanupHtml(html, ir) {
 		let headerDirective = '';
 		if (headerType === 'H003') {
 			headerDirective = '{Insert(H003 TagHeader)}\n';
+		} else if (headerType === 'UHM') {
+			headerDirective = '{Insert(UHM Header)}\n';
 		} else if (headerType === 'NMLSID') {
 			headerDirective = '{Header(NMLSID)}\n';
 		} else {
@@ -2207,16 +2271,26 @@ function cleanupHtml(html, ir) {
 	// Pattern: {[Q189]} -> {Q189V2()}
 	out = out.replace(/\{\[Q189\]\}/g, '{Q189V2()}');
 	
-	// UNIVERSAL RULE: Remove extra header placeholders (H002, H003, H004) and extra "Dear" lines
-	// Pattern: Remove {Insert(H003 TagHeader)} and extra header divs
+	// UNIVERSAL RULE: Remove H002/H003/H004 fields and conditional logic sections
+	// Remove conditional logic lines: (IF {[H003]} = '*' or 'NULL'; then suppress print of line; else produce:)
+	out = out.replace(/<div[^>]*>\([^<]*IF\s*\{\[H003\]\}\s*=\s*['"]\*['"]\s*or\s*['"]NULL['"][^<]*then\s*suppress\s*print[^<]*else\s*produce[^<]*\)<\/div>\s*<br>\s*/gi, '');
+	out = out.replace(/<div[^>]*><b>\([^<]*IF\s*\{\[H003\]\}\s*=\s*['"]\*['"]\s*or\s*['"]NULL['"][^<]*then\s*suppress\s*print[^<]*else\s*produce[^<]*\)<\/b><\/div>\s*<br>\s*/gi, '');
+	// Remove H002, H003, H004 fields with comments in parentheses
+	out = out.replace(/<div[^>]*><b>\{\[H002\]\}[^<]*<\/b>[^<]*\([^)]*\)<\/div>\s*<br>\s*/gi, '');
+	out = out.replace(/<div[^>]*><b>\{\[H003\]\}[^<]*<\/b>[^<]*\([^)]*\)<\/div>\s*<br>\s*/gi, '');
+	out = out.replace(/<div[^>]*><b>\{\[H004\]\}[^<]*<\/b>[^<]*\([^)]*\)<\/div>\s*<br>\s*/gi, '');
+	// Remove H002, H003, H004 fields without comments (fallback)
+	out = out.replace(/<div[^>]*>\{\[H002\]\}[^<]*<\/div>\s*<br>\s*/gi, '');
+	out = out.replace(/<div[^>]*>\{\[H003\]\}[^<]*<\/div>\s*<br>\s*/gi, '');
+	out = out.replace(/<div[^>]*>\{\[H004\]\}[^<]*<\/div>\s*<br>\s*/gi, '');
+	// Remove duplicate {Insert(H003 TagHeader)} directives (keep only one at the start)
 	out = out.replace(/\{Insert\(H003 TagHeader\)\}\s*<br>\s*/g, '');
 	out = out.replace(/<div[^>]*>\{Insert\(H003 TagHeader\)\}<\/div>\s*<br>\s*/g, '');
-	out = out.replace(/<div[^>]*>\{\[H002\]\}<\/div>\s*<br>\s*/g, '');
-	out = out.replace(/<div[^>]*>\{\[H003\]\}<\/div>\s*<br>\s*/g, '');
-	out = out.replace(/<div[^>]*>\{\[H004\]\}<\/div>\s*<br>\s*/g, '');
 	// Remove extra "Dear" lines with various placeholders
 	out = out.replace(/<div[^>]*>Dear\s+\{\[H[0-9]+\]\}\s*and\s+\{\[H[0-9]+\]\},<\/div>\s*<br>\s*/g, '');
 	out = out.replace(/<div[^>]*>Dear\s+\{\[H[0-9]+\]\},<\/div>\s*<br>\s*/g, '');
+	// Remove "Send via First Class and Certified Mail to the Mailing address" line (BR008)
+	out = out.replace(/<div[^>]*><b>Send via First Class and Certified Mail to the Mailing address<\/b><\/div>\s*<br>\s*/gi, '');
 	// Remove extra co-borrower and non-borrower address fields
 	out = out.replace(/<div[^>]*>\{\[M928\]\}<\/div>\s*<br>\s*/g, '');
 	out = out.replace(/<div[^>]*>\{\[M929\]\}<\/div>\s*<br>\s*/g, '');
@@ -2370,8 +2444,8 @@ function cleanupHtml(html, ir) {
 		out = out.replace(pattern, '');
 	}
 	
-	// Convert SUBJECT/UHM/JPMORGAN to table
-	if (out.includes('SUBJECT:') && out.includes('UHM LOAN NUMBER:')) {
+	// Convert SUBJECT/UHM/JPMORGAN to table (SR121-specific - only if both SUBJECT and UHM LOAN NUMBER exist)
+	if (out.includes('SUBJECT:') && out.includes('UHM LOAN NUMBER:') && !out.includes('Borrower Name:')) {
 		// Find SUBJECT, UHM, and JPMORGAN divs - handle tabs/spaces
 		const subjectMatch = out.match(/<div[^>]*>SUBJECT:\s+([^<]+)<\/div>/i);
 		const uhmMatch = out.match(/<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)<\/div>/i);
@@ -2411,8 +2485,8 @@ function cleanupHtml(html, ir) {
 		}
 	}
 	
-	// Convert PROPERTY to table with Compress
-	if (out.includes('PROPERTY:') && out.includes('{[M567]}')) {
+	// Convert PROPERTY to table with Compress (SR121-specific - only if UHM LOAN NUMBER exists, not for BR008)
+	if (out.includes('PROPERTY:') && out.includes('{[M567]}') && (out.includes('UHM LOAN NUMBER') || out.includes('JPMORGAN CHASE BANK'))) {
 		// Match: PROPERTY: {[M567]}</div><br><div>{[M583]}</div><br><div>{[M568]}</div>
 		const propertyPattern = /<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\{\[M\s*568\]\}<\/div>/i;
 		const match = out.match(propertyPattern);
@@ -2529,21 +2603,24 @@ function cleanupHtml(html, ir) {
 	out = out.replace(/\{\[CorporateAddr1\]\}/g, '{[plsMatrix.CorporateAddr1]}');
 	out = out.replace(/\{\[CorporateAddr\s+2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
 	out = out.replace(/\{\[CorporateAddr2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
-	// STEP 6: Fix spacing issues
-	// Fix mailing address section: should have indented <br> tags (remove extra <br> after the 5 <br> tags)
-	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>)\s*<br><br><br><br><br>\s*<br>/g, '$1\n<br>\n  <br>\n    <br>\n      <br>\n        <br>');
-	// Fix PROPERTY table: should have <br> before it (if missing) and indented <br> after
-	out = out.replace(/(<\/tbody><\/table>)\s*(<table width="100%"><tbody><tr>\s*<td width="20%" valign="top">PROPERTY:)/g, '$1\n<br>\n$2');
-	out = out.replace(/(<table width="100%"><tbody><tr>\s*<td width="20%" valign="top">PROPERTY:[\s\S]*?<\/tbody><\/table>)\s*<br>/g, '$1\n<br>\n  <br>\n    <br>');
-	// Fix payment address table: remove extra <br> after it (should be just one <br>)
-	out = out.replace(/(<table><tbody><tr>[\s\S]*?<\/tbody><\/table>)\s*<br>\s*<br>/g, '$1\n<br>');
-	// Fix Customer Care Department section: remove <br> between lines
-	out = out.replace(/(<div>Customer Care Department<\/div>)\s*<br>\s*(<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>)/g, '$1\n$2');
-	// Fix L003/hr section: should have <hr> then <br> then indented <br> (remove extra <br>)
-	out = out.replace(/(<div>\{\[L003\]\}<\/div>)\s*<hr>\s*<br>\s*<br>/g, '$1\n<hr>\n<br>\n  <br>');
+	// STEP 6: Fix spacing issues (SR121-specific rules - only apply if UHM LOAN NUMBER exists)
+	if (out.includes('UHM LOAN NUMBER') || out.includes('JPMORGAN CHASE BANK')) {
+		// Fix mailing address section: should have indented <br> tags (remove extra <br> after the 5 <br> tags)
+		out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>)\s*<br><br><br><br><br>\s*<br>/g, '$1\n<br>\n  <br>\n    <br>\n      <br>\n        <br>');
+		// Fix PROPERTY table: should have <br> before it (if missing) and indented <br> after
+		out = out.replace(/(<\/tbody><\/table>)\s*(<table width="100%"><tbody><tr>\s*<td width="20%" valign="top">PROPERTY:)/g, '$1\n<br>\n$2');
+		out = out.replace(/(<table width="100%"><tbody><tr>\s*<td width="20%" valign="top">PROPERTY:[\s\S]*?<\/tbody><\/table>)\s*<br>/g, '$1\n<br>\n  <br>\n    <br>');
+		// Fix payment address table: remove extra <br> after it (should be just one <br>)
+		out = out.replace(/(<table><tbody><tr>[\s\S]*?<\/tbody><\/table>)\s*<br>\s*<br>/g, '$1\n<br>');
+		// Fix Customer Care Department section: remove <br> between lines
+		out = out.replace(/(<div>Customer Care Department<\/div>)\s*<br>\s*(<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>)/g, '$1\n$2');
+		// Fix L003/hr section: should have <hr> then <br> then indented <br> (remove extra <br>)
+		out = out.replace(/(<div>\{\[L003\]\}<\/div>)\s*<hr>\s*<br>\s*<br>/g, '$1\n<hr>\n<br>\n  <br>');
+	}
 	
-	// Fix servicer table: add proper styling and Compress functions
-	out = out.replace(/<div><table[^>]*><tbody><tr>[\s\S]*?<td[^>]*><b>Current Servicer<\/b><\/td>[\s\S]*?<td[^>]*><b>New Servicer<\/b><\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><\/tbody><\/table><\/div>/gi, (match, currentInfo, newInfo, currentAddr, newAddr) => {
+	// Fix servicer table: add proper styling and Compress functions (SR121-specific - only if "Current Servicer" exists and JPMorgan Chase Bank)
+	if (out.includes('Current Servicer') && out.includes('New Servicer') && out.includes('JPMorgan Chase Bank')) {
+		out = out.replace(/<div><table[^>]*><tbody><tr>[\s\S]*?<td[^>]*><b>Current Servicer<\/b><\/td>[\s\S]*?<td[^>]*><b>New Servicer<\/b><\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><\/tbody><\/table><\/div>/gi, (match, currentInfo, newInfo, currentAddr, newAddr) => {
 		// Fix plsMatrix prefixes in current info
 		currentInfo = currentInfo.replace(/\{\[CSEmail\]\}/g, '{[plsMatrix.CSEmail]}');
 		currentInfo = currentInfo.replace(/\{\[CorporateAddr1\]\}/g, '{[plsMatrix.CorporateAddr1]}');
@@ -2573,18 +2650,22 @@ function cleanupHtml(html, ir) {
 </tr></tbody></table>`;
 	});
 	
-	// STEP 7: Fix spacing after servicer table replacement
-	// Fix servicer table: add indented <br> before and after (after replacement, table has no div wrapper)
-	out = out.replace(/(<div>If you have any questions[^<]*<\/div>)\s*<br>\s*(<table width="100%" style="border-collapse: collapse"><tbody><tr>\s*<td[^>]*><b>Current Servicer)/g, '$1\n<br>\n  <br>\n$2');
-	out = out.replace(/(<\/tbody><\/table>)\s*<br>\s*(<div>Under Federal law)/g, '$1\n<br>\n  <br>\n$2');
+	// STEP 7: Fix spacing after servicer table replacement (SR121-specific)
+	if (out.includes('Current Servicer') && out.includes('If you have any questions')) {
+		// Fix servicer table: add indented <br> before and after (after replacement, table has no div wrapper)
+		out = out.replace(/(<div>If you have any questions[^<]*<\/div>)\s*<br>\s*(<table width="100%" style="border-collapse: collapse"><tbody><tr>\s*<td[^>]*><b>Current Servicer)/g, '$1\n<br>\n  <br>\n$2');
+		out = out.replace(/(<\/tbody><\/table>)\s*<br>\s*(<div>Under Federal law)/g, '$1\n<br>\n  <br>\n$2');
+	}
 	
 	// STEP 8: Additional fixes for remaining issues
 	// Fix salutation: Dear {[M558]} and {[M559]}, -> Dear {[Salutation]},
 	out = out.replace(/<div[^>]*>Dear\s+\{\[M558\]\}\s+and\s+\{\[M559\]\},<\/div>/gi, '<div>Dear {[Salutation]},</div>');
 	
-	// Fix payment address: convert separate divs to table with padding-left: 50px
-	out = out.replace(/(<div>Send all payments[^<]*<\/div>)\s*<br>\s*(<div>JPMorgan Chase Bank, NA<\/div>)\s*<br>\s*(<div>Attn: Payment Processing<\/div>)\s*<br>\s*(<div>P\.O\. Box[^<]*<\/div>)\s*<br>\s*(<div>Philadelphia[^<]*<\/div>)/gi, 
-		'$1\n<br>\n<table><tbody><tr>\n  <td style="padding-left: 50px">JPMorgan Chase Bank, NA</td>\n</tr><tr>\n  <td style="padding-left: 50px">Attn: Payment Processing</td>\n</tr><tr>\n  <td style="padding-left: 50px">P.O. Box 71244</td>\n</tr><tr>\n  <td style="padding-left: 50px">Philadelphia, PA 19176-6244</td>\n</tr></tbody></table>');
+	// Fix payment address: convert separate divs to table with padding-left: 50px (SR121-specific)
+	if (out.includes('JPMorgan Chase Bank, NA') && out.includes('Send all payments')) {
+		out = out.replace(/(<div>Send all payments[^<]*<\/div>)\s*<br>\s*(<div>JPMorgan Chase Bank, NA<\/div>)\s*<br>\s*(<div>Attn: Payment Processing<\/div>)\s*<br>\s*(<div>P\.O\. Box[^<]*<\/div>)\s*<br>\s*(<div>Philadelphia[^<]*<\/div>)/gi, 
+			'$1\n<br>\n<table><tbody><tr>\n  <td style="padding-left: 50px">JPMorgan Chase Bank, NA</td>\n</tr><tr>\n  <td style="padding-left: 50px">Attn: Payment Processing</td>\n</tr><tr>\n  <td style="padding-left: 50px">P.O. Box 71244</td>\n</tr><tr>\n  <td style="padding-left: 50px">Philadelphia, PA 19176-6244</td>\n</tr></tbody></table>');
+	}
 	
 	// Fix "Important note about insurance": remove <br> between title and content
 	out = out.replace(/(<div><b>Important note about insurance<\/b><\/div>)\s*<br>\s*(<div>If you have)/gi, '$1\n$2');
@@ -2594,6 +2675,19 @@ function cleanupHtml(html, ir) {
 	
 	// Fix "first" -> "<u>first</u>"
 	out = out.replace(/your\s+first\s+payment/gi, 'your <u>first</u> payment');
+	
+	// Fix payment detail spacing: remove <br> between payment detail lines (BR008)
+	// Pattern: <div><b><u>Label:</u></b>...</div><br><div><b><u>Next Label:</u></b>... -> remove <br>
+	out = out.replace(/(<div><b><u>Number of Payments Due:<\/u><\/b>[^<]*<\/div>)\s*<br>\s*(<div><b><u>Net Payment Amount)/gi, '$1\n$2');
+	out = out.replace(/(<div><b><u>Net Payment Amount[^<]*<\/u><\/b>[^<]*<\/div>)\s*<br>\s*(<div><b><u>Unpaid Late Charges)/gi, '$1\n$2');
+	out = out.replace(/(<div><b><u>Unpaid Late Charges[^<]*<\/u><\/b>[^<]*<\/div>)\s*<br>\s*(<div><b><u>NSF)/gi, '$1\n$2');
+	out = out.replace(/(<div><b><u>NSF[^<]*<\/u><\/b>[^<]*<\/div>)\s*<br>\s*(<div><b><u>Unapplied\/Suspense Funds)/gi, '$1\n$2');
+	
+	// Fix "Demand Notice expires" line: combine into single line with proper formatting
+	out = out.replace(/(<div><b><u>Demand Notice expires<\/u><\/b><b><u>\s*<\/u><\/b><b><u>\{\[L011\]\}[^<]*<\/u><\/b><u>[^<]*<\/u><u>\.<\/u><b><u>\s*<\/u><\/b><b><u>Total Due:\s*\$<\/u><\/b>\s*<b>\{\[C001\]\}[^<]*<\/b>\s*\+\s*\{\[M585\]\}\s*[–-]\s*\{\[M013\]\}<b>\s*<\/b>\([^)]*\)<\/div>)/gi, '<div><b>Demand Notice expires {[L011]}. Total Due: {Math({[C001]} + {[M585]} - {[M013]}|Money)}</b></div>');
+	
+	// Fix bullet table URL: add missing URL to second bullet item (BR008)
+	out = out.replace(/(<td>Avoid Foreclosure Scams:[^<]*Do your research[^<]*make sure you are working with a reputable company\.\s*<\/td>)/gi, '$1 http://www.consumer.ftc.gov/articles/0100-mortgage-relief-scams');
 	
 	// Add border table before "IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT" if missing
 	if (out.includes('IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT') && !out.includes('border-top: 2px solid') || !out.match(/border-top: 2px solid[\s\S]{0,500}IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT/)) {
@@ -2609,6 +2703,17 @@ function cleanupHtml(html, ir) {
 	
 	// Fix extra <br> before final border table (should be just one <br>)
 	out = out.replace(/(<div>If you are currently using an online banking service[^<]*<\/div>)\s*<br>\s*<br>\s*(<table width="100%"><tbody><tr>\s*<td style="border-top: 2px solid)/g, '$1\n<br>\n$2');
+	
+	// Fix extra closing div at end (BR008): </div></div> -> </div>
+	out = out.replace(/(<div>Default Department<\/div>\s*<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>)<\/div>\s*<br>/g, '$1\n<br>');
+	
+	// Fix "To cure" paragraph: convert to Money() format (BR008)
+	out = out.replace(/To cure the aforesaid breach and default, you are required to pay\s+\$\s+\{\[M591\]\}<b>\s*<\/b>\([^)]*Delinquent Balance[^)]*\)\s+which represents[^<]*\.\s+Please add an additional late charge of\s+\$\s+<b>\{\[U026\]\}\s*<\/b>\([^)]*Late Charge Fee[^)]*\)\s+if paid after\s+\{\[U027\]\}\s*\([^)]*Late Fee Date[^)]*\)\.\s+This amount is only valid until\s+\{\[L008\]\}\s*\([^)]*Last Day This Month[^)]*\)\./gi, 
+		'To cure the aforesaid breach and default, you are required to pay {Money({[M591]})} which represents the past due amount. Please add an additional late charge of {Money({[U026]})} if paid after {[U027]}. This amount is only valid until {[L008]}.');
+	
+	// Fix "If payment is received" paragraph: convert to Math() format (BR008)
+	out = out.replace(/If payment is received after\s+\{\[L008\]\}, you must pay the past due amount of\s+\{Money\(\{\[C001\]\}\)\}\s*\+\s*\{\[M585\]\}\s*\+\s*\{\[M029\]\}\s*[–-]\s*\{\[M013\]\}\s*\([^)]*Total Amount Due[^)]*\)\s+on or before\s+\{\[L011\]\}, which is thirty-five days from the date of this notice\./gi,
+		'If payment is received after {[L008]}, you must pay the past due amount of {Math({[C001]} + {[M585]} + {[M029]} - {[M013]}|Money)} on or before {[L011]}, which is thirty-five days from the date of this notice.');
 	
 	return out;
 }

@@ -1080,6 +1080,63 @@ function cleanupHtml(html, ir) {
 	// UNIVERSAL RULE: Remove extra blank lines after mailingAddress (should be exactly 5 <br> tags)
 	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>)\s*<br><br><br><br><br>\s*\n\n\s*<br><br><br><br><br>\s*\n\n\s*<br><br><br>/g, '$1\n<br><br><br><br><br>\n\n');
 	
+	// FINAL CLEANUP: Fix field names with spaces, dates, phone numbers, plsMatrix prefixes, property address, servicer table
+	// STEP 1: Fix field names with spaces FIRST: {[M 567]} -> {[M567]}
+	out = out.replace(/\{\[([A-Za-z]+)\s+(\d+)\]\}/g, '{[$1$2]}');
+	// STEP 2: Fix property address: convert to table with Compress (after field names are fixed)
+	// First, try to match with spaces in field names (in case field name fix didn't catch them)
+	out = out.replace(/<br>\s*<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}<\/div>/gi, '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>');
+	out = out.replace(/<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}<\/div>/gi, '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>');
+	// Then match without spaces (after field names are fixed)
+	out = out.replace(/<br>\s*<div[^>]*>PROPERTY:\s+\t+\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M568\]\}<\/div>/gi, '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>');
+	out = out.replace(/<div[^>]*>PROPERTY:\s+\t+\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M568\]\}<\/div>/gi, '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>');
+	// Also match more flexible patterns (with or without spaces)
+	out = out.replace(/<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\{\[M\s*568\]\}<\/div>/gi, '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>');
+	out = out.replace(/<div[^>]*>PROPERTY:\s+\{\[M567\]\}<\/div>\s*<br>\s*<div[^>]*>\{\[M583\]\}<\/div>\s*<br>\s*<div[^>]*>\s+\{\[M568\]\}<\/div>/gi, '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>');
+	// STEP 3: Fix dates with spaces: 1 / 2 /202 6 -> 1/2/2026
+	out = out.replace(/(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)\s+(\d+)/g, '$1/$2/$3$4');
+	out = out.replace(/(\d+)\s*\/\s*(\d)\s+(\d)\s*\/\s*(\d+)\s+(\d+)/g, '$1/$2$3/$4$5');
+	out = out.replace(/(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)/g, '$1/$2/$3');
+	// STEP 4: Fix phone numbers with spaces: ( 800) -> (800)
+	out = out.replace(/\(\s+(\d+)\)/g, '($1)');
+	out = out.replace(/\((\d+)\s+\)/g, '($1)');
+	// STEP 5: Fix plsMatrix prefixes: {[CSEmail]} -> {[plsMatrix.CSEmail]}
+	out = out.replace(/\{\[CSEmail\]\}/g, '{[plsMatrix.CSEmail]}');
+	out = out.replace(/\{\[CorporateAddr1\]\}/g, '{[plsMatrix.CorporateAddr1]}');
+	out = out.replace(/\{\[CorporateAddr\s+2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
+	out = out.replace(/\{\[CorporateAddr2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
+	// Fix servicer table: add proper styling and Compress functions
+	// This is a complex pattern, so we'll handle it with a function
+	out = out.replace(/<div><table[^>]*><tbody><tr>[\s\S]*?<td[^>]*><b>Current Servicer<\/b><\/td>[\s\S]*?<td[^>]*><b>New Servicer<\/b><\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><\/tbody><\/table><\/div>/gi, (match, currentInfo, newInfo, currentAddr, newAddr) => {
+		// Fix plsMatrix prefixes in current info
+		currentInfo = currentInfo.replace(/\{\[CSEmail\]\}/g, '{[plsMatrix.CSEmail]}');
+		currentInfo = currentInfo.replace(/\{\[CorporateAddr1\]\}/g, '{[plsMatrix.CorporateAddr1]}');
+		currentInfo = currentInfo.replace(/\{\[CorporateAddr\s+2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
+		currentInfo = currentInfo.replace(/\{\[CorporateAddr2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
+		currentAddr = currentAddr.replace(/\{\[CorporateAddr1\]\}/g, '{[plsMatrix.CorporateAddr1]}');
+		currentAddr = currentAddr.replace(/\{\[CorporateAddr\s+2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
+		currentAddr = currentAddr.replace(/\{\[CorporateAddr2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
+		// Convert to Compress format
+		const currentLines = currentInfo.split(/<br\s*\/?>/).map(l => l.trim()).filter(l => l);
+		const newLines = newInfo.split(/<br\s*\/?>/).map(l => l.trim()).filter(l => l);
+		const currentAddrLines = currentAddr.split(/<br\s*\/?>/).map(l => l.trim()).filter(l => l);
+		const newAddrLines = newAddr.split(/<br\s*\/?>/).map(l => l.trim()).filter(l => l);
+		const currentCompress = currentLines.join('|');
+		const newCompress = newLines.join('|');
+		const currentAddrCompress = currentAddrLines.join('|');
+		const newAddrCompress = newAddrLines.join('|');
+		return `<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1)"><b>Current Servicer</b></td>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1)"><b>New Servicer</b></td>
+</tr><tr>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{Compress(${currentCompress})}</td>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{Compress(${newCompress})}</td>
+</tr><tr>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{Compress(${currentAddrCompress})}</td>
+  <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{Compress(${newAddrCompress})}</td>
+</tr></tbody></table>`;
+	});
+	
 	return out;
 }
 

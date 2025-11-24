@@ -652,6 +652,9 @@ def apply_universal_formatting_rules(html_text):
         # STEP 0: FIX BROKEN BOLD TAGS - Reconstruct field names broken by bold tags
         html_text = fix_broken_bold_tags(html_text)
         
+        # STEP 0.5: FIX FIELD NAMES WITH SPACES - Remove spaces from field names like {[M 567]} -> {[M567]}
+        html_text = fix_field_names_with_spaces(html_text)
+        
         # STEP 1: FIELD CLEANUP - Direct string replacements that we know work
         html_text = simple_field_cleanup(html_text)
         
@@ -722,6 +725,9 @@ def apply_universal_formatting_rules(html_text):
         
         # STEP 5.5: FIX DATE FORMATTING - Remove spaces in dates (1 / 2 /202 6 -> 1/2/2026)
         html_text = fix_date_formatting(html_text)
+        
+        # STEP 5.5.5: FIX PHONE NUMBER FORMATTING - Remove spaces in phone numbers ( 800) -> (800)
+        html_text = fix_phone_number_formatting(html_text)
         
         # STEP 5.6: FIX PAYMENT ADDRESS TABLE FORMATTING
         html_text = fix_payment_address_table(html_text)
@@ -923,6 +929,11 @@ def simple_field_cleanup(text):
         ('{[PayoffAddr2]}', '{[plsMatrix.PayoffAddr2]}'),
         ('{[CompanyShortName]}', '{[plsMatrix.CompanyShortName]}'),
         ('{[CompanyLongName]}', '{[plsMatrix.CompanyLongName]}'),
+        ('{[CSEmail]}', '{[plsMatrix.CSEmail]}'),
+        ('{[CorporateAddr1]}', '{[plsMatrix.CorporateAddr1]}'),
+        ('{[CorporateAddr 2]}', '{[plsMatrix.CorporateAddr2]}'),
+        ('{[CorporateAddr2]}', '{[plsMatrix.CorporateAddr2]}'),
+        ('{[HoursOfOperation]}', '{[plsMatrix.HoursOfOperation]}'),
         
         # Clean up any remaining descriptive text patterns (fallback)
         (' (Company Address Line 1)', ''),
@@ -1326,6 +1337,7 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # First, handle PROPERTY: with multiple address fields (M567, M583, M568) in separate divs
     # Pattern 1: PROPERTY: on same line as M567, then M583, M568 on separate lines
     # Match: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
+    # Also match: <div>PROPERTY:		{[M567]}</div><br><div>{[M583]}</div><br><div>			{[M568]}</div>
     def convert_property_multiple(match):
         return '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>'
     
@@ -1333,11 +1345,15 @@ def convert_aligned_label_value_pairs_to_tables(text):
     # Match the sequence: PROPERTY div -> M583 div -> M568 div
     # Pattern from incorrect output: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
     # Match tabs after PROPERTY:, space in M 567, tabs before M 568
+    # Also handle without spaces: <div>PROPERTY:		{[M567]}</div><br><div>{[M583]}</div><br><div>			{[M568]}</div>
     property_sequence = r'<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}</div>'
     text = re.sub(property_sequence, convert_property_multiple, text, flags=re.IGNORECASE)
-    # Also try more flexible pattern - match any whitespace
+    # Also try more flexible pattern - match any whitespace, handle both with and without spaces in field names
     property_sequence_flexible = r'<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\{\[M\s*568\]\}</div>'
     text = re.sub(property_sequence_flexible, convert_property_multiple, text, flags=re.IGNORECASE)
+    # Pattern without spaces in field names: <div>PROPERTY:		{[M567]}</div><br><div>{[M583]}</div><br><div>			{[M568]}</div>
+    property_sequence_no_spaces = r'<div[^>]*>PROPERTY:\s+\t+\{\[M567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M568\]\}</div>'
+    text = re.sub(property_sequence_no_spaces, convert_property_multiple, text, flags=re.IGNORECASE)
     # Strategy: Find PROPERTY div containing M567, then find M583 div, then find M568 div
     # Use a pattern that matches the entire sequence including all content
     # Match: <div>PROPERTY: ... {[M567]} ...</div> ... <div>{[M583]} ...</div> ... <div> ... {[M568]} ...</div>
@@ -1836,15 +1852,45 @@ def convert_aligned_label_value_pairs_to_tables(text):
     
     return text
 
+def fix_field_names_with_spaces(text):
+    """Fix field names that have spaces in them like {[M 567]} -> {[M567]}"""
+    import re
+    
+    # Pattern: {[LETTER SPACE NUMBER]} -> {[LETTERNUMBER]}
+    # Match field names like {[M 567]}, {[M 568]}, {[CorporateAddr 2]}
+    # This handles spaces between letters and numbers, or within field names
+    text = re.sub(r'\{\[([A-Za-z]+)\s+(\d+)\]\}', r'{[\1\2]}', text)
+    # Also handle spaces in the middle of field names like {[CorporateAddr 2]}
+    text = re.sub(r'\{\[([A-Za-z]+)\s+(\d+)\]\}', r'{[\1\2]}', text)
+    # Handle multiple spaces: {[M  567]} -> {[M567]}
+    text = re.sub(r'\{\[([A-Za-z]+)\s+(\d+)\]\}', r'{[\1\2]}', text)
+    
+    return text
+
 def fix_date_formatting(text):
     """Fix date formatting - remove spaces in dates like '1 / 2 /202 6' -> '1/2/2026'"""
     import re
     
     # Pattern: number space / space number space / space number
     # Match: 1 / 2 /202 6 or 12 /3 1 /202 5
-    text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)\s*(\d+)', r'\1/\2/\3\4', text)
-    # Also handle: 1 / 2 /2026 (no space before last digit)
+    # First handle dates with space before last digit: 1 / 2 /202 6
+    text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)\s+(\d+)', r'\1/\2/\3\4', text)
+    # Then handle dates without space before last digit: 1 / 2 /2026
     text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)', r'\1/\2/\3', text)
+    
+    return text
+
+def fix_phone_number_formatting(text):
+    """Fix phone number formatting - remove spaces in phone numbers like '( 800)' -> '(800)'"""
+    import re
+    
+    # Pattern: ( space NUMBER ) -> (NUMBER)
+    # Match: ( 800) -> (800)
+    text = re.sub(r'\(\s+(\d+)\)', r'(\1)', text)
+    # Also handle: (800 ) -> (800)
+    text = re.sub(r'\((\d+)\s+\)', r'(\1)', text)
+    # Handle: ( 800 ) -> (800)
+    text = re.sub(r'\(\s+(\d+)\s+\)', r'(\1)', text)
     
     return text
 
@@ -1897,10 +1943,10 @@ def fix_servicer_table_formatting(text):
     # Pattern: Find servicer table and fix formatting
     # Match table with Current Servicer and New Servicer headers
     # More flexible pattern to handle various table structures
-    # Pattern 1: Standard format with div wrapper
-    servicer_pattern1 = r'<div><table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table></div>'
+    # Pattern 1: Standard format with div wrapper - handle any spacing/newlines
+    servicer_pattern1 = r'<div><table[^>]*><tbody><tr>[\s\S]*?<td[^>]*><b>Current Servicer</b></td>[\s\S]*?<td[^>]*><b>New Servicer</b></td>[\s\S]*?</tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?</tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?</tr></tbody></table></div>'
     # Pattern 2: Without div wrapper, or with different spacing
-    servicer_pattern2 = r'<table[^>]*><tbody><tr>\s*<td[^>]*><b>Current Servicer</b></td>\s*<td[^>]*><b>New Servicer</b></td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr><tr>\s*<td[^>]*>([\s\S]*?)</td>\s*<td[^>]*>([\s\S]*?)</td>\s*</tr></tbody></table>'
+    servicer_pattern2 = r'<table[^>]*><tbody><tr>[\s\S]*?<td[^>]*><b>Current Servicer</b></td>[\s\S]*?<td[^>]*><b>New Servicer</b></td>[\s\S]*?</tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?</tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?<td[^>]*>([\s\S]*?)</td>[\s\S]*?</tr></tbody></table>'
     servicer_pattern = servicer_pattern1 + '|' + servicer_pattern2
     
     def format_servicer_table(match):
@@ -3084,15 +3130,21 @@ def fix_payment_information(text):
 
 def add_pls_matrix_prefixes(text):
     """Add plsMatrix. prefixes to specific fields"""
+    import re
     # Fields that need plsMatrix prefix
     pls_matrix_fields = [
         'CSPhoneNumber', 'SPOCContactEmail', 'PayoffAddr1', 'PayoffAddr2',
         'CompanyShortName', 'CompanyLongName', 'CashMgmtDept', 'LossMitHrs',
-        'LoanCounselingPh', 'SeeReverse'
+        'LoanCounselingPh', 'SeeReverse', 'CSEmail', 'CorporateAddr1', 'CorporateAddr2',
+        'HoursOfOperation'
     ]
     
     for field in pls_matrix_fields:
+        # Match {[field]} but not {[plsMatrix.field]} (avoid double prefixing)
         text = re.sub(r'\{\[' + field + r'\]\}', r'{[plsMatrix.' + field + ']}', text)
+        # Also handle field names with spaces: {[CorporateAddr 2]} -> {[plsMatrix.CorporateAddr2]}
+        if field == 'CorporateAddr2':
+            text = re.sub(r'\{\[CorporateAddr\s+2\]\}', r'{[plsMatrix.CorporateAddr2]}', text)
     
     return text
 

@@ -2526,6 +2526,19 @@ function cleanupHtml(html, ir) {
 	out = out.replace(/\{\[CorporateAddr1\]\}/g, '{[plsMatrix.CorporateAddr1]}');
 	out = out.replace(/\{\[CorporateAddr\s+2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
 	out = out.replace(/\{\[CorporateAddr2\]\}/g, '{[plsMatrix.CorporateAddr2]}');
+	// STEP 6: Fix spacing issues
+	// Fix mailing address section: should have indented <br> tags (remove extra <br> after the 5 <br> tags)
+	out = out.replace(/(<div>\{\[mailingAddress\]\}<\/div>)\s*<br><br><br><br><br>\s*<br>/g, '$1\n<br>\n  <br>\n    <br>\n      <br>\n        <br>');
+	// Fix PROPERTY table: should have <br> before it (if missing) and indented <br> after
+	out = out.replace(/(<\/tbody><\/table>)\s*(<table width="100%"><tbody><tr>\s*<td width="20%" valign="top">PROPERTY:)/g, '$1\n<br>\n$2');
+	out = out.replace(/(<table width="100%"><tbody><tr>\s*<td width="20%" valign="top">PROPERTY:[\s\S]*?<\/tbody><\/table>)\s*<br>/g, '$1\n<br>\n  <br>\n    <br>');
+	// Fix payment address table: remove extra <br> after it (should be just one <br>)
+	out = out.replace(/(<table><tbody><tr>[\s\S]*?<\/tbody><\/table>)\s*<br>\s*<br>/g, '$1\n<br>');
+	// Fix Customer Care Department section: remove <br> between lines
+	out = out.replace(/(<div>Customer Care Department<\/div>)\s*<br>\s*(<div>\{\[plsMatrix\.CompanyLongName\]\}<\/div>)/g, '$1\n$2');
+	// Fix L003/hr section: should have <hr> then <br> then indented <br> (remove extra <br>)
+	out = out.replace(/(<div>\{\[L003\]\}<\/div>)\s*<hr>\s*<br>\s*<br>/g, '$1\n<hr>\n<br>\n  <br>');
+	
 	// Fix servicer table: add proper styling and Compress functions
 	out = out.replace(/<div><table[^>]*><tbody><tr>[\s\S]*?<td[^>]*><b>Current Servicer<\/b><\/td>[\s\S]*?<td[^>]*><b>New Servicer<\/b><\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><\/tbody><\/table><\/div>/gi, (match, currentInfo, newInfo, currentAddr, newAddr) => {
 		// Fix plsMatrix prefixes in current info
@@ -2556,6 +2569,11 @@ function cleanupHtml(html, ir) {
   <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{Compress(${newAddrCompress})}</td>
 </tr></tbody></table>`;
 	});
+	
+	// STEP 7: Fix spacing after servicer table replacement
+	// Fix servicer table: add indented <br> before and after (after replacement, table has no div wrapper)
+	out = out.replace(/(<div>If you have any questions[^<]*<\/div>)\s*<br>\s*(<table width="100%" style="border-collapse: collapse"><tbody><tr>\s*<td[^>]*><b>Current Servicer)/g, '$1\n<br>\n  <br>\n$2');
+	out = out.replace(/(<\/tbody><\/table>)\s*<br>\s*(<div>Under Federal law)/g, '$1\n<br>\n  <br>\n$2');
 	
 	return out;
 }

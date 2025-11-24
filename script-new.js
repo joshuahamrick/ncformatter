@@ -2271,6 +2271,16 @@ function cleanupHtml(html, ir) {
 	// Pattern: {[Q189]} -> {Q189V2()}
 	out = out.replace(/\{\[Q189\]\}/g, '{Q189V2()}');
 	
+	// UNIVERSAL RULE: Fix header directive based on document type (run BEFORE H002/H003/H004 removal)
+	// If document has H003 conditional logic, change {Insert(UHM Header)} to {Insert(H003 TagHeader)}
+	// Check for H003 conditional patterns in the HTML - do this BEFORE removing the conditional logic
+	const hasH003Conditional = out.includes('(IF {[H003]}') || out.includes('if {[H003]} =') || 
+	                            out.includes('suppress print of line') || out.includes('else produce') ||
+	                            out.match(/\(IF\s*\{\[H003\]\}/i) || out.match(/IF\s*\{\[H003\]\}\s*=\s*['"]\*['"]/i);
+	if (hasH003Conditional) {
+		out = out.replace(/\{Insert\(UHM Header\)\}/g, '{Insert(H003 TagHeader)}');
+	}
+	
 	// UNIVERSAL RULE: Remove H002/H003/H004 fields and conditional logic sections
 	// Remove conditional logic lines: (IF {[H003]} = '*' or 'NULL'; then suppress print of line; else produce:)
 	out = out.replace(/<div[^>]*>\([^<]*IF\s*\{\[H003\]\}\s*=\s*['"]\*['"]\s*or\s*['"]NULL['"][^<]*then\s*suppress\s*print[^<]*else\s*produce[^<]*\)<\/div>\s*<br>\s*/gi, '');

@@ -748,6 +748,20 @@ def apply_universal_formatting_rules(html_text):
         # STEP 7.5: SR121-SPECIFIC FORMATTING FIXES
         html_text = fix_sr121_specific_formatting(html_text)
         
+        # STEP 8: FINAL CLEANUP - Catch any remaining issues
+        # Fix field names with spaces one more time (in case they were reintroduced)
+        html_text = fix_field_names_with_spaces(html_text)
+        # Fix property address conversion one more time (in case it was missed)
+        html_text = convert_property_address_final(html_text)
+        # Fix dates one more time
+        html_text = fix_date_formatting(html_text)
+        # Fix phone numbers one more time
+        html_text = fix_phone_number_formatting(html_text)
+        # Fix plsMatrix prefixes one more time (especially in servicer table)
+        html_text = add_pls_matrix_prefixes(html_text)
+        # Fix servicer table one more time
+        html_text = fix_servicer_table_formatting(html_text)
+        
     except Exception as e:
         # If any step fails, return the original text with error info
         html_text = f'<div style="color: red;">Formatting error: {str(e)}</div>' + html_text
@@ -1873,9 +1887,15 @@ def fix_date_formatting(text):
     
     # Pattern: number space / space number space / space number
     # Match: 1 / 2 /202 6 or 12 /3 1 /202 5
-    # First handle dates with space before last digit: 1 / 2 /202 6
+    # First handle dates with space before last digit: 1 / 2 /202 6 -> 1/2/2026
+    # Pattern: digit(s) space / space digit(s) space / space digit(s) space digit
     text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)\s+(\d+)', r'\1/\2/\3\4', text)
-    # Then handle dates without space before last digit: 1 / 2 /2026
+    # Handle dates with space in the middle: 12 /3 1 /202 5 -> 12/31/2025
+    # Pattern: digit(s) space / space digit space digit space / space digit(s) space digit
+    text = re.sub(r'(\d+)\s*/\s*(\d)\s+(\d)\s*/\s*(\d+)\s+(\d+)', r'\1/\2\3/\4\5', text)
+    # Then handle dates without space before last digit: 1 / 2 /2026 -> 1/2/2026
+    text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)', r'\1/\2/\3', text)
+    # Also handle dates with spaces around slashes: 1/ 2/ 2026 -> 1/2/2026
     text = re.sub(r'(\d+)\s*/\s*(\d+)\s*/\s*(\d+)', r'\1/\2/\3', text)
     
     return text
@@ -1933,6 +1953,44 @@ def fix_payment_address_table(text):
     text = re.sub(r'(<td[^>]*style="padding-left: 50px">)([^<\n]+)\s*<br>\s*</td>', r'\1\2</td>', text)
     # Also remove trailing spaces
     text = re.sub(r'(<td[^>]*style="padding-left: 50px">)([^<\n]+)\s+</td>', r'\1\2</td>', text)
+    
+    return text
+
+def convert_property_address_final(text):
+    """Final pass to convert property address to table format - handles cases that might have been missed"""
+    import re
+    
+    # Pattern: PROPERTY: with M567, M583, M568 in separate divs
+    # Match: <div>PROPERTY:		{[M567]}</div><br><div>{[M583]}</div><br><div>			{[M568]}</div>
+    # Also match with spaces: <div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
+    # Match current output format: <br><div>PROPERTY:		{[M 567]}</div><br><div>{[M583]}</div><br><div>			{[M 568]}</div>
+    def convert_property(match):
+        return '<table width="100%"><tbody><tr>\n  <td width="20%" valign="top">PROPERTY:</td>\n  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>\n</tr></tbody></table>'
+    
+    # Match property address pattern - handle both with and without spaces in field names
+    # Pattern 1: With <br> before PROPERTY and tabs/spaces (current output format)
+    pattern1 = r'<br>\s*<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}</div>'
+    text = re.sub(pattern1, convert_property, text, flags=re.IGNORECASE)
+    
+    # Pattern 2: With tabs and spaces (original format)
+    pattern2 = r'<div[^>]*>PROPERTY:\s+\t+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M\s*568\]\}</div>'
+    text = re.sub(pattern2, convert_property, text, flags=re.IGNORECASE)
+    
+    # Pattern 3: More flexible - any whitespace with spaces in field names
+    pattern3 = r'<div[^>]*>PROPERTY:\s+\{\[M\s*567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\{\[M\s*568\]\}</div>'
+    text = re.sub(pattern3, convert_property, text, flags=re.IGNORECASE)
+    
+    # Pattern 4: Without spaces in field names (after fix_field_names_with_spaces) - with <br> before
+    pattern4 = r'<br>\s*<div[^>]*>PROPERTY:\s+\t+\{\[M567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M568\]\}</div>'
+    text = re.sub(pattern4, convert_property, text, flags=re.IGNORECASE)
+    
+    # Pattern 5: Without spaces in field names - original format
+    pattern5 = r'<div[^>]*>PROPERTY:\s+\t+\{\[M567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\t+\{\[M568\]\}</div>'
+    text = re.sub(pattern5, convert_property, text, flags=re.IGNORECASE)
+    
+    # Pattern 6: More flexible without spaces
+    pattern6 = r'<div[^>]*>PROPERTY:\s+\{\[M567\]\}</div>\s*<br>\s*<div[^>]*>\{\[M583\]\}</div>\s*<br>\s*<div[^>]*>\s+\{\[M568\]\}</div>'
+    text = re.sub(pattern6, convert_property, text, flags=re.IGNORECASE)
     
     return text
 

@@ -2607,6 +2607,9 @@ function cleanupHtml(html, ir) {
 		out = out.replace(/(<div>\{\[L003\]\}<\/div>\s*<hr>\s*<br>\s*<br>)(<div style="text-align: center"><b>IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT<\/b><\/div>)/gi, '$1' + borderTable + '$2');
 	}
 	
+	// Fix extra <br> before final border table (should be just one <br>)
+	out = out.replace(/(<div>If you are currently using an online banking service[^<]*<\/div>)\s*<br>\s*<br>\s*(<table width="100%"><tbody><tr>\s*<td style="border-top: 2px solid)/g, '$1\n<br>\n$2');
+	
 	return out;
 }
 

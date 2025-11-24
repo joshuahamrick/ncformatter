@@ -2372,7 +2372,7 @@ function cleanupHtml(html, ir) {
 	
 	// Convert SUBJECT/UHM/JPMORGAN to table
 	if (out.includes('SUBJECT:') && out.includes('UHM LOAN NUMBER:')) {
-		// Find SUBJECT, UHM, and JPMORGAN divs
+		// Find SUBJECT, UHM, and JPMORGAN divs - handle tabs/spaces
 		const subjectMatch = out.match(/<div[^>]*>SUBJECT:\s+([^<]+)<\/div>/i);
 		const uhmMatch = out.match(/<div[^>]*>UHM\s+LOAN\s+NUMBER:\s+([^<]+)<\/div>/i);
 		const jpmMatch = out.match(/<div[^>]*>JPMORGAN\s+CHASE\s+BANK[^<]*LOAN\s+NUMBER:\s+([^<]+)<\/div>/i);
@@ -2385,7 +2385,7 @@ function cleanupHtml(html, ir) {
 			// Find where SUBJECT starts and where JPMORGAN ends
 			const subjectStart = subjectMatch.index;
 			const jpmEnd = jpmMatch.index + jpmMatch[0].length;
-			// Find the <br> after JPMORGAN
+			// Find the <br> after JPMORGAN (may have multiple)
 			const afterJpm = out.substring(jpmEnd);
 			const brMatch = afterJpm.match(/^\s*<br>\s*/);
 			const jpmEndWithBr = brMatch ? jpmEnd + brMatch[0].length : jpmEnd;
@@ -2403,8 +2403,11 @@ function cleanupHtml(html, ir) {
 </tr></tbody></table>
 <br>`;
 			
-			// Replace the entire section
-			out = out.substring(0, subjectStart) + tableHtml + out.substring(jpmEndWithBr);
+			// Replace the entire section (including all <br> tags between them)
+			// Find all content from SUBJECT to after JPMORGAN's <br>
+			const beforeSubject = out.substring(0, subjectStart);
+			const afterJpmWithBr = out.substring(jpmEndWithBr);
+			out = beforeSubject + tableHtml + afterJpmWithBr;
 		}
 	}
 	
@@ -2574,6 +2577,35 @@ function cleanupHtml(html, ir) {
 	// Fix servicer table: add indented <br> before and after (after replacement, table has no div wrapper)
 	out = out.replace(/(<div>If you have any questions[^<]*<\/div>)\s*<br>\s*(<table width="100%" style="border-collapse: collapse"><tbody><tr>\s*<td[^>]*><b>Current Servicer)/g, '$1\n<br>\n  <br>\n$2');
 	out = out.replace(/(<\/tbody><\/table>)\s*<br>\s*(<div>Under Federal law)/g, '$1\n<br>\n  <br>\n$2');
+	
+	// STEP 8: Additional fixes for remaining issues
+	// Fix salutation: Dear {[M558]} and {[M559]}, -> Dear {[Salutation]},
+	out = out.replace(/<div[^>]*>Dear\s+\{\[M558\]\}\s+and\s+\{\[M559\]\},<\/div>/gi, '<div>Dear {[Salutation]},</div>');
+	
+	// Fix payment address: convert separate divs to table with padding-left: 50px
+	out = out.replace(/(<div>Send all payments[^<]*<\/div>)\s*<br>\s*(<div>JPMorgan Chase Bank, NA<\/div>)\s*<br>\s*(<div>Attn: Payment Processing<\/div>)\s*<br>\s*(<div>P\.O\. Box[^<]*<\/div>)\s*<br>\s*(<div>Philadelphia[^<]*<\/div>)/gi, 
+		'$1\n<br>\n<table><tbody><tr>\n  <td style="padding-left: 50px">JPMorgan Chase Bank, NA</td>\n</tr><tr>\n  <td style="padding-left: 50px">Attn: Payment Processing</td>\n</tr><tr>\n  <td style="padding-left: 50px">P.O. Box 71244</td>\n</tr><tr>\n  <td style="padding-left: 50px">Philadelphia, PA 19176-6244</td>\n</tr></tbody></table>');
+	
+	// Fix "Important note about insurance": remove <br> between title and content
+	out = out.replace(/(<div><b>Important note about insurance<\/b><\/div>)\s*<br>\s*(<div>If you have)/gi, '$1\n$2');
+	
+	// Fix "visit." -> "visit <u>www.chase.com</u>."
+	out = out.replace(/visit\.\s*<\/div>/gi, 'visit <u>www.chase.com</u>.</div>');
+	
+	// Fix "first" -> "<u>first</u>"
+	out = out.replace(/your\s+first\s+payment/gi, 'your <u>first</u> payment');
+	
+	// Add border table before "IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT" if missing
+	if (out.includes('IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT') && !out.includes('border-top: 2px solid') || !out.match(/border-top: 2px solid[\s\S]{0,500}IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT/)) {
+		const borderTable = `<br>
+  <br>
+<table width="100%"><tbody><tr>
+  <td style="border-top: 2px solid rgba(0, 0, 0, 1)"></td>
+</tr></tbody></table>
+<br>
+  <br>`;
+		out = out.replace(/(<div>\{\[L003\]\}<\/div>\s*<hr>\s*<br>\s*<br>)(<div style="text-align: center"><b>IMPORTANT INFORMATION FOR CUSTOMERS WITH AUTOMATIC DRAFT<\/b><\/div>)/gi, '$1' + borderTable + '$2');
+	}
 	
 	return out;
 }

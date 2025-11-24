@@ -2619,7 +2619,7 @@ function cleanupHtml(html, ir) {
 	}
 	
 	// Fix servicer table: add proper styling and Compress functions (SR121-specific - only if "Current Servicer" exists and JPMorgan Chase Bank)
-	if (out.includes('Current Servicer') && out.includes('New Servicer') && out.includes('JPMorgan Chase Bank')) {
+	if (out.includes('Current Servicer') && out.includes('New Servicer') && (out.includes('JPMorgan Chase Bank') || out.includes('JPMORGAN CHASE BANK'))) {
 		out = out.replace(/<div><table[^>]*><tbody><tr>[\s\S]*?<td[^>]*><b>Current Servicer<\/b><\/td>[\s\S]*?<td[^>]*><b>New Servicer<\/b><\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><tr>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr><\/tbody><\/table><\/div>/gi, (match, currentInfo, newInfo, currentAddr, newAddr) => {
 		// Fix plsMatrix prefixes in current info
 		currentInfo = currentInfo.replace(/\{\[CSEmail\]\}/g, '{[plsMatrix.CSEmail]}');
@@ -2648,7 +2648,8 @@ function cleanupHtml(html, ir) {
   <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{Compress(${currentAddrCompress})}</td>
   <td width="50%" valign="top" style="text-align: center; border: 1px solid rgba(0, 0, 0, 1); padding-top: 15px; padding-bottom: 15px">{Compress(${newAddrCompress})}</td>
 </tr></tbody></table>`;
-	});
+		});
+	}
 	
 	// STEP 7: Fix spacing after servicer table replacement (SR121-specific)
 	if (out.includes('Current Servicer') && out.includes('If you have any questions')) {

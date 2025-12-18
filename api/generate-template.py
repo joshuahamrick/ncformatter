@@ -18,6 +18,28 @@ def normalize_html(html):
 	
 	normalized = html
 	
+	# Remove business rule references and instruction text
+	normalized = re.sub(r'<div>\(see\s+["\'].*?Business Rules.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
+	normalized = re.sub(r'<div>\(see\s+["\'].*?BKFS.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
+	
+	# Fix conditional logic formatting - merge {If()} and {End If} into same div as content
+	# Pattern: <div>{If(...)}</div><div>content</div><div>{End If}</div>
+	# Should become: <div>{If(...)}content{End If}</div>
+	normalized = re.sub(
+		r'<div>(\{If\([^}]+\}\))</div>\s*<div>([^<]+)</div>\s*<div>(\{End If\})</div>',
+		r'<div>\1\2\3</div>',
+		normalized,
+		flags=re.IGNORECASE
+	)
+	
+	# Also handle cases with multiple content divs between If and End If
+	normalized = re.sub(
+		r'<div>(\{If\([^}]+\}\))</div>\s*(<div>[^<]+</div>\s*)+<div>(\{End If\})</div>',
+		lambda m: f'<div>{m.group(1)}{"".join(re.findall(r"<div>([^<]+)</div>", m.group(0)))}{m.group(3)}</div>',
+		normalized,
+		flags=re.IGNORECASE
+	)
+	
 	# Normalize line endings
 	normalized = normalized.replace('\r\n', '\n').replace('\r', '\n')
 	
@@ -28,9 +50,9 @@ def normalize_html(html):
 	normalized = re.sub(r'\s+</', '</', normalized)
 	normalized = re.sub(r'>\s+', '>', normalized)
 	
-	# Normalize conditional blocks
-	normalized = re.sub(r'\{If\([^}]+\}\)\s+', lambda m: m.group(0).strip() + ' ', normalized)
-	normalized = re.sub(r'\s+\{End If\}', lambda m: ' ' + m.group(0).strip(), normalized)
+	# Normalize conditional blocks (inline format)
+	normalized = re.sub(r'\{If\([^}]+\}\)\s+', lambda m: m.group(0).strip(), normalized)
+	normalized = re.sub(r'\s+\{End If\}', lambda m: m.group(0).strip(), normalized)
 	
 	# Normalize multiple <br> tags
 	normalized = re.sub(r'(<br>\s*){3,}', lambda m: '<br>' * len(re.findall(r'<br>', m.group(0))), normalized)
@@ -199,6 +221,12 @@ def format_ir_for_prompt(ir):
 			
 			# Skip conditional salutation text
 			if re.search(r'\(or if\s+\[.*\]\s+(and/or|present)\)', text, re.IGNORECASE):
+				continue
+			
+			# Skip business rule references
+			if re.search(r'\(see\s+["\'].*Business Rules', text, re.IGNORECASE):
+				continue
+			if re.search(r'Letter Library Business Rules', text, re.IGNORECASE):
 				continue
 			
 			# This looks like actual content - include it

@@ -2,7 +2,7 @@ from http.server import BaseHTTPRequestHandler
 import json
 import os
 import traceback
-import hashlib
+import re
 
 try:
 	import openai

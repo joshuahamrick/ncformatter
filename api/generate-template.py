@@ -295,8 +295,15 @@ STEP 1 - CONTENT EXTRACTION:
    - Always use &gt; not > for greater than
    - Always use &lt; not < for less than
 7. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
-8. PRESERVE STYLING from source document - if text is centered, bold, underlined, or has specific font sizes, include those style attributes (e.g., style="text-align: center; font-size: 14pt")
+8. PRESERVE STYLING from source document - CRITICAL: if text is centered, bold, underlined, or has specific font sizes, you MUST include those style attributes:
+   - Centered text: style="text-align: center"
+   - Font size: style="font-size: 14pt" (or whatever size is in the document)
+   - Bold: <b>...</b>
+   - Underlined: <u>...</u>
+   - Combined: <div style="text-align: center; font-size: 14pt"><b>...</b></div>
+   - Look at the Document Content for styling hints - if text appears centered or larger, preserve that
 9. For tables, extract the ACTUAL table structure and content from the document - don't generate placeholder tables with "Column 1, Column 2" etc. - look at the LM401 example to see the correct 3-column table format
+10. CRITICAL: If you see table content in the Document Content (look for "Table X" entries), you MUST include that table in your output - NEVER skip tables
 
 STEP 2 - STRUCTURE (MANDATORY - FOLLOW EXACTLY):
 You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OWN LINE:

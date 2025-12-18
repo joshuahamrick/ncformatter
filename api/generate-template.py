@@ -206,7 +206,8 @@ def format_ir_for_prompt(ir):
 				continue
 			
 			# This looks like actual content - include it
-			formatted.append(f"Paragraph {idx + 1}: {text[:500]}")
+			# Increase limit to capture more content
+			formatted.append(f"Paragraph {idx + 1}: {text[:1000]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content

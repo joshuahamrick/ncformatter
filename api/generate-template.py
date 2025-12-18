@@ -323,14 +323,15 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - Include styled titles (with style attributes like text-align: center, font-size)
 - Include ALL sections, tables, and content
 - Don't stop after just the title - continue with all paragraphs
-- If you see "Final Payment Supplement Disclosure" in the content, format it with styling: <div style="text-align: center; font-size: 12pt"><b><u>Final Payment Supplement Disclosure</u></b></div>
-- If you see "IMPORTANT NOTICE:" format it as: <div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
-- If you see "MORTGAGE PAYMENT INCREASE BEGINS" format it as: <div style="text-align: center; font-size: 14pt"><b>MORTGAGE PAYMENT INCREASE BEGINS...</b></div>
-- If you see "Information About Your Payment Supplement" format it as: <div style="font-size: 14pt"><b>Information About Your Payment Supplement</b></div>
+- PRESERVE ALL STYLING from the source document:
+  - If text is centered, use style="text-align: center"
+  - If text has a specific font size, include font-size in the style attribute
+  - If text is bold, wrap in <b> tags
+  - If text is underlined, wrap in <u> tags
+  - If text is both bold and underlined, use <b><u>...</u></b>
 - For tables, extract the ACTUAL table structure and content from the document - look at the Document Content for table information
 - NEVER generate placeholder tables with "Column 1, Column 2" or "Add actual table rows here" - extract the real table content
 - If you see table content in the Document Content, extract ALL rows and cells with their actual content
-- If you see "Payment Supplement Funds Applied" or similar table headers in the content, you MUST include the complete table with all rows
 - Tables should have proper structure: headers in first row with <b> tags, data rows below, proper borders and styling
 - Look for table content in the Document Content section - if you see "Table X" with rows, extract ALL of those rows into the HTML table structure
 - NEVER skip tables - if the document has a table, it MUST appear in the HTML output

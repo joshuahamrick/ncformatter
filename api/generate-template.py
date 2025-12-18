@@ -311,7 +311,7 @@ You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OW
 [INCLUDE ALL CONTENT - don't stop early, include every paragraph from the document]
 
 NOTE: The property address table should have TWO rows: "RE: Loan Number:" and "Property Address:" - NOT just one row
-NOTE: Conditional syntax - use {[TAG]} NOT '{[TAG]}' inside conditions (no quotes around the variable)
+NOTE: Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
 YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.

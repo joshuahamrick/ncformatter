@@ -387,15 +387,23 @@ Example of CORRECT formatting:
 <div style="font-size: 14pt"><b>Information About Your Payment Supplement</b></div>
 <div>Section content here.</div>
 <br>
-<div><b>Table Title</b></div>
+<div><b>Payment Supplement Funds Applied as of {[L001]}</b></div>
 <table width="100%" style="border-collapse: collapse"><tbody><tr>
-  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1)"><b>Header 1</b></td>
-  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Header 2</b></td>
-  <td width="20%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Header 3</b></td>
+  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1)"></td>
+  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Date(s)</b></td>
+  <td width="20%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Amount</b></td>
 </tr><tr>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">Row 1 Col 1</td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">Row 1 Col 2</td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[M029]})}</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Total Payment Supplement note amount (includes amounts used to bring your mortgage current and provide monthly principal reductions)</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1); background-color: rgba(211, 211, 211, 1)"></td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[J044]})}</td>
+</tr><tr>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Amount used to bring your mortgage current</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{[J048]}</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[J045]})}</td>
+</tr><tr>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Amount used to provide monthly principal reductions as of {[L001]}</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{[J048]} through {[J049]}</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[T318]})}</td>
 </tr></tbody></table>
 <br>
 <div>Contact us at {[plsMatrix.CSPhoneNumber]} or {[plsMatrix.LossPreventionPhoneNumberTollFree]}</div>

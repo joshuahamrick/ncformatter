@@ -55,30 +55,35 @@ Generate HTML templates that:
 - Use width percentages, valign="top" for multi-line cells
 - Bold headers: <td><b>Header</b></td> or <td style="text-align: center"><b>Header</b></td>
 
-### Paragraphs
+### Paragraphs and Spacing
 - Wrap each paragraph in <div>...</div>
-- Use <br> between paragraphs
+- Use <br> tags ONLY where the source document has line breaks/spacing
+- Match the spacing from the actual Word document - if there's no space between sections in the doc, don't add <br>
+- Each line break in the source document = one <br> tag
+- Infer spacing from the document structure - don't automatically add spacing
 - Use <b>...</b> for bold text
 - Use <u>...</u> for underlined text
 
 ### Output Format
 CRITICAL FORMATTING RULES:
 - Each HTML element MUST be on its own line
-- Use <br> tags between paragraphs and sections
+- Use <br> tags ONLY where the source document has actual line breaks/spacing
+- Match spacing from the Word document - if sections are together in the doc, keep them together
 - Follow this EXACT structure:
   1. <div>{Insert(H003 TagHeader)}</div>
   2. <br>
   3. <div>{[L001]}</div>
   4. <div>{[mailingAddress]}</div>
-  5. <br><br><br><br><br>
+  5. <br><br><br><br><br> (standard spacing after mailing address)
   6. Property address table (if needed)
-  7. <br>
-  8. Content paragraphs (each in <div>...</div> with <br> between)
+  7. <br> (only if there's spacing in the doc)
+  8. Content paragraphs - match spacing from source document
   9. Closing signature section
 
 - NEVER output everything on one line - format with proper newlines
 - Each <div>, <table>, <tr>, <td> should be on its own line
 - Use proper indentation for nested elements (2 spaces)
+- Infer spacing from document structure - don't add spacing that isn't in the source
 - Return ONLY valid HTML that matches the style guide exactly
 - Do not include explanations, markdown, or code blocks
 - Return pure HTML string with proper formatting

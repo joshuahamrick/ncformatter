@@ -323,21 +323,23 @@ FORMATTING RULES (CRITICAL - STUDY THE EXAMPLES):
    <div>{[mailingAddress]}</div>
    <br><br><br><br><br>
    [Property address table if needed]
-   <br>
-   [Content paragraphs]
+   [Content paragraphs - match spacing from source document]
 
 8. Format with proper newlines - EACH element on its own line:
    <div>content</div>
-   <br>
+   <br>  (ONLY if there's spacing in the source document)
    <div>next paragraph</div>
-   <br>
 
 9. NEVER output everything on one line - format like the examples show
-10. Use proper spacing: <br> between paragraphs, <br><br><br><br><br> after mailing address
+10. SPACING RULE: Use <br> tags ONLY where the source document has actual line breaks/spacing
+    - Match spacing from the Word document exactly
+    - If sections are together in the doc with no spacing, keep them together (no <br>)
+    - If there's a line break in the doc, use <br>
+    - Standard spacing: <br><br><br><br><br> after mailing address
 11. Follow the structure and spacing patterns from examples EXACTLY
 12. Return ONLY the HTML, no explanations, no markdown code blocks, no conditional text
 
-HTML Output (formatted with proper newlines like the examples):"""
+HTML Output (formatted with proper newlines like the examples, matching source document spacing):"""
 	
 	return system_prompt, user_message, few_shot_text
 

@@ -279,7 +279,14 @@ STEP 1 - CONTENT EXTRACTION:
 3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, etc.)
 4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
 5. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
-6. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
+6. CRITICAL CONDITIONAL SYNTAX - Follow this EXACT format:
+   CORRECT: {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}
+   WRONG: {If({[M006]} = 'FHA' AND {[M037]} > 0)}  ← Missing quotes around variable, wrong comparison operator
+   - Variables in string comparisons need quotes: '{[TAG]}'
+   - Variables in numeric comparisons don't need quotes: {[TAG]}
+   - Always use &gt; not > for greater than
+   - Always use &lt; not < for less than
+7. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
 
 STEP 2 - STRUCTURE (MANDATORY - FOLLOW EXACTLY):
 You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OWN LINE:

@@ -345,7 +345,9 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - Look for table content in the Document Content section - if you see "Table X" with rows, extract ALL of those rows into the HTML table structure
 - NEVER skip tables - if the document has a table, it MUST appear in the HTML output
 - CRITICAL: If you see text like "Payment Supplement Funds Applied" or any table-related header in the Document Content, there MUST be a table following it - look for "Table X" entries in the Document Content and include that complete table structure
-- If the Document Content mentions a "chart" or "table" or "accounting", you MUST include the actual table structure with all rows
+- If the Document Content mentions a "chart" or "table" or "accounting" or "chart below", you MUST include the actual table structure with all rows
+- If you see text like "The chart below provides an accounting" or "This notice also provides an accounting", there MUST be a table in the Document Content - find it and include it
+- NEVER skip tables - if text references a table/chart/accounting, that table MUST appear in your output
 - Include ALL content until the signature/closing section
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)

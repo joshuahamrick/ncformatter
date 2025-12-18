@@ -179,6 +179,12 @@ def format_ir_for_prompt(ir):
 			if re.match(r'^\[[A-Z0-9]+\]\s+[A-Z]', text) and len(text) < 80:
 				continue
 			
+			# Skip variable definitions like "[M563] [M564] [M565] [M566] (Mailing City), (State), (5-Digit Zip), (4-Digit Zip)"
+			if re.search(r'\[M\d+\]\s+\[M\d+\]\s+\[M\d+\]', text):
+				continue
+			if re.search(r'\(Mailing City\)|\(State\)|\(5-Digit Zip\)|\(4-Digit Zip\)', text):
+				continue
+			
 			# Skip if it contains skip patterns and is short (likely just metadata)
 			if any(pattern in text for pattern in skip_patterns):
 				if len(text) < 100:  # Short = likely just metadata
@@ -193,6 +199,10 @@ def format_ir_for_prompt(ir):
 			if re.search(r'\(see\s+["\'].*Business Rules', text, re.IGNORECASE):
 				continue
 			if re.search(r'Letter Library Business Rules', text, re.IGNORECASE):
+				continue
+			
+			# Skip lines that are just variable lists like "[M563] {[M564]} {[M565]} {[M566]}"
+			if re.match(r'^(\[M\d+\]\s*)+', text) and len(text) < 150:
 				continue
 			
 			# This looks like actual content - include it
@@ -279,13 +289,19 @@ You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OW
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
 <table width="100%"><tbody><tr>
+  <td width="20%" valign="top">RE: Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
   <td width="20%" valign="top">Property Address:</td>
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
+[Conditional FHA/RHS sections if present - format as {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}<div>FHA Case Number: {[M037]}</div>{End If}]
 <br>
 <div>Dear {[Salutation]},</div>
 <br>
 [Content paragraphs here - match spacing from source document]
+
+NOTE: The property address table should have TWO rows: "RE: Loan Number:" and "Property Address:" - NOT just one row
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
 YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.

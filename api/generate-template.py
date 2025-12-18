@@ -187,7 +187,8 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 		few_shot_text += f"### Example {idx + 1}: {ex['name']}\n```html\n{ex['html']}\n```\n\n"
 	
 	# Build user message
-	user_message = f"""Convert the following document content into formatted HTML following the style guide and examples.
+	# Note: Using regular string concatenation instead of f-string to avoid issues with {If()} syntax
+	user_message = """Convert the following document content into formatted HTML following the style guide and examples.
 
 CRITICAL RULES:
 - Extract ONLY the actual document text content
@@ -197,7 +198,7 @@ CRITICAL RULES:
 - NEVER include conditional salutation logic - ALWAYS use <div>Dear {[Salutation]},</div>
 
 Document Content:
-{ir_content}
+""" + ir_content + """
 
 """
 	

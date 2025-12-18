@@ -277,7 +277,7 @@ Generate the HTML template following these EXACT rules:
 STEP 1 - CONTENT EXTRACTION:
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
 2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]})
-3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, etc.)
+3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, LossPreventionPhoneNumberTollFree, etc.) - NEVER use variables without plsMatrix prefix for company data
 4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
 5. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
 6. CRITICAL CONDITIONAL SYNTAX - Follow this EXACT format:
@@ -288,6 +288,8 @@ STEP 1 - CONTENT EXTRACTION:
    - Always use &gt; not > for greater than
    - Always use &lt; not < for less than
 7. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
+8. PRESERVE STYLING from source document - if text is centered, bold, underlined, or has specific font sizes, include those style attributes (e.g., style="text-align: center; font-size: 14pt")
+9. For tables, extract the ACTUAL table structure and content from the document - don't generate placeholder tables with "Column 1, Column 2" etc. - look at the LM401 example to see the correct 3-column table format
 
 STEP 2 - STRUCTURE (MANDATORY - FOLLOW EXACTLY):
 You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OWN LINE:
@@ -308,7 +310,18 @@ You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OW
 <div>Dear {[Salutation]},</div>
 <br>
 [Content paragraphs here - match spacing from source document]
-[INCLUDE ALL CONTENT - don't stop early, include every paragraph from the document]
+
+CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
+- Include EVERY paragraph shown in the Document Content above
+- Include styled titles (with style attributes like text-align: center, font-size)
+- Include ALL sections, tables, and content
+- Don't stop after just the title - continue with all paragraphs
+- If you see "Final Payment Supplement Disclosure" in the content, format it with styling: <div style="text-align: center; font-size: 12pt"><b><u>Final Payment Supplement Disclosure</u></b></div>
+- If you see "IMPORTANT NOTICE:" format it as: <div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
+- For tables, extract the ACTUAL table structure from the document - don't generate placeholder tables with "Column 1, Column 2" etc.
+- Include ALL content until the signature/closing section
+- Include closing signature section with department name and company name: <div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div>
+- Include any conditional sections at the end (like Wisconsin notice)
 
 NOTE: The property address table should have TWO rows: "RE: Loan Number:" and "Property Address:" - NOT just one row
 NOTE: Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >

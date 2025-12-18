@@ -301,9 +301,12 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	# Build few-shot examples section - show ALL examples with proper formatting
 	few_shot_text = "\n## CRITICAL: Example Outputs - Study These Carefully\n\n"
 	few_shot_text += "These examples show the EXACT formatting structure you must follow:\n"
-	few_shot_text += "- Each element on its own line\n"
-	few_shot_text += "- Proper <br> tags for spacing\n"
-	few_shot_text += "- Standard header structure: Header, Date, Mailing Address, Property Address Table, Content\n\n"
+	few_shot_text += "- Each element on its own line (with newlines)\n"
+	few_shot_text += "- Proper <br> tags for spacing based on source document\n"
+	few_shot_text += "- Standard header structure: Header, Date, Mailing Address, Property Address Table, Salutation, Content\n"
+	few_shot_text += "- Conditional logic wrapped in {If()}...{End If}\n"
+	few_shot_text += "- Property address ALWAYS in a table with Compress()\n\n"
+	few_shot_text += "IMPORTANT: Notice how each example has proper newlines - each <div>, <br>, <table> is on its own line!\n\n"
 	
 	for idx, ex in enumerate(few_shot_examples):  # Show ALL examples
 		few_shot_text += f"### Example {idx + 1}: {ex['name']}\n```html\n{ex['html']}\n```\n\n"

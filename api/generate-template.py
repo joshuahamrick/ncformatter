@@ -189,7 +189,12 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	# Build user message
 	user_message = f"""Convert the following document content into formatted HTML following the style guide and examples.
 
-IMPORTANT: Extract only the actual document text content. Ignore variable definitions like "[H002] Company Address Line 1" - those are metadata, not content.
+CRITICAL RULES:
+- Extract ONLY the actual document text content
+- IGNORE variable definitions like "[H002] Company Address Line 1" - those are metadata
+- IGNORE conditional logic text like "(or if [H581] and/or [H582] present)" - do NOT include this
+- IGNORE instructions like "If [M065] ≥ 'July 29, 1999' then print:" - convert to proper {If()} syntax
+- NEVER include conditional salutation logic - ALWAYS use <div>Dear {[Salutation]},</div>
 
 Document Content:
 {ir_content}
@@ -199,15 +204,17 @@ Document Content:
 	if user_instruction:
 		user_message += f"Additional Instruction: {user_instruction}\n\n"
 	
-	user_message += """Generate the HTML template following these rules:
-1. Extract ONLY the actual document content - ignore variable definitions like "[H002] Company Address Line 1"
-2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]})
-3. Use {[plsMatrix.*]} for all company variables (CompanyLongName, CSPhoneNumber, etc.)
+	user_message += """Generate the HTML template following these EXACT rules:
+1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
+2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]})
+3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, etc.)
 4. Use {Compress({[M567]}|{[M583]}|{[M568]})} for property addresses
-5. Use <div>Dear {[Salutation]},</div> for salutations (NOT conditional logic)
+5. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
 6. Start with <div>{Insert(H003 TagHeader)}</div> or <div>{Insert(Flat Branch Header)}</div>
-7. Follow the structure and spacing patterns from examples exactly
-8. Return ONLY the HTML, no explanations, no markdown code blocks
+7. Use {[L001]} for date and {[mailingAddress]} for mailing address
+8. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}
+9. Follow the structure and spacing patterns from examples EXACTLY
+10. Return ONLY the HTML, no explanations, no markdown code blocks, no conditional text
 
 HTML Output:"""
 	

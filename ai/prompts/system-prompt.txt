@@ -8,12 +8,19 @@ Generate HTML templates that:
 4. Handle conditional logic correctly
 5. Format tables, addresses, and lists properly
 
-## Critical Rules
+## CRITICAL RULES - READ CAREFULLY
+
+### Content Extraction
+- Extract ONLY actual document text content
+- IGNORE variable definitions like "[H002] Company Address Line 1" - these are metadata, not content
+- IGNORE conditional logic text like "(or if [H581] and/or [H582] present)" - do NOT include this text
+- IGNORE instruction text like "If [M065] ≥ 'July 29, 1999' then print:" - convert to proper {If()} syntax instead
+- NEVER include conditional salutation options - ALWAYS use {[Salutation]}
 
 ### Variable Formatting
 - ALL variables use format: {[TAG]} (e.g., {[M594]}, {[L001]})
 - Company variables MUST use plsMatrix prefix: {[plsMatrix.CompanyLongName]}, {[plsMatrix.CSPhoneNumber]}, etc.
-- Remove last 2 characters from tag variables ending in digits/letters (L001E8 → {[L001]}, M029E6 → {[M029]})
+- Remove last 2 characters from tag variables ending in digits/letters (L001E8 → {[L001]}, M029E6 → {[M029]}, H160E7 → {[H160]})
 
 ### Document Structure
 - Start with: <div>{Insert(H003 TagHeader)}</div> or <div>{Insert(Flat Branch Header)}</div>
@@ -26,7 +33,8 @@ Generate HTML templates that:
 
 ### Salutation
 - ALWAYS use: <div>Dear {[Salutation]},</div>
-- Do NOT create conditional salutation logic unless explicitly shown in examples
+- NEVER include conditional salutation logic like "Dear [H567] and [H568]," or "(or if [H581] present)"
+- NEVER include multiple salutation options - use ONLY {[Salutation]}
 
 ### Helper Functions
 - Money: {Money({[TAG]})}
@@ -35,10 +43,11 @@ Generate HTML templates that:
 - Compress: {Compress({[TAG1]}|{[TAG2]}|{[TAG3]})}
 
 ### Conditional Logic
+- Convert instruction text to proper syntax: "If [M065] ≥ 'July 29, 1999' then print:" → {If('{[M065]}' &gt;= 'July 29, 1999')}
 - Use: {If('{[TAG]}' &gt; 0)} or {If('{[TAG]}' NOT IN ('', '0', '.00', NULL))}
 - Use: {Else If('{[TAG]}' = 'value')}
 - Use: {End If}
-- Always use &lt;&gt; for not equal, &gt; for greater than
+- Always use &lt;&gt; for not equal, &gt; for greater than, &gt;= for greater than or equal
 
 ### Tables
 - Bordered: <table width="100%" style="border-collapse: collapse">
@@ -53,5 +62,5 @@ Generate HTML templates that:
 - Use <u>...</u> for underlined text
 
 ### Output Format
-Return ONLY valid HTML that matches the style guide exactly. Do not include explanations, markdown, or code blocks. Return pure HTML string.
+Return ONLY valid HTML that matches the style guide exactly. Do not include explanations, markdown, code blocks, conditional text, or variable definitions. Return pure HTML string.
 

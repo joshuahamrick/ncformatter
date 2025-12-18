@@ -212,21 +212,13 @@ class WordFormatter {
                 })
             });
             
-            if (!response.ok) {
-                // Try to get error details from response
-                let errorDetail = `HTTP ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    errorDetail = errorData.error || errorDetail;
-                } catch (e) {
-                    // If response isn't JSON, use status
-                }
-                throw new Error(errorDetail);
-            }
-            
             const result = await response.json();
-            if (!result.success) {
-                const errorMsg = result.error || 'AI generation error';
+            
+            if (!response.ok || !result.success) {
+                // Get the actual error message from the API response
+                const errorMsg = result.error || `HTTP ${response.status}`;
+                console.error('API Error:', errorMsg);
+                console.error('Full response:', result);
                 throw new Error(errorMsg);
             }
             

@@ -66,7 +66,7 @@ Generate HTML templates that:
 
 ### Output Format
 CRITICAL FORMATTING RULES:
-- Each HTML element MUST be on its own line
+- Each HTML element MUST be on its own line - THIS IS MANDATORY
 - Use <br> tags ONLY where the source document has actual line breaks/spacing
 - Match spacing from the Word document - if sections are together in the doc, keep them together
 - Follow this EXACT structure:
@@ -77,14 +77,17 @@ CRITICAL FORMATTING RULES:
   5. <br><br><br><br><br> (standard spacing after mailing address)
   6. Property address table (if needed)
   7. <br> (only if there's spacing in the doc)
-  8. Content paragraphs - match spacing from source document
-  9. Closing signature section
+  8. <div>Dear {[Salutation]},</div>
+  9. <br>
+  10. Content paragraphs - match spacing from source document
+  11. Closing signature section
 
 - NEVER output everything on one line - format with proper newlines
-- Each <div>, <table>, <tr>, <td> should be on its own line
+- NEVER nest divs unnecessarily - each paragraph gets ONE <div>, not <div><div>
+- Each <div>, <table>, <tr>, <td> MUST be on its own line
 - Use proper indentation for nested elements (2 spaces)
 - Infer spacing from document structure - don't add spacing that isn't in the source
 - Return ONLY valid HTML that matches the style guide exactly
 - Do not include explanations, markdown, or code blocks
-- Return pure HTML string with proper formatting
+- Return pure HTML string with proper formatting AND NEWLINES
 

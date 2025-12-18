@@ -22,6 +22,27 @@ def normalize_html(html):
 	normalized = re.sub(r'<div>\(see\s+["\'].*?Business Rules.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
 	normalized = re.sub(r'<div>\(see\s+["\'].*?BKFS.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
 	
+	# Fix nested divs - remove empty wrapper divs
+	normalized = re.sub(r'<div><div>', '<div>', normalized)
+	normalized = re.sub(r'</div></div>', '</div>', normalized)
+	
+	# Add newlines for proper formatting if missing
+	# If everything is on one line, add newlines after each tag
+	if '\n' not in normalized or normalized.count('\n') < 5:
+		# Add newline after each closing tag
+		normalized = re.sub(r'(</div>)', r'\1\n', normalized)
+		normalized = re.sub(r'(<br>)', r'\1\n', normalized)
+		normalized = re.sub(r'(<table[^>]*>)', r'\1\n', normalized)
+		normalized = re.sub(r'(</table>)', r'\1\n', normalized)
+		normalized = re.sub(r'(<tr[^>]*>)', r'\1\n', normalized)
+		normalized = re.sub(r'(</tr>)', r'\1\n', normalized)
+		normalized = re.sub(r'(<td[^>]*>)', r'\1\n', normalized)
+		normalized = re.sub(r'(</td>)', r'\1\n', normalized)
+		normalized = re.sub(r'(<tbody>)', r'\1\n', normalized)
+		normalized = re.sub(r'(</tbody>)', r'\1\n', normalized)
+		# Clean up multiple newlines
+		normalized = re.sub(r'\n{3,}', '\n\n', normalized)
+	
 	# Fix conditional logic formatting - merge {If()} and {End If} into same div as content
 	# Pattern: <div>{If(...)}</div><div>content</div><div>{End If}</div>
 	# Should become: <div>{If(...)}content{End If}</div>

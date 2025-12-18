@@ -285,6 +285,8 @@ STEP 1 - CONTENT EXTRACTION:
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
 2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]})
 3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, LossPreventionPhoneNumberTollFree, etc.) - NEVER use variables without plsMatrix prefix for company data
+   - CORRECT: {[plsMatrix.LossPreventionPhoneNumberTollFree]}, {[plsMatrix.CSPhoneNumber]}, {[plsMatrix.CompanyLongName]}
+   - WRONG: {[LossPreventionPhoneNumberTollFree]}, {[CSPhoneNumber]}, {[CompanyLongName]} ← Missing plsMatrix prefix
 4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
 5. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
 6. CRITICAL CONDITIONAL SYNTAX - Follow this EXACT format:
@@ -360,13 +362,41 @@ Example of CORRECT formatting:
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
 <table width="100%"><tbody><tr>
+  <td width="20%" valign="top">RE: Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
   <td width="20%" valign="top">Property Address:</td>
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
 <br>
 <div>Dear {[Salutation]},</div>
 <br>
-<div>Content paragraph here</div>
+<div style="text-align: center; font-size: 12pt"><b><u>Document Title</u></b></div>
+<br>
+<div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
+<br>
+<div><b>This paragraph starts with bold text.</b> Then continues with regular text.</div>
+<br>
+<div style="font-size: 14pt"><b>Section Heading</b></div>
+<div>Section content here.</div>
+<br>
+<div><b>Table Title</b></div>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1)"><b>Header 1</b></td>
+  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Header 2</b></td>
+  <td width="20%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Header 3</b></td>
+</tr><tr>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Row 1 Col 1</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Row 1 Col 2</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[M029]})}</td>
+</tr></tbody></table>
+<br>
+<div>Contact us at {[plsMatrix.CSPhoneNumber]} or {[plsMatrix.LossPreventionPhoneNumberTollFree]}</div>
+<br>
+<div>Sincerely,</div>
+<br><br><br>
+<div>Department Name</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
 <br>
 
 Example of WRONG formatting (DO NOT DO THIS):

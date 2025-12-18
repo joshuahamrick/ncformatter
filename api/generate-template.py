@@ -51,13 +51,26 @@ def normalize_html(html):
 
 def load_system_prompt():
 	"""Load the system prompt from file"""
-	prompt_path = os.path.join(os.path.dirname(__file__), '..', 'ai', 'prompts', 'system-prompt.txt')
-	try:
-		with open(prompt_path, 'r', encoding='utf-8') as f:
-			return f.read()
-	except Exception:
-		# Fallback prompt if file not found
-		return """You are an expert HTML template generator for mortgage servicing documents. 
+	# Try multiple paths for Vercel serverless environment
+	possible_paths = [
+		os.path.join(os.path.dirname(__file__), '..', 'ai', 'prompts', 'system-prompt.txt'),
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ai', 'prompts', 'system-prompt.txt'),
+		'ai/prompts/system-prompt.txt',
+		os.path.join(os.getcwd(), 'ai', 'prompts', 'system-prompt.txt')
+	]
+	
+	for prompt_path in possible_paths:
+		try:
+			if os.path.exists(prompt_path):
+				with open(prompt_path, 'r', encoding='utf-8') as f:
+					return f.read()
+		except Exception as e:
+			print(f"Failed to load prompt from {prompt_path}: {e}")
+			continue
+	
+	# Fallback prompt if file not found
+	print("WARNING: Using fallback system prompt - file not found")
+	return """You are an expert HTML template generator for mortgage servicing documents. 
 Generate HTML templates that match the exact formatting style shown in examples.
 Use {[TAG]} format for variables, {[plsMatrix.*]} for company variables.
 Remove last 2 characters from tag variables ending in digits/letters.
@@ -67,7 +80,14 @@ Return ONLY valid HTML, no explanations."""
 
 def load_few_shot_examples():
 	"""Load few-shot examples from formatted HTML files"""
-	examples_dir = os.path.join(os.path.dirname(__file__), '..', 'formatter examples')
+	# Try multiple paths for Vercel serverless environment
+	possible_dirs = [
+		os.path.join(os.path.dirname(__file__), '..', 'formatter examples'),
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'formatter examples'),
+		'formatter examples',
+		os.path.join(os.getcwd(), 'formatter examples')
+	]
+	
 	curated = [
 		'GB001/GB001-formatted.html',
 		'ES114/ES114-formatted.html',
@@ -77,6 +97,18 @@ def load_few_shot_examples():
 	]
 	
 	examples = []
+	examples_dir = None
+	
+	# Find the examples directory
+	for dir_path in possible_dirs:
+		if os.path.exists(dir_path):
+			examples_dir = dir_path
+			break
+	
+	if not examples_dir:
+		print("WARNING: Examples directory not found, using empty examples")
+		return examples
+	
 	for rel_path in curated:
 		full_path = os.path.join(examples_dir, rel_path)
 		if os.path.exists(full_path):
@@ -89,6 +121,8 @@ def load_few_shot_examples():
 					})
 			except Exception as e:
 				print(f"Error loading example {rel_path}: {e}")
+		else:
+			print(f"Example file not found: {full_path}")
 	
 	return examples
 
@@ -196,12 +230,16 @@ class handler(BaseHTTPRequestHandler):
 				return self._send(400, {'success': False, 'error': 'No IR data provided'})
 			
 			if not OPENAI_AVAILABLE:
-				return self._send(500, {'success': False, 'error': 'OpenAI library not available. Install with: pip install openai'})
+				import_error = "OpenAI library not available. Install with: pip install openai"
+				print(f"ERROR: {import_error}")
+				return self._send(500, {'success': False, 'error': import_error})
 			
 			# Get OpenAI API key from environment
 			api_key = os.environ.get('OPENAI_API_KEY')
 			if not api_key:
-				return self._send(500, {'success': False, 'error': 'OPENAI_API_KEY environment variable not set'})
+				key_error = 'OPENAI_API_KEY environment variable not set. Please set it in Vercel project settings.'
+				print(f"ERROR: {key_error}")
+				return self._send(500, {'success': False, 'error': key_error})
 			
 			# Initialize OpenAI client
 			client = openai.OpenAI(api_key=api_key)

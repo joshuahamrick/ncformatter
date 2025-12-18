@@ -220,7 +220,7 @@ def format_ir_for_prompt(ir):
 			if table_text:
 				formatted.append(f"Table {idx + 1}: {' | '.join(table_text)}")
 	
-	return '\n'.join(formatted[:30])  # Limit to first 30 blocks
+	return '\n'.join(formatted[:50])  # Increased limit to capture more content blocks
 
 def build_prompt(ir, few_shot_examples, user_instruction=None):
 	"""Build the complete prompt for OpenAI"""

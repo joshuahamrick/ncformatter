@@ -333,6 +333,7 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - Include ALL content until the signature/closing section
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)
+- Wrap the first part of paragraphs in <b> tags if they start with "This notice is to advise you..." - format as: <div><b>This notice is to advise you...</b> rest of paragraph</div>
 
 NOTE: The property address table should have TWO rows: "RE: Loan Number:" and "Property Address:" - NOT just one row
 NOTE: Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >

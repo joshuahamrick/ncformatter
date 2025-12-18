@@ -245,10 +245,21 @@ class handler(BaseHTTPRequestHandler):
 			client = openai.OpenAI(api_key=api_key)
 			
 			# Load few-shot examples
-			few_shot_examples = load_few_shot_examples()
+			try:
+				few_shot_examples = load_few_shot_examples()
+				print(f"Loaded {len(few_shot_examples)} few-shot examples")
+			except Exception as e:
+				print(f"Warning: Failed to load few-shot examples: {e}")
+				few_shot_examples = []
 			
 			# Build prompt
-			system_prompt, user_message, few_shot_text = build_prompt(ir, few_shot_examples, user_instruction)
+			try:
+				system_prompt, user_message, few_shot_text = build_prompt(ir, few_shot_examples, user_instruction)
+				print("Prompt built successfully")
+			except Exception as e:
+				error_msg = f"Failed to build prompt: {str(e)}"
+				print(f"ERROR: {error_msg}")
+				return self._send(500, {'success': False, 'error': error_msg})
 			
 			# Combine system prompt with few-shot examples
 			full_system_prompt = system_prompt + "\n\n" + few_shot_text

@@ -411,7 +411,7 @@ class handler(BaseHTTPRequestHandler):
 						{"role": "user", "content": user_message}
 					],
 					temperature=0,  # Deterministic
-					max_tokens=4000
+					max_tokens=8000  # Increased to handle longer documents
 				)
 				
 				html = response.choices[0].message.content.strip()

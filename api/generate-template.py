@@ -274,9 +274,14 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	# Format IR content
 	ir_content = format_ir_for_prompt(ir)
 	
-	# Build few-shot examples section
-	few_shot_text = "\n## Example Outputs\n\n"
-	for idx, ex in enumerate(few_shot_examples[:3]):  # Limit to 3 examples
+	# Build few-shot examples section - show ALL examples with proper formatting
+	few_shot_text = "\n## CRITICAL: Example Outputs - Study These Carefully\n\n"
+	few_shot_text += "These examples show the EXACT formatting structure you must follow:\n"
+	few_shot_text += "- Each element on its own line\n"
+	few_shot_text += "- Proper <br> tags for spacing\n"
+	few_shot_text += "- Standard header structure: Header, Date, Mailing Address, Property Address Table, Content\n\n"
+	
+	for idx, ex in enumerate(few_shot_examples):  # Show ALL examples
 		few_shot_text += f"### Example {idx + 1}: {ex['name']}\n```html\n{ex['html']}\n```\n\n"
 	
 	# Build user message
@@ -299,19 +304,38 @@ Document Content:
 		user_message += f"Additional Instruction: {user_instruction}\n\n"
 	
 	user_message += """Generate the HTML template following these EXACT rules:
+
+CONTENT RULES:
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
 2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]})
 3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, etc.)
 4. Use {Compress({[M567]}|{[M583]}|{[M568]})} for property addresses
 5. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
-6. Start with <div>{Insert(H003 TagHeader)}</div> or <div>{Insert(Flat Branch Header)}</div>
-7. Use {[L001]} for date and {[mailingAddress]} for mailing address
-8. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
-9. Format HTML with proper spacing: <div>content</div><br> between paragraphs, no extra spaces
-10. Follow the structure and spacing patterns from examples EXACTLY
-11. Return ONLY the HTML, no explanations, no markdown code blocks, no conditional text
+6. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
 
-HTML Output:"""
+FORMATTING RULES (CRITICAL - STUDY THE EXAMPLES):
+7. ALWAYS start with this EXACT structure:
+   <div>{Insert(H003 TagHeader)}</div>
+   <br>
+   <div>{[L001]}</div>
+   <div>{[mailingAddress]}</div>
+   <br><br><br><br><br>
+   [Property address table if needed]
+   <br>
+   [Content paragraphs]
+
+8. Format with proper newlines - EACH element on its own line:
+   <div>content</div>
+   <br>
+   <div>next paragraph</div>
+   <br>
+
+9. NEVER output everything on one line - format like the examples show
+10. Use proper spacing: <br> between paragraphs, <br><br><br><br><br> after mailing address
+11. Follow the structure and spacing patterns from examples EXACTLY
+12. Return ONLY the HTML, no explanations, no markdown code blocks, no conditional text
+
+HTML Output (formatted with proper newlines like the examples):"""
 	
 	return system_prompt, user_message, few_shot_text
 

@@ -26,12 +26,12 @@ def normalize_html(html):
 	normalized = re.sub(r'<div><div>', '<div>', normalized)
 	normalized = re.sub(r'</div></div>', '</div>', normalized)
 	
-	# Add newlines for proper formatting if missing
-	# Check if HTML is mostly on one line (fewer than 10 newlines)
+	# Minimal post-processing - trust the AI to format correctly
+	# Only fix if absolutely necessary (everything on one line)
 	line_count = normalized.count('\n')
-	if line_count < 10:
-		# Add newline after each opening tag
-		normalized = re.sub(r'(<div>)', r'\1\n', normalized)
+	if line_count < 5:
+		# Last resort: add newlines after tags
+		normalized = re.sub(r'(</div>)', r'\1\n', normalized)
 		normalized = re.sub(r'(<br>)', r'\1\n', normalized)
 		normalized = re.sub(r'(<table[^>]*>)', r'\1\n', normalized)
 		normalized = re.sub(r'(</table>)', r'\1\n', normalized)
@@ -41,15 +41,8 @@ def normalize_html(html):
 		normalized = re.sub(r'(</tr>)', r'\1\n', normalized)
 		normalized = re.sub(r'(<td[^>]*>)', r'\1\n', normalized)
 		normalized = re.sub(r'(</td>)', r'\1\n', normalized)
-		# Add newline after each closing div
-		normalized = re.sub(r'(</div>)', r'\1\n', normalized)
-		# Clean up: remove newlines that are inside tags (between > and <)
 		normalized = re.sub(r'>\n<', '><', normalized)
-		# Clean up multiple consecutive newlines
 		normalized = re.sub(r'\n{3,}', '\n\n', normalized)
-		# Remove leading/trailing newlines from each line
-		lines = normalized.split('\n')
-		normalized = '\n'.join([line.strip() for line in lines if line.strip()])
 	
 	# Fix conditional logic formatting - merge {If()} and {End If} into same div as content
 	# Pattern: <div>{If(...)}</div><div>content</div><div>{End If}</div>
@@ -317,7 +310,14 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	
 	# Build user message
 	# Note: Using regular string concatenation instead of f-string to avoid issues with {If()} syntax
-	user_message = """Convert the following document content into formatted HTML following the style guide and examples.
+	user_message = """You are converting a Word document into a formatted HTML template. Your task is to:
+
+1. Extract the actual document content (ignore variable definitions and instructions)
+2. Format it as HTML following the EXACT structure and style shown in the examples
+3. Use proper newlines - each HTML element on its own line
+4. Include ALL required elements: header, date, mailing address, property address table, salutation, content
+5. Wrap conditional content in {If()}...{End If} blocks
+6. Match spacing from the source document
 
 CRITICAL RULES:
 - Extract ONLY the actual document text content
@@ -325,6 +325,8 @@ CRITICAL RULES:
 - IGNORE conditional logic text like "(or if [H581] and/or [H582] present)" - do NOT include this
 - IGNORE instructions like "If [M065] ≥ 'July 29, 1999' then print:" - convert to proper {If()} syntax
 - NEVER include conditional salutation logic - ALWAYS use <div>Dear {[Salutation]},</div>
+- ALWAYS include property address table after mailing address
+- ALWAYS format with newlines - each tag on its own line
 
 Document Content:
 """ + ir_content + """
@@ -427,9 +429,8 @@ class handler(BaseHTTPRequestHandler):
 			
 			# Call OpenAI
 			try:
-				# Use gpt-3.5-turbo for lower cost (much cheaper than gpt-4o)
-				# Cost: ~$0.001-0.002 per document vs $0.01-0.05 for gpt-4o
-				model_name = "gpt-3.5-turbo"
+				# Use gpt-4o for better quality - it understands formatting and structure better
+				model_name = "gpt-4o"
 				print(f"Calling OpenAI API with model: {model_name}")
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")

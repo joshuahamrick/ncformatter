@@ -256,9 +256,10 @@ Document Content:
 5. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
 6. Start with <div>{Insert(H003 TagHeader)}</div> or <div>{Insert(Flat Branch Header)}</div>
 7. Use {[L001]} for date and {[mailingAddress]} for mailing address
-8. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}
-9. Follow the structure and spacing patterns from examples EXACTLY
-10. Return ONLY the HTML, no explanations, no markdown code blocks, no conditional text
+8. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
+9. Format HTML with proper spacing: <div>content</div><br> between paragraphs, no extra spaces
+10. Follow the structure and spacing patterns from examples EXACTLY
+11. Return ONLY the HTML, no explanations, no markdown code blocks, no conditional text
 
 HTML Output:"""
 	

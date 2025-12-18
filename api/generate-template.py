@@ -268,11 +268,14 @@ class handler(BaseHTTPRequestHandler):
 			
 			# Call OpenAI
 			try:
-				print(f"Calling OpenAI API with model: gpt-4o")
+				# Use gpt-3.5-turbo for lower cost (much cheaper than gpt-4o)
+				# Cost: ~$0.001-0.002 per document vs $0.01-0.05 for gpt-4o
+				model_name = "gpt-3.5-turbo"
+				print(f"Calling OpenAI API with model: {model_name}")
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")
 				response = client.chat.completions.create(
-					model="gpt-4o",  # Using gpt-4o for better quality
+					model=model_name,
 					messages=[
 						{"role": "system", "content": full_system_prompt},
 						{"role": "user", "content": user_message}

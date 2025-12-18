@@ -210,15 +210,22 @@ def format_ir_for_prompt(ir):
 			formatted.append(f"Paragraph {idx + 1}: {text[:1000]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
-			# Extract table content
+			# Extract table content - include more detail
 			table_text = []
-			for row in rows[:5]:  # Limit rows
+			for row in rows[:10]:  # Increased limit to capture more rows
 				cells = row.get('cells', [])
-				row_text = ' | '.join([''.join([r.get('text', '') for r in c.get('runs', [])]) for c in cells[:3]])
-				if row_text.strip():
-					table_text.append(row_text[:100])
+				cell_texts = []
+				for c in cells[:5]:  # Increased cell limit
+					cell_text = ''.join([r.get('text', '') for r in c.get('runs', [])])
+					if cell_text.strip():
+						cell_texts.append(cell_text[:200])  # Increased character limit
+				if cell_texts:
+					row_text = ' | '.join(cell_texts)
+					table_text.append(row_text)
 			if table_text:
-				formatted.append(f"Table {idx + 1}: {' | '.join(table_text)}")
+				formatted.append(f"Table {idx + 1} ({len(rows)} rows):")
+				for i, row_text in enumerate(table_text):
+					formatted.append(f"  Row {i+1}: {row_text}")
 	
 	return '\n'.join(formatted[:50])  # Increased limit to capture more content blocks
 

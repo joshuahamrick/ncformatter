@@ -376,8 +376,9 @@ Example of CORRECT formatting:
 <div style="text-align: center; font-size: 12pt"><b><u>Document Title</u></b></div>
 <br>
 <div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
+<div style="text-align: center; font-size: 14pt"><b>MORTGAGE PAYMENT INCREASE BEGINS...</b></div>
 <br>
-<div><b>This paragraph starts with bold text.</b> Then continues with regular text.</div>
+<div><b>This notice is to advise you that important information follows.</b> Then continues with regular text.</div>
 <br>
 <div style="font-size: 14pt"><b>Section Heading</b></div>
 <div>Section content here.</div>

@@ -305,12 +305,14 @@ class handler(BaseHTTPRequestHandler):
 			
 		except Exception as e:
 			error_trace = traceback.format_exc()
-			print(f"Error in generate-template: {str(e)}")
+			error_msg = str(e)
+			print(f"ERROR in generate-template: {error_msg}")
 			print(f"Traceback: {error_trace}")
+			# Return a user-friendly error message
 			err = {
 				'success': False,
-				'error': str(e),
-				'trace': error_trace
+				'error': error_msg,
+				'trace': error_trace if 'VERCEL' not in os.environ else None  # Don't expose trace in production
 			}
 			return self._send(500, err)
 	

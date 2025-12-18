@@ -259,41 +259,70 @@ Document Content:
 	if user_instruction:
 		user_message += f"Additional Instruction: {user_instruction}\n\n"
 	
-	user_message += """Generate the HTML template following these EXACT rules:
+	user_message += """CRITICAL: You MUST format the HTML with proper newlines. Each HTML element MUST be on its own line.
 
-CONTENT RULES:
+Generate the HTML template following these EXACT rules:
+
+STEP 1 - CONTENT EXTRACTION:
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
 2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]})
 3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, etc.)
-4. Use {Compress({[M567]}|{[M583]}|{[M568]})} for property addresses
-5. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
-6. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
+4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
+5. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
+6. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
 
-FORMATTING RULES (CRITICAL - STUDY THE EXAMPLES):
-7. ALWAYS start with this EXACT structure:
-   <div>{Insert(H003 TagHeader)}</div>
-   <br>
-   <div>{[L001]}</div>
-   <div>{[mailingAddress]}</div>
-   <br><br><br><br><br>
-   [Property address table if needed]
-   [Content paragraphs - match spacing from source document]
+STEP 2 - STRUCTURE (MANDATORY - FOLLOW EXACTLY):
+You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OWN LINE:
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+[Content paragraphs here - match spacing from source document]
 
-8. Format with proper newlines - EACH element on its own line:
-   <div>content</div>
-   <br>  (ONLY if there's spacing in the source document)
-   <div>next paragraph</div>
+STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
+YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.
 
-9. NEVER output everything on one line - format like the examples show
-10. SPACING RULE: Use <br> tags ONLY where the source document has actual line breaks/spacing
-    - Match spacing from the Word document exactly
-    - If sections are together in the doc with no spacing, keep them together (no <br>)
-    - If there's a line break in the doc, use <br>
-    - Standard spacing: <br><br><br><br><br> after mailing address
-11. Follow the structure and spacing patterns from examples EXACTLY
-12. Return ONLY the HTML, no explanations, no markdown code blocks, no conditional text
+Example of CORRECT formatting:
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Content paragraph here</div>
+<br>
 
-HTML Output (formatted with proper newlines like the examples, matching source document spacing):"""
+Example of WRONG formatting (DO NOT DO THIS):
+<div>{Insert(H003 TagHeader)}</div><br><div>{[L001]}</div><div>{[mailingAddress]}</div><br><br><br><br><br>...
+
+RULES:
+- Each <div> tag MUST be on its own line
+- Each <br> tag MUST be on its own line  
+- Each <table>, <tr>, <td> MUST be on its own line
+- NEVER output everything on one line
+- NEVER nest divs unnecessarily - each paragraph gets ONE <div>
+- Look at the examples provided - they show the EXACT formatting you must use
+
+STEP 4 - SPACING:
+- Use <br> tags ONLY where the source document has actual line breaks/spacing
+- Match spacing from the Word document exactly
+- Standard spacing: <br><br><br><br><br> after mailing address
+
+Return ONLY the HTML, formatted with proper newlines like the examples show. Each element on its own line. No explanations, no markdown code blocks."""
 	
 	return system_prompt, user_message, few_shot_text
 

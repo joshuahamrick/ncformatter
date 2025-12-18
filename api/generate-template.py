@@ -27,21 +27,29 @@ def normalize_html(html):
 	normalized = re.sub(r'</div></div>', '</div>', normalized)
 	
 	# Add newlines for proper formatting if missing
-	# If everything is on one line, add newlines after each tag
-	if '\n' not in normalized or normalized.count('\n') < 5:
-		# Add newline after each closing tag
-		normalized = re.sub(r'(</div>)', r'\1\n', normalized)
+	# Check if HTML is mostly on one line (fewer than 10 newlines)
+	line_count = normalized.count('\n')
+	if line_count < 10:
+		# Add newline after each opening tag
+		normalized = re.sub(r'(<div>)', r'\1\n', normalized)
 		normalized = re.sub(r'(<br>)', r'\1\n', normalized)
 		normalized = re.sub(r'(<table[^>]*>)', r'\1\n', normalized)
 		normalized = re.sub(r'(</table>)', r'\1\n', normalized)
+		normalized = re.sub(r'(<tbody>)', r'\1\n', normalized)
+		normalized = re.sub(r'(</tbody>)', r'\1\n', normalized)
 		normalized = re.sub(r'(<tr[^>]*>)', r'\1\n', normalized)
 		normalized = re.sub(r'(</tr>)', r'\1\n', normalized)
 		normalized = re.sub(r'(<td[^>]*>)', r'\1\n', normalized)
 		normalized = re.sub(r'(</td>)', r'\1\n', normalized)
-		normalized = re.sub(r'(<tbody>)', r'\1\n', normalized)
-		normalized = re.sub(r'(</tbody>)', r'\1\n', normalized)
-		# Clean up multiple newlines
+		# Add newline after each closing div
+		normalized = re.sub(r'(</div>)', r'\1\n', normalized)
+		# Clean up: remove newlines that are inside tags (between > and <)
+		normalized = re.sub(r'>\n<', '><', normalized)
+		# Clean up multiple consecutive newlines
 		normalized = re.sub(r'\n{3,}', '\n\n', normalized)
+		# Remove leading/trailing newlines from each line
+		lines = normalized.split('\n')
+		normalized = '\n'.join([line.strip() for line in lines if line.strip()])
 	
 	# Fix conditional logic formatting - merge {If()} and {End If} into same div as content
 	# Pattern: <div>{If(...)}</div><div>content</div><div>{End If}</div>

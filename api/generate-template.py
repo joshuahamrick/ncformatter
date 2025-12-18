@@ -131,12 +131,14 @@ def load_few_shot_examples():
 		os.path.join(os.getcwd(), 'formatter examples')
 	]
 	
+	# Load MORE examples to give AI better context - diverse patterns
 	curated = [
-		'GB001/GB001-formatted.html',
-		'ES114/ES114-formatted.html',
-		'CA001/CA001-formatted.html',
-		'CA003/CA003-formatted.html',
-		'LM401/LM401-formatted.html',
+		'ES114/ES114-formatted.html',  # Simple PMI termination
+		'CA003/CA003-formatted.html',  # ACH with conditionals
+		'GB001/GB001-formatted.html',  # Transfer letter
+		'CA005/CA005-formatted.html',  # ACH removal
+		'CS101/CS101-formatted.html',  # One-time draft
+		'LM401/LM401-formatted.html'  # Complex table + conditionals
 	]
 	
 	examples = []

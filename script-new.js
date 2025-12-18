@@ -17,6 +17,19 @@ class WordFormatter {
         this.processingDiv = document.getElementById('processing');
         this.tabButtons = document.querySelectorAll('.tab-btn');
         
+        // Chat panel elements
+        this.chatPanel = document.getElementById('chatPanel');
+        this.chatHistory = document.getElementById('chatHistory');
+        this.chatInput = document.getElementById('chatInput');
+        this.applyButton = document.getElementById('applyButton');
+        this.resetButton = document.getElementById('resetButton');
+        
+        // State management
+        this.lastIr = null;
+        this.currentHtml = null;
+        this.initialHtml = null;
+        this.chatHistoryData = [];
+        
         console.log('Elements found:', {
             fileInput: !!this.fileInput,
             dropZone: !!this.dropZone,
@@ -25,7 +38,8 @@ class WordFormatter {
             htmlCode: !!this.htmlCode,
             copyButton: !!this.copyButton,
             processingDiv: !!this.processingDiv,
-            tabButtons: this.tabButtons.length
+            tabButtons: this.tabButtons.length,
+            chatPanel: !!this.chatPanel
         });
     }
 
@@ -46,6 +60,21 @@ class WordFormatter {
         this.tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
         });
+        
+        // Chat panel event listeners
+        if (this.applyButton) {
+            this.applyButton.addEventListener('click', () => this.applyChatChange());
+        }
+        if (this.resetButton) {
+            this.resetButton.addEventListener('click', () => this.resetToInitial());
+        }
+        if (this.chatInput) {
+            this.chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    this.applyChatChange();
+                }
+            });
+        }
     }
 
     handleFileSelect(event) {
@@ -106,7 +135,12 @@ class WordFormatter {
 				const result = await response.json();
 				if (!result.success) throw new Error(result.error || 'DOCX processing error');
 				const ir = result.ir;
-				htmlOut = window.NcRenderer.renderIRToHtml(ir);
+				
+				// Store IR for chat adjustments
+				this.lastIr = ir;
+				
+				// Use AI generation instead of renderer
+				htmlOut = await this.generateTemplateWithAI(ir);
 			} else if (isPdfDocument(file)) {
 				const arrayBuffer = await readFileAsArrayBuffer(file);
 				let ir = await extractIRFromPdf(arrayBuffer);
@@ -135,7 +169,11 @@ class WordFormatter {
 						console.warn('PDF server fallback failed:', e);
 					}
 				}
-				htmlOut = window.NcRenderer.renderIRToHtml(ir);
+				// Store IR for chat adjustments
+				this.lastIr = ir;
+				
+				// Use AI generation instead of renderer
+				htmlOut = await this.generateTemplateWithAI(ir);
 			} else {
 				throw new Error('Unsupported file type');
 			}
@@ -161,11 +199,134 @@ class WordFormatter {
         }
     }
 
+    async generateTemplateWithAI(ir, userInstruction = null) {
+        try {
+            const response = await fetch('/api/generate-template.py', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ir: ir,
+                    docMeta: {},
+                    userInstruction: userInstruction,
+                    chatHistory: this.chatHistoryData
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`AI generation failed: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'AI generation error');
+            }
+            
+            return result.html || '';
+        } catch (error) {
+            console.error('AI generation error:', error);
+            // Fallback to renderer if AI fails
+            if (window.NcRenderer && window.NcRenderer.renderIRToHtml) {
+                console.warn('Falling back to renderer');
+                return window.NcRenderer.renderIRToHtml(ir);
+            }
+            throw error;
+        }
+    }
+    
+    async applyChatChange() {
+        const instruction = this.chatInput?.value.trim();
+        if (!instruction || !this.lastIr) {
+            return;
+        }
+        
+        // Disable button
+        if (this.applyButton) {
+            this.applyButton.disabled = true;
+            this.applyButton.textContent = 'Applying...';
+        }
+        
+        try {
+            // Add user message to chat history
+            this.addChatMessage('user', instruction);
+            this.chatHistoryData.push({ role: 'user', content: instruction });
+            
+            // Clear input
+            if (this.chatInput) {
+                this.chatInput.value = '';
+            }
+            
+            // Call patch API
+            const response = await fetch('/api/patch-template.py', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentHtml: this.currentHtml,
+                    instruction: instruction,
+                    ir: this.lastIr
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Patch failed: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Patch error');
+            }
+            
+            // Update HTML
+            this.currentHtml = result.html;
+            this.displayResult(result.html);
+            
+            // Add system message
+            this.addChatMessage('system', 'Change applied successfully');
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            this.addChatMessage('system', `Error: ${error.message}`);
+        } finally {
+            // Re-enable button
+            if (this.applyButton) {
+                this.applyButton.disabled = false;
+                this.applyButton.textContent = 'Apply Change';
+            }
+        }
+    }
+    
+    resetToInitial() {
+        if (this.initialHtml) {
+            this.currentHtml = this.initialHtml;
+            this.displayResult(this.initialHtml);
+            this.chatHistoryData = [];
+            if (this.chatHistory) {
+                this.chatHistory.innerHTML = '';
+            }
+            this.addChatMessage('system', 'Reset to initial output');
+        }
+    }
+    
+    addChatMessage(type, message) {
+        if (!this.chatHistory) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${type}`;
+        messageDiv.textContent = message;
+        this.chatHistory.appendChild(messageDiv);
+        this.chatHistory.scrollTop = this.chatHistory.scrollHeight;
+    }
+
     displayResult(formattedText) {
         console.log('Displaying result:', formattedText.substring(0, 100) + '...');
         
         // Hide processing
         this.hideProcessing();
+        
+        // Store HTML state
+        this.currentHtml = formattedText;
+        if (!this.initialHtml) {
+            this.initialHtml = formattedText;
+        }
         
         // Set the preview content
         if (this.formattedPreview) {
@@ -181,6 +342,11 @@ class WordFormatter {
         if (this.resultsSection) {
             this.resultsSection.style.display = 'block';
             this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Show chat panel
+        if (this.chatPanel) {
+            this.chatPanel.style.display = 'flex';
         }
     }
 

@@ -22,26 +22,28 @@
         </header>
 
         <main class="main-content">
-            <!-- Upload Area -->
-            <div class="upload-section">
-                <div id="dropZone" class="drop-zone">
-                    <div class="drop-zone-content">
-                        <div class="upload-icon">
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7,10 12,15 17,10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
+            <div class="content-wrapper">
+                <div class="main-panel">
+                    <!-- Upload Area -->
+                    <div class="upload-section">
+                        <div id="dropZone" class="drop-zone">
+                            <div class="drop-zone-content">
+                                <div class="upload-icon">
+                                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7,10 12,15 17,10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                </div>
+                                <h3>Drop your Word or PDF document here</h3>
+                                <p>Or click to browse files</p>
+                                <input type="file" id="fileInput" accept=".doc,.docx,.pdf" hidden>
+                                <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
+                                    Browse Files
+                                </button>
+                            </div>
                         </div>
-                        <h3>Drop your Word or PDF document here</h3>
-                        <p>Or click to browse files</p>
-                        <input type="file" id="fileInput" accept=".doc,.docx,.pdf" hidden>
-                        <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
-                            Browse Files
-                        </button>
                     </div>
-                </div>
-            </div>
 
             <!-- Processing Status -->
             <div id="processing" class="processing-status" style="display: none;">
@@ -76,19 +78,34 @@
                 </div>
             </div>
 
-            <!-- Error Message -->
-            <div id="errorMessage" class="error-message" style="display: none;">
-                <div class="error-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
+                    <!-- Error Message -->
+                    <div id="errorMessage" class="error-message" style="display: none;">
+                        <div class="error-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="error-content">
+                            <h3>Error Processing Document</h3>
+                            <p id="errorText"></p>
+                            <button class="retry-btn" onclick="resetUpload()">Try Again</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="error-content">
-                    <h3>Error Processing Document</h3>
-                    <p id="errorText"></p>
-                    <button class="retry-btn" onclick="resetUpload()">Try Again</button>
+                
+                <!-- Chat Panel -->
+                <div id="chatPanel" class="chat-panel" style="display: none;">
+                    <div class="chat-header">
+                        <h3>Adjust Output</h3>
+                        <button id="resetButton" class="reset-btn" title="Reset to initial output">Reset</button>
+                    </div>
+                    <div id="chatHistory" class="chat-history"></div>
+                    <div class="chat-input-container">
+                        <textarea id="chatInput" class="chat-input" placeholder="Describe the change you want..."></textarea>
+                        <button id="applyButton" class="apply-btn">Apply Change</button>
+                    </div>
                 </div>
             </div>
         </main>

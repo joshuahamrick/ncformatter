@@ -87,6 +87,148 @@ body {
     flex-shrink: 0;
 }
 
+/* Content Wrapper for side-by-side layout */
+.content-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.main-panel {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Chat Panel */
+.chat-panel {
+    width: 350px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 200px);
+    position: sticky;
+    top: 80px;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #30363d;
+}
+
+.chat-header h3 {
+    color: #f0f6fc;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.reset-btn {
+    background: #21262d;
+    color: #f0f6fc;
+    border: 1px solid #30363d;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.reset-btn:hover {
+    background: #30363d;
+}
+
+.chat-history {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    min-height: 200px;
+    max-height: 400px;
+}
+
+.chat-message {
+    margin-bottom: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.chat-message.user {
+    background: #21262d;
+    color: #f0f6fc;
+    margin-left: 20px;
+}
+
+.chat-message.system {
+    background: #1c2128;
+    color: #8b949e;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+.chat-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #f0f6fc;
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+
+.chat-input:focus {
+    outline: none;
+    border-color: #58a6ff;
+}
+
+.apply-btn {
+    background: #238636;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.apply-btn:hover {
+    background: #2ea043;
+}
+
+.apply-btn:disabled {
+    background: #30363d;
+    color: #8b949e;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+    .content-wrapper {
+        flex-direction: column;
+    }
+    
+    .chat-panel {
+        width: 100%;
+        position: relative;
+        top: 0;
+        max-height: 500px;
+    }
+}
+
 /* Upload Section */
 .upload-section {
     margin-bottom: 30px;

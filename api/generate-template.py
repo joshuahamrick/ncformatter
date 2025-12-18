@@ -312,15 +312,27 @@ class handler(BaseHTTPRequestHandler):
 		except Exception as e:
 			error_trace = traceback.format_exc()
 			error_msg = str(e)
-			print(f"ERROR in generate-template: {error_msg}")
+			error_type = type(e).__name__
+			print(f"ERROR in generate-template: {error_type}: {error_msg}")
 			print(f"Traceback: {error_trace}")
 			# Return a user-friendly error message
-			err = {
-				'success': False,
-				'error': error_msg,
-				'trace': error_trace if 'VERCEL' not in os.environ else None  # Don't expose trace in production
-			}
-			return self._send(500, err)
+			try:
+				err = {
+					'success': False,
+					'error': f"{error_type}: {error_msg}",
+					'trace': error_trace if 'VERCEL' not in os.environ else None
+				}
+				return self._send(500, err)
+			except Exception as send_error:
+				print(f"Failed to send error response: {send_error}")
+				# Last resort - try to send a simple error
+				try:
+					self.send_response(500)
+					self.send_header('Content-type', 'application/json')
+					self.end_headers()
+					self.wfile.write(json.dumps({'success': False, 'error': error_msg}).encode('utf-8'))
+				except:
+					pass
 	
 	def do_OPTIONS(self):
 		self.send_response(200)
@@ -330,11 +342,17 @@ class handler(BaseHTTPRequestHandler):
 		self.end_headers()
 	
 	def _send(self, status, payload):
-		self.send_response(status)
-		self.send_header('Content-type', 'application/json')
-		self.send_header('Access-Control-Allow-Origin', '*')
-		self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-		self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-		self.end_headers()
-		self.wfile.write(json.dumps(payload).encode('utf-8'))
+		try:
+			self.send_response(status)
+			self.send_header('Content-type', 'application/json')
+			self.send_header('Access-Control-Allow-Origin', '*')
+			self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+			self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+			self.end_headers()
+			response_body = json.dumps(payload).encode('utf-8')
+			self.wfile.write(response_body)
+			print(f"Sent response: status={status}, body_length={len(response_body)}")
+		except Exception as e:
+			print(f"Error in _send: {e}")
+			traceback.print_exc()
 

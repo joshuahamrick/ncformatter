@@ -330,6 +330,8 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - For tables, extract the ACTUAL table structure and content from the document - look at the Document Content for table information
 - NEVER generate placeholder tables with "Column 1, Column 2" or "Add actual table rows here" - extract the real table content
 - If you see table content in the Document Content, extract ALL rows and cells with their actual content
+- If you see "Payment Supplement Funds Applied" or similar table headers in the content, you MUST include the complete table with all rows
+- Tables should have proper structure: headers in first row with <b> tags, data rows below, proper borders and styling
 - Include ALL content until the signature/closing section
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)

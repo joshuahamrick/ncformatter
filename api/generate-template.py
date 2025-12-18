@@ -25,20 +25,42 @@ def normalize_html(html):
 	# Fix conditional logic formatting - merge {If()} and {End If} into same div as content
 	# Pattern: <div>{If(...)}</div><div>content</div><div>{End If}</div>
 	# Should become: <div>{If(...)}content{End If}</div>
-	normalized = re.sub(
-		r'<div>(\{If\([^}]+\}\))</div>\s*<div>([^<]+)</div>\s*<div>(\{End If\})</div>',
-		r'<div>\1\2\3</div>',
-		normalized,
-		flags=re.IGNORECASE
-	)
+	# Handle single content div case
+	while True:
+		new_normalized = re.sub(
+			r'<div>(\{If\([^}]+\}\))</div>\s*<div>([^<]+)</div>\s*<div>(\{End If\})</div>',
+			r'<div>\1\2\3</div>',
+			normalized,
+			flags=re.IGNORECASE | re.DOTALL
+		)
+		if new_normalized == normalized:
+			break
+		normalized = new_normalized
 	
-	# Also handle cases with multiple content divs between If and End If
-	normalized = re.sub(
-		r'<div>(\{If\([^}]+\}\))</div>\s*(<div>[^<]+</div>\s*)+<div>(\{End If\})</div>',
-		lambda m: f'<div>{m.group(1)}{"".join(re.findall(r"<div>([^<]+)</div>", m.group(0)))}{m.group(3)}</div>',
-		normalized,
-		flags=re.IGNORECASE
-	)
+	# Handle multiple content divs between If and End If
+	while True:
+		# Find pattern: <div>{If(...)}</div>...multiple divs...<div>{End If}</div>
+		match = re.search(
+			r'<div>(\{If\([^}]+\}\))</div>\s*(<div>[^<]+</div>\s*)+<div>(\{End If\})</div>',
+			normalized,
+			flags=re.IGNORECASE | re.DOTALL
+		)
+		if not match:
+			break
+		# Extract all content between If and End If
+		content_match = re.search(
+			r'<div>(\{If\([^}]+\}\))</div>\s*((?:<div>[^<]+</div>\s*)+)<div>(\{End If\})</div>',
+			normalized,
+			flags=re.IGNORECASE | re.DOTALL
+		)
+		if content_match:
+			content_divs = content_match.group(2)
+			# Extract text from all divs
+			content_text = ''.join(re.findall(r'<div>([^<]+)</div>', content_divs))
+			replacement = f'<div>{content_match.group(1)}{content_text}{content_match.group(3)}</div>'
+			normalized = normalized.replace(content_match.group(0), replacement)
+		else:
+			break
 	
 	# Normalize line endings
 	normalized = normalized.replace('\r\n', '\n').replace('\r', '\n')

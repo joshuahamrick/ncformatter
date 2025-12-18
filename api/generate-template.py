@@ -382,7 +382,7 @@ Example of CORRECT formatting:
 <br>
 <div><b>This notice is to advise you that important information follows.</b> Then continues with regular text.</div>
 <br>
-<div style="font-size: 14pt"><b>Section Heading</b></div>
+<div style="font-size: 14pt"><b>Information About Your Payment Supplement</b></div>
 <div>Section content here.</div>
 <br>
 <div><b>Table Title</b></div>

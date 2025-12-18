@@ -93,21 +93,53 @@ def load_few_shot_examples():
 	return examples
 
 def format_ir_for_prompt(ir):
-	"""Format IR data into a readable prompt format"""
+	"""Format IR data into a readable prompt format - extract actual document content"""
 	blocks = ir.get('blocks', [])
 	formatted = []
+	
+	# Skip variable definition blocks - look for actual document content
+	skip_patterns = [
+		'Company Address Line',
+		'System Date',
+		'New Bill Line',
+		'Mailing Street Address',
+		'Mailing City, State',
+		'Foreign Country Code',
+		'Foreign Postal Code',
+		'Loan Number – No Dash',
+		'New Property Line',
+		'Mortgagor Name',
+		'Second Mortgagor',
+		'Co-borrower',
+		'Non-borrower'
+	]
 	
 	for idx, block in enumerate(blocks):
 		if block.get('type') == 'paragraph':
 			runs = block.get('runs', [])
 			text = ''.join([r.get('text', '') for r in runs])
-			if text.strip():
-				formatted.append(f"Paragraph {idx + 1}: {text[:200]}")
+			
+			# Skip if this looks like a variable definition
+			if any(pattern in text for pattern in skip_patterns):
+				# Only include if it's part of actual content (has more than just the definition)
+				if len(text) > 100:  # Likely actual content, not just definition
+					formatted.append(f"Paragraph {idx + 1}: {text[:300]}")
+			elif text.strip() and len(text.strip()) > 10:
+				# Regular content
+				formatted.append(f"Paragraph {idx + 1}: {text[:300]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
-			formatted.append(f"Table {idx + 1}: {len(rows)} rows")
+			# Extract table content
+			table_text = []
+			for row in rows[:5]:  # Limit rows
+				cells = row.get('cells', [])
+				row_text = ' | '.join([''.join([r.get('text', '') for r in c.get('runs', [])]) for c in cells[:3]])
+				if row_text.strip():
+					table_text.append(row_text[:100])
+			if table_text:
+				formatted.append(f"Table {idx + 1}: {' | '.join(table_text)}")
 	
-	return '\n'.join(formatted[:50])  # Limit to first 50 blocks
+	return '\n'.join(formatted[:30])  # Limit to first 30 blocks
 
 def build_prompt(ir, few_shot_examples, user_instruction=None):
 	"""Build the complete prompt for OpenAI"""
@@ -121,10 +153,12 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	for idx, ex in enumerate(few_shot_examples[:3]):  # Limit to 3 examples
 		few_shot_text += f"### Example {idx + 1}: {ex['name']}\n```html\n{ex['html']}\n```\n\n"
 	
-	# Build user message
-	user_message = f"""Convert the following document structure into formatted HTML following the style guide and examples.
+			# Build user message
+			user_message = f"""Convert the following document content into formatted HTML following the style guide and examples.
 
-Document Structure:
+IMPORTANT: Extract only the actual document text content. Ignore variable definitions like "[H002] Company Address Line 1" - those are metadata, not content.
+
+Document Content:
 {ir_content}
 
 """
@@ -133,12 +167,14 @@ Document Structure:
 		user_message += f"Additional Instruction: {user_instruction}\n\n"
 	
 	user_message += """Generate the HTML template following these rules:
-1. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc.
-2. Use {[plsMatrix.*]} for all company variables
-3. Use {Compress({[M567]}|{[M583]}|{[M568]})} for property addresses
-4. Use <div>Dear {[Salutation]},</div> for salutations
-5. Follow the structure and spacing patterns from examples
-6. Return ONLY the HTML, no explanations or markdown
+1. Extract ONLY the actual document content - ignore variable definitions like "[H002] Company Address Line 1"
+2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]})
+3. Use {[plsMatrix.*]} for all company variables (CompanyLongName, CSPhoneNumber, etc.)
+4. Use {Compress({[M567]}|{[M583]}|{[M568]})} for property addresses
+5. Use <div>Dear {[Salutation]},</div> for salutations (NOT conditional logic)
+6. Start with <div>{Insert(H003 TagHeader)}</div> or <div>{Insert(Flat Branch Header)}</div>
+7. Follow the structure and spacing patterns from examples exactly
+8. Return ONLY the HTML, no explanations, no markdown code blocks
 
 HTML Output:"""
 	
@@ -180,17 +216,22 @@ class handler(BaseHTTPRequestHandler):
 			full_system_prompt = system_prompt + "\n\n" + few_shot_text
 			
 			# Call OpenAI
-			response = client.chat.completions.create(
-				model="gpt-4o",  # Using gpt-4o for better quality
-				messages=[
-					{"role": "system", "content": full_system_prompt},
-					{"role": "user", "content": user_message}
-				],
-				temperature=0,  # Deterministic
-				max_tokens=4000
-			)
-			
-			html = response.choices[0].message.content.strip()
+			try:
+				response = client.chat.completions.create(
+					model="gpt-4o",  # Using gpt-4o for better quality
+					messages=[
+						{"role": "system", "content": full_system_prompt},
+						{"role": "user", "content": user_message}
+					],
+					temperature=0,  # Deterministic
+					max_tokens=4000
+				)
+				
+				html = response.choices[0].message.content.strip()
+			except Exception as api_error:
+				error_msg = f"OpenAI API error: {str(api_error)}"
+				print(error_msg)
+				return self._send(500, {'success': False, 'error': error_msg})
 			
 			# Remove markdown code blocks if present
 			if html.startswith('```html'):

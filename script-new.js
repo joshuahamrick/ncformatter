@@ -224,11 +224,9 @@ class WordFormatter {
             return result.html || '';
         } catch (error) {
             console.error('AI generation error:', error);
-            // Fallback to renderer if AI fails
-            if (window.NcRenderer && window.NcRenderer.renderIRToHtml) {
-                console.warn('Falling back to renderer');
-                return window.NcRenderer.renderIRToHtml(ir);
-            }
+            // Show error to user instead of silently falling back
+            this.showError('AI generation failed: ' + error.message + '. Please check that OPENAI_API_KEY is set and OpenAI library is installed.');
+            // Don't fall back to renderer - force user to fix AI setup
             throw error;
         }
     }

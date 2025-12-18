@@ -240,6 +240,8 @@ class handler(BaseHTTPRequestHandler):
 				print(f"ERROR: {key_error}")
 				return self._send(500, {'success': False, 'error': key_error})
 			
+			print(f"OpenAI API key found: {api_key[:10]}... (length: {len(api_key)})")
+			
 			# Initialize OpenAI client
 			client = openai.OpenAI(api_key=api_key)
 			
@@ -265,6 +267,9 @@ class handler(BaseHTTPRequestHandler):
 			
 			# Call OpenAI
 			try:
+				print(f"Calling OpenAI API with model: gpt-4o")
+				print(f"System prompt length: {len(full_system_prompt)}")
+				print(f"User message length: {len(user_message)}")
 				response = client.chat.completions.create(
 					model="gpt-4o",  # Using gpt-4o for better quality
 					messages=[
@@ -276,9 +281,11 @@ class handler(BaseHTTPRequestHandler):
 				)
 				
 				html = response.choices[0].message.content.strip()
+				print(f"OpenAI API call successful, HTML length: {len(html)}")
 			except Exception as api_error:
 				error_msg = f"OpenAI API error: {str(api_error)}"
-				print(error_msg)
+				print(f"ERROR: {error_msg}")
+				print(f"API Error type: {type(api_error).__name__}")
 				return self._send(500, {'success': False, 'error': error_msg})
 			
 			# Remove markdown code blocks if present

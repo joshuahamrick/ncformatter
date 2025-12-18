@@ -186,8 +186,8 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	for idx, ex in enumerate(few_shot_examples[:3]):  # Limit to 3 examples
 		few_shot_text += f"### Example {idx + 1}: {ex['name']}\n```html\n{ex['html']}\n```\n\n"
 	
-			# Build user message
-			user_message = f"""Convert the following document content into formatted HTML following the style guide and examples.
+	# Build user message
+	user_message = f"""Convert the following document content into formatted HTML following the style guide and examples.
 
 IMPORTANT: Extract only the actual document text content. Ignore variable definitions like "[H002] Company Address Line 1" - those are metadata, not content.
 

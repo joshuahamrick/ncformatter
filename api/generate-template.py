@@ -127,10 +127,11 @@ def load_few_shot_examples():
 
 def format_ir_for_prompt(ir):
 	"""Format IR data into a readable prompt format - extract actual document content"""
+	import re
 	blocks = ir.get('blocks', [])
 	formatted = []
 	
-	# Skip variable definition blocks - look for actual document content
+	# Patterns to skip - these are metadata/instructions, not actual content
 	skip_patterns = [
 		'Company Address Line',
 		'System Date',
@@ -144,22 +145,64 @@ def format_ir_for_prompt(ir):
 		'Mortgagor Name',
 		'Second Mortgagor',
 		'Co-borrower',
-		'Non-borrower'
+		'Non-borrower',
+		'Additional Mailing Address',
+		'New Property Unit Number',
+		'Foreign Address Indicator',
+		'Letter Library Business Rules',
+		'Additional Borrowers',
+		'Co-Borrowers',
+		'BKFS'
+	]
+	
+	# Patterns that indicate instruction text (not actual content)
+	instruction_patterns = [
+		r'^If\s+\[',  # "If [TAG]"
+		r'^If\s+\[.*\]\s+and\s+\[',  # "If [H567] and [H568] present"
+		r'^If\s+\[.*\]\s+present',  # "If [H567] present"
+		r'^If\s+\[.*\]\s*=\s*\d+',  # "If [M956] = 1"
+		r'^If\s+\[.*\]\s*≥',  # "If [M065] ≥"
+		r'^If\s+\[.*\]\s*<',  # "If [M065] <"
+		r'\(or if\s+\[',  # "(or if [H581]"
+		r'\(see\s+["\']',  # "(see "Additional Borrowers..."
+		r'^\[.*\]\s+[A-Z]',  # "[M561] Additional Mailing Address"
 	]
 	
 	for idx, block in enumerate(blocks):
 		if block.get('type') == 'paragraph':
 			runs = block.get('runs', [])
-			text = ''.join([r.get('text', '') for r in runs])
+			text = ''.join([r.get('text', '') for r in runs]).strip()
 			
-			# Skip if this looks like a variable definition
+			# Skip empty or very short text
+			if not text or len(text) < 10:
+				continue
+			
+			# Skip if it matches instruction patterns
+			is_instruction = False
+			for pattern in instruction_patterns:
+				if re.match(pattern, text, re.IGNORECASE):
+					is_instruction = True
+					break
+			
+			if is_instruction:
+				continue
+			
+			# Skip if it's just a variable definition (starts with [TAG] and short)
+			if re.match(r'^\[[A-Z0-9]+\]\s+[A-Z]', text) and len(text) < 80:
+				continue
+			
+			# Skip if it contains skip patterns and is short (likely just metadata)
 			if any(pattern in text for pattern in skip_patterns):
-				# Only include if it's part of actual content (has more than just the definition)
-				if len(text) > 100:  # Likely actual content, not just definition
-					formatted.append(f"Paragraph {idx + 1}: {text[:300]}")
-			elif text.strip() and len(text.strip()) > 10:
-				# Regular content
-				formatted.append(f"Paragraph {idx + 1}: {text[:300]}")
+				if len(text) < 100:  # Short = likely just metadata
+					continue
+				# If longer, might be actual content with metadata mention - include it
+			
+			# Skip conditional salutation text
+			if re.search(r'\(or if\s+\[.*\]\s+(and/or|present)\)', text, re.IGNORECASE):
+				continue
+			
+			# This looks like actual content - include it
+			formatted.append(f"Paragraph {idx + 1}: {text[:500]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content

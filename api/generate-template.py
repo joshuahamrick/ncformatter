@@ -255,10 +255,13 @@ class handler(BaseHTTPRequestHandler):
 			})
 			
 		except Exception as e:
+			error_trace = traceback.format_exc()
+			print(f"Error in generate-template: {str(e)}")
+			print(f"Traceback: {error_trace}")
 			err = {
 				'success': False,
 				'error': str(e),
-				'trace': traceback.format_exc()
+				'trace': error_trace
 			}
 			return self._send(500, err)
 	

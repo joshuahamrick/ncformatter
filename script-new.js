@@ -213,19 +213,29 @@ class WordFormatter {
             });
             
             if (!response.ok) {
-                throw new Error(`AI generation failed: ${response.status}`);
+                // Try to get error details from response
+                let errorDetail = `HTTP ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorDetail = errorData.error || errorDetail;
+                } catch (e) {
+                    // If response isn't JSON, use status
+                }
+                throw new Error(errorDetail);
             }
             
             const result = await response.json();
             if (!result.success) {
-                throw new Error(result.error || 'AI generation error');
+                const errorMsg = result.error || 'AI generation error';
+                throw new Error(errorMsg);
             }
             
             return result.html || '';
         } catch (error) {
             console.error('AI generation error:', error);
-            // Show error to user instead of silently falling back
-            this.showError('AI generation failed: ' + error.message + '. Please check that OPENAI_API_KEY is set and OpenAI library is installed.');
+            // Show the actual error message to help debug
+            const errorMsg = error.message || 'Unknown error';
+            this.showError(`AI generation failed: ${errorMsg}\n\nPlease check:\n1. OPENAI_API_KEY environment variable is set\n2. OpenAI library is installed (pip install openai)\n3. Check server logs for details`);
             // Don't fall back to renderer - force user to fix AI setup
             throw error;
         }

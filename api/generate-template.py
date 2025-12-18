@@ -318,9 +318,13 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - Don't stop after just the title - continue with all paragraphs
 - If you see "Final Payment Supplement Disclosure" in the content, format it with styling: <div style="text-align: center; font-size: 12pt"><b><u>Final Payment Supplement Disclosure</u></b></div>
 - If you see "IMPORTANT NOTICE:" format it as: <div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
-- For tables, extract the ACTUAL table structure from the document - don't generate placeholder tables with "Column 1, Column 2" etc.
+- If you see "MORTGAGE PAYMENT INCREASE BEGINS" format it as: <div style="text-align: center; font-size: 14pt"><b>MORTGAGE PAYMENT INCREASE BEGINS...</b></div>
+- If you see "Information About Your Payment Supplement" format it as: <div style="font-size: 14pt"><b>Information About Your Payment Supplement</b></div>
+- For tables, extract the ACTUAL table structure and content from the document - look at the Document Content for table information
+- NEVER generate placeholder tables with "Column 1, Column 2" or "Add actual table rows here" - extract the real table content
+- If you see table content in the Document Content, extract ALL rows and cells with their actual content
 - Include ALL content until the signature/closing section
-- Include closing signature section with department name and company name: <div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div>
+- Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)
 
 NOTE: The property address table should have TWO rows: "RE: Loan Number:" and "Property Address:" - NOT just one row

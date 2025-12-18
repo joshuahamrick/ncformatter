@@ -22,7 +22,6 @@ def normalize_html(html):
 	normalized = normalized.replace('\r\n', '\n').replace('\r', '\n')
 	
 	# Normalize <br> tags
-	import re
 	normalized = re.sub(r'<br\s*/?>', '<br>', normalized, flags=re.IGNORECASE)
 	
 	# Normalize whitespace around tags

@@ -332,6 +332,8 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - If you see table content in the Document Content, extract ALL rows and cells with their actual content
 - If you see "Payment Supplement Funds Applied" or similar table headers in the content, you MUST include the complete table with all rows
 - Tables should have proper structure: headers in first row with <b> tags, data rows below, proper borders and styling
+- Look for table content in the Document Content section - if you see "Table X" with rows, extract ALL of those rows into the HTML table structure
+- NEVER skip tables - if the document has a table, it MUST appear in the HTML output
 - Include ALL content until the signature/closing section
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)

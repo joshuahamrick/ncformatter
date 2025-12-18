@@ -229,15 +229,16 @@ class handler(BaseHTTPRequestHandler):
 				return self._send(400, {'success': False, 'error': 'No IR data provided'})
 			
 			if not OPENAI_AVAILABLE:
-				import_error = "OpenAI library not available. Install with: pip install openai"
+				import_error = "OpenAI library not available. Install with: pip install openai. Make sure requirements.txt includes 'openai>=1.0.0'"
 				print(f"ERROR: {import_error}")
 				return self._send(500, {'success': False, 'error': import_error})
 			
 			# Get OpenAI API key from environment
 			api_key = os.environ.get('OPENAI_API_KEY')
 			if not api_key:
-				key_error = 'OPENAI_API_KEY environment variable not set. Please set it in Vercel project settings.'
+				key_error = 'OPENAI_API_KEY environment variable not set. Please set it in Vercel project settings → Environment Variables → Add OPENAI_API_KEY'
 				print(f"ERROR: {key_error}")
+				print(f"Available env vars: {list(os.environ.keys())[:10]}...")  # Debug: show first 10 env vars
 				return self._send(500, {'success': False, 'error': key_error})
 			
 			print(f"OpenAI API key found: {api_key[:10]}... (length: {len(api_key)})")

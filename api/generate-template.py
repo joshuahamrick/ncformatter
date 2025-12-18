@@ -12,105 +12,25 @@ except ImportError:
 
 # Import normalization (we'll create a Python version)
 def normalize_html(html):
-	"""Normalize HTML for deterministic exact snapshot matching"""
+	"""Minimal normalization - just clean up, let AI do the formatting"""
 	if not html or not isinstance(html, str):
 		return ''
 	
 	normalized = html
 	
-	# Remove business rule references and instruction text
+	# Remove business rule references
 	normalized = re.sub(r'<div>\(see\s+["\'].*?Business Rules.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
 	normalized = re.sub(r'<div>\(see\s+["\'].*?BKFS.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
 	
-	# Fix nested divs - remove empty wrapper divs
+	# Fix nested divs
 	normalized = re.sub(r'<div><div>', '<div>', normalized)
 	normalized = re.sub(r'</div></div>', '</div>', normalized)
-	
-	# Minimal post-processing - trust the AI to format correctly
-	# Only fix if absolutely necessary (everything on one line)
-	line_count = normalized.count('\n')
-	if line_count < 5:
-		# Last resort: add newlines after tags
-		normalized = re.sub(r'(</div>)', r'\1\n', normalized)
-		normalized = re.sub(r'(<br>)', r'\1\n', normalized)
-		normalized = re.sub(r'(<table[^>]*>)', r'\1\n', normalized)
-		normalized = re.sub(r'(</table>)', r'\1\n', normalized)
-		normalized = re.sub(r'(<tbody>)', r'\1\n', normalized)
-		normalized = re.sub(r'(</tbody>)', r'\1\n', normalized)
-		normalized = re.sub(r'(<tr[^>]*>)', r'\1\n', normalized)
-		normalized = re.sub(r'(</tr>)', r'\1\n', normalized)
-		normalized = re.sub(r'(<td[^>]*>)', r'\1\n', normalized)
-		normalized = re.sub(r'(</td>)', r'\1\n', normalized)
-		normalized = re.sub(r'>\n<', '><', normalized)
-		normalized = re.sub(r'\n{3,}', '\n\n', normalized)
-	
-	# Fix conditional logic formatting - merge {If()} and {End If} into same div as content
-	# Pattern: <div>{If(...)}</div><div>content</div><div>{End If}</div>
-	# Should become: <div>{If(...)}content{End If}</div>
-	# Handle single content div case
-	while True:
-		new_normalized = re.sub(
-			r'<div>(\{If\([^}]+\}\))</div>\s*<div>([^<]+)</div>\s*<div>(\{End If\})</div>',
-			r'<div>\1\2\3</div>',
-			normalized,
-			flags=re.IGNORECASE | re.DOTALL
-		)
-		if new_normalized == normalized:
-			break
-		normalized = new_normalized
-	
-	# Handle multiple content divs between If and End If
-	while True:
-		# Find pattern: <div>{If(...)}</div>...multiple divs...<div>{End If}</div>
-		match = re.search(
-			r'<div>(\{If\([^}]+\}\))</div>\s*(<div>[^<]+</div>\s*)+<div>(\{End If\})</div>',
-			normalized,
-			flags=re.IGNORECASE | re.DOTALL
-		)
-		if not match:
-			break
-		# Extract all content between If and End If
-		content_match = re.search(
-			r'<div>(\{If\([^}]+\}\))</div>\s*((?:<div>[^<]+</div>\s*)+)<div>(\{End If\})</div>',
-			normalized,
-			flags=re.IGNORECASE | re.DOTALL
-		)
-		if content_match:
-			content_divs = content_match.group(2)
-			# Extract text from all divs
-			content_text = ''.join(re.findall(r'<div>([^<]+)</div>', content_divs))
-			replacement = f'<div>{content_match.group(1)}{content_text}{content_match.group(3)}</div>'
-			normalized = normalized.replace(content_match.group(0), replacement)
-		else:
-			break
 	
 	# Normalize line endings
 	normalized = normalized.replace('\r\n', '\n').replace('\r', '\n')
 	
 	# Normalize <br> tags
 	normalized = re.sub(r'<br\s*/?>', '<br>', normalized, flags=re.IGNORECASE)
-	
-	# Normalize whitespace around tags
-	normalized = re.sub(r'\s+</', '</', normalized)
-	normalized = re.sub(r'>\s+', '>', normalized)
-	
-	# Normalize conditional blocks (inline format)
-	normalized = re.sub(r'\{If\([^}]+\}\)\s+', lambda m: m.group(0).strip(), normalized)
-	normalized = re.sub(r'\s+\{End If\}', lambda m: m.group(0).strip(), normalized)
-	
-	# Normalize multiple <br> tags
-	normalized = re.sub(r'(<br>\s*){3,}', lambda m: '<br>' * len(re.findall(r'<br>', m.group(0))), normalized)
-	
-	# Normalize whitespace between tags
-	normalized = re.sub(r'>\s+<', '><', normalized)
-	normalized = re.sub(r'>\s+([^<])', r'>\1', normalized)
-	normalized = re.sub(r'([^>])\s+<', r'\1<', normalized)
-	
-	# Normalize trailing whitespace
-	normalized = re.sub(r'\s+$', '', normalized, flags=re.MULTILINE)
-	
-	# Normalize empty lines
-	normalized = re.sub(r'\n{3,}', '\n\n', normalized)
 	
 	return normalized.strip()
 

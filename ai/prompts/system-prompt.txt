@@ -62,5 +62,24 @@ Generate HTML templates that:
 - Use <u>...</u> for underlined text
 
 ### Output Format
-Return ONLY valid HTML that matches the style guide exactly. Do not include explanations, markdown, code blocks, conditional text, or variable definitions. Return pure HTML string.
+CRITICAL FORMATTING RULES:
+- Each HTML element MUST be on its own line
+- Use <br> tags between paragraphs and sections
+- Follow this EXACT structure:
+  1. <div>{Insert(H003 TagHeader)}</div>
+  2. <br>
+  3. <div>{[L001]}</div>
+  4. <div>{[mailingAddress]}</div>
+  5. <br><br><br><br><br>
+  6. Property address table (if needed)
+  7. <br>
+  8. Content paragraphs (each in <div>...</div> with <br> between)
+  9. Closing signature section
+
+- NEVER output everything on one line - format with proper newlines
+- Each <div>, <table>, <tr>, <td> should be on its own line
+- Use proper indentation for nested elements (2 spaces)
+- Return ONLY valid HTML that matches the style guide exactly
+- Do not include explanations, markdown, or code blocks
+- Return pure HTML string with proper formatting
 

@@ -297,6 +297,7 @@ STEP 1 - CONTENT EXTRACTION:
    - Always use &gt; not > for greater than
    - Always use &lt; not < for less than
 7. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
+8. CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in ISO format (YYYY-MM-DD) to be evaluated correctly, otherwise they will be compared as strings. The Date() function's second parameter is for format. Example: {If(Date({[M065]}|YYYY-MM-DD) &gt;= '1999-07-29')}
 8. PRESERVE STYLING from source document - CRITICAL: if text is centered, bold, underlined, or has specific font sizes, you MUST include those style attributes:
    - Centered text: style="text-align: center"
    - Font size: style="font-size: 14pt" (or whatever size is in the document)

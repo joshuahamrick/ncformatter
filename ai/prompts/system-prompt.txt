@@ -52,7 +52,7 @@ Generate HTML templates that:
 - Use: {Else If('{[TAG]}' = 'value')}
 - Use: {End If}
 - Always use &lt;&gt; for not equal, &gt; for greater than, &gt;= for greater than or equal
-- CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in ISO format (YYYY-MM-DD) to be evaluated correctly, otherwise they will be compared as strings. The Date() function's second parameter is for format. Example: {If(Date({[M065]}|YYYY-MM-DD) &gt;= '1999-07-29')}
+- CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in ISO format (yyyy-MM-dd) to be evaluated correctly, otherwise they will be compared as strings. The Date() function's second parameter is for format. Example: {If(Date({[M065]}|yyyy-MM-dd) &gt;= 1999-07-29)} - NO QUOTES around the date value
 
 ### Tables
 - Bordered: <table width="100%" style="border-collapse: collapse">

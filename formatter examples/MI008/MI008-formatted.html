@@ -1,0 +1,45 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div> 
+<br>
+<div style="text-align: center; font-size: 14pt"><b>Notice of Termination of Private Mortgage Insurance (PMI)</b></div>
+<br>
+<div>Your mortgage loan requires Private Mortgage Insurance ("PMI"). PMI protects lenders and others against financial loss when borrowers default. Charges for the insurance are added to your loan payments. Under certain circumstances, federal law gives you the right to cancel PMI or requires that PMI automatically terminate. Cancellation or termination of PMI does not affect any obligation you may have to maintain other types of insurance. Please be advised that you have met the requirements for the automatic termination of Private Mortgage Insurance (PMI). Your mortgage is no longer required to carry private mortgage insurance if you meet the below minimum requirements:</div>
+<br>
+{If(Date({[M065]}|yyyy-MM-dd) &gt;= 1999-07-29)}
+<div>For loans closed on or after 7/29/1999, the earlier of (1) the date that the mortgage balance is first scheduled to reach 78% of the original value of the property, or (2) the first day of the month after the date that is the midpoint of the original amortization period is reached, if the scheduled loan to value ratio for the mortgage loan does not reach 78% before the midpoint.</div>
+{End If}
+{If(Date({[M065]}|yyyy-MM-dd) &lt; 1999-07-29)}
+<div>For loans closed before 7/29/1999, the first day of the month after is the midpoint of the original amortization period, provided your payments are current on that date.</div>
+{End If}
+<br>
+<table width="100%"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Your mortgage loan must be current at the time of cancellation.</td>
+</tr></tbody></table>
+<br>
+<div>Our records indicate that your loan has met the above criteria. As such we are notifying you that the private mortgage insurance on your loan has been cancelled and removed. Your monthly mortgage payment amount will be adjusted effective your next payment. If your payments are setup on ACH to be automatically deducted, please contact us to update the draft amount.</div>
+<br>
+<div>Please note that PMI is not the same as property and casualty insurance, such as homeowner's or flood insurance, which protect you against damage to your property. Termination of PMI does not affect the obligation you may have to maintain other types of insurance.</div>
+<br>
+<div>If you have any questions or concerns, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<br>
+<br>
+<div>Sincerely,</div>
+<br>
+<br>
+<br>
+<div>PMI/MIP Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

@@ -17,10 +17,10 @@
 <br>
 <div>Your mortgage loan requires Private Mortgage Insurance ("PMI"). PMI protects lenders and others against financial loss when borrowers default. Charges for the insurance are added to your loan payments. Under certain circumstances, federal law gives you the right to cancel PMI or requires that PMI automatically terminate. Cancellation or termination of PMI does not affect any obligation you may have to maintain other types of insurance. Please be advised that you have met the requirements for the automatic termination of Private Mortgage Insurance (PMI). Your mortgage is no longer required to carry private mortgage insurance if you meet the below minimum requirements:</div>
 <br>
-{If(Date({[M065]}|yyyy-MM-dd) &gt;= 1999-07-29)}
+{If((Date({[M065]}|yyyyMMdd) &gt;= 19990729))}
 <div>For loans closed on or after 7/29/1999, the earlier of (1) the date that the mortgage balance is first scheduled to reach 78% of the original value of the property, or (2) the first day of the month after the date that is the midpoint of the original amortization period is reached, if the scheduled loan to value ratio for the mortgage loan does not reach 78% before the midpoint.</div>
 {End If}
-{If(Date({[M065]}|yyyy-MM-dd) &lt; 1999-07-29)}
+{If((Date({[M065]}|yyyyMMdd) &lt; 19990729))}
 <div>For loans closed before 7/29/1999, the first day of the month after is the midpoint of the original amortization period, provided your payments are current on that date.</div>
 {End If}
 <br>

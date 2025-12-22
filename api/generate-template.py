@@ -297,10 +297,10 @@ STEP 1 - CONTENT EXTRACTION:
    - Always use &gt; not > for greater than
    - Always use &lt; not < for less than
 7. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
-8. CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in ISO format (yyyy-MM-dd) to be evaluated correctly, otherwise they will be compared as strings. The Date() function's second parameter is for format (uses C# DateTime format strings). 
-   - Example: {If(Date({[M065]}|yyyy-MM-dd) &gt;= 1999-07-29)} - NO QUOTES around the date value
+8. CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in numeric format (yyyyMMdd) to be evaluated correctly, otherwise they will be compared as strings or interpreted as math. The Date() function's second parameter is for format (uses C# DateTime format strings). 
+   - Example: {If((Date({[M065]}|yyyyMMdd) &gt;= 19990729))} - NO QUOTES around the date value, NO DASHES (to avoid subtraction)
    - Date() format examples: {Date({[M035]}|MMMM yyyy)} produces "September 2034", {Date({[TAG]}|MM/dd/yyyy)} produces "05/29/2015"
-   - For comparisons, always use ISO format: yyyy-MM-dd WITHOUT quotes (e.g., 1999-07-29, not '1999-07-29')
+   - For comparisons, always use numeric format: yyyyMMdd WITHOUT quotes or dashes (e.g., 19990729, not '1999-07-29' or 1999-07-29)
 8. PRESERVE STYLING from source document - CRITICAL: if text is centered, bold, underlined, or has specific font sizes, you MUST include those style attributes:
    - Centered text: style="text-align: center"
    - Font size: style="font-size: 14pt" (or whatever size is in the document)

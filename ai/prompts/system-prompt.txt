@@ -42,8 +42,11 @@ Generate HTML templates that:
 - DateAdd: {DateAdd({[TAG]}|+1|MM/dd/yyyy|Month)}
 - Date: {Date({[TAG]}|FORMAT)} - The second parameter is the format string (uses C# DateTime format)
   - Examples: {Date({[M035]}|MMMM yyyy)} produces "September 2034"
-  - Common formats: MM/dd/yyyy, MMMM yyyy, MMMM dd, yyyy, yyyy-MM-DD (ISO for comparisons)
-  - For date comparisons in IF functions, use ISO format: {Date({[M065]}|yyyy-MM-dd)} to compare with '1999-07-29'
+  - Common formats: MM/dd/yyyy, MMMM yyyy, MMMM dd, yyyy, yyyyMMdd (numeric for comparisons)
+  - For date comparisons in IF functions, use numeric format: {Date({[M065]}|yyyyMMdd)} to compare with 19990729
+- DateDiff: {DateDiff({[TAG1]}|{[TAG2]}|Unit)} - Format both dates to the same format first
+  - Example: {DateDiff(Date({[M026]}|yyyyMMdd)|Date({[M035]}|yyyyMMdd)|Month)}
+  - Always format both dates to the same format (typically yyyyMMdd) before using DateDiff
 - Compress: {Compress({[TAG1]}|{[TAG2]}|{[TAG3]})}
 
 ### Conditional Logic

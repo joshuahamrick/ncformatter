@@ -1,0 +1,45 @@
+<div>{Insert(Flat Branch Header)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>{[plsMatrix.CompanyShortName]} Loan Number: {[M594]}</div>
+<br>
+<div>New Servicer Loan Number: {[M614]}</div>
+<br>
+<br>
+<div style="text-align: center"><b>Notice of Servicing Transfer</b></div>
+<br>
+<div>The servicing of your mortgage loan is being transferred, effective {[H160]}. This means that after this date, a new servicer will be collecting your mortgage loan payments from you. Nothing else about your mortgage loan will change.</div>
+<br>
+<div>{[plsMatrix.CompanyLongName]} is now collecting your payments. {[plsMatrix.CompanyLongName]} will stop accepting payments received from you after {Math({[H160]} - 1|Date)}.</div>
+<br>
+<div>RoundPoint Mortgage Servicing LLC will collect your payments going forward. Your new servicer will start accepting payments received from you on {[H160]}.</div>
+<br>
+<div>Send all payments due on or after {[H160]} to RoundPoint Mortgage Servicing LLC at this address:</div>
+<br>
+<div><b>RoundPoint Mortgage Servicing LLC</b></div>
+<div><b>PO Box 650011</b></div>
+<div><b>Dallas, TX 75265-0011</b></div>
+<div><b>(877) 426-8805</b></div>
+<br>
+<div>If you have any questions for either your present servicer, {[plsMatrix.CompanyLongName]}, or your new servicer, RoundPoint Mortgage Servicing LLC, about your mortgage loan or this transfer, please contact them using the information below:</div>
+<br>
+<br>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%" valign="top"><div><b>Current Servicer:</b></div></td>
+  <td width="50%" valign="top"><div><b>New Servicer:</b></div></td>
+</tr><tr>
+  <td width="50%" valign="top">{Compress({[plsMatrix.CompanyLongName]}|Attn: Customer Service|{[plsMatrix.OvernightCorrAddress1]}|{[plsMatrix.OvernightCorrAddress2]}|{[plsMatrix.CSPhoneNumber]})}</td>
+  <td width="50%" valign="top">{Compress(RoundPoint Mortgage Servicing LLC|Attn: Customer Service|P.O. Box 19409|Charlotte, NC 28219-9409|Toll Free: (877) 426-8805)}</td>
+</tr></tbody></table>
+<br>
+<br>
+<div>Under Federal law, during the 60-day period following the effective date of the transfer of the loan servicing, a loan payment received by your old servicer on or before its due date may not be treated by the new servicer as late, and a late fee may not be imposed on you.</div>
+<br>
+<div>{[plsMatrix.CompanyLongName]}</div>

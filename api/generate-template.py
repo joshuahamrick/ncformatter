@@ -76,6 +76,7 @@ def load_few_shot_examples():
 	# Load MORE examples to give AI better context - diverse patterns
 	curated = [
 		'ES114/ES114-formatted.html',  # Simple PMI termination
+		'MI008/MI008-formatted.html',  # PMI Auto Term with bullet points and different header layout
 		'CA003/CA003-formatted.html',  # ACH with conditionals
 		'GB001/GB001-formatted.html',  # Transfer letter
 		'CA005/CA005-formatted.html',  # ACH removal
@@ -311,20 +312,28 @@ STEP 1 - CONTENT EXTRACTION:
 9. For tables, extract the ACTUAL table structure and content from the document - don't generate placeholder tables with "Column 1, Column 2" etc. - look at the LM401 example to see the correct 3-column table format
 10. CRITICAL: If you see table content in the Document Content (look for "Table X" entries), you MUST include that table in your output - NEVER skip tables
 
-STEP 2 - STRUCTURE (MANDATORY - FOLLOW EXACTLY):
-You MUST include this structure in this exact order, WITH EACH ELEMENT ON ITS OWN LINE:
+STEP 2 - STRUCTURE (MANDATORY - DETECT FROM DOCUMENT):
+CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header structure - different documents have different layouts!
+
+1. HEADER DETECTION - Look at the Document Content to determine:
+   - If you see "Loan Number:" and "RE:" or "Property Address:" in separate rows or together, extract the EXACT structure from the document
+   - Some documents have: "Loan Number:" in first row, "RE:" in second row (like MI008)
+   - Some documents have: "RE: Loan Number:" in first row, "Property Address:" in second row
+   - Some documents have NO property address table at all - only include it if it appears in the Document Content
+   - Extract the EXACT label text from the document (e.g., "Loan Number:" vs "RE: Loan Number:")
+
+2. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
 <div>{Insert(H003 TagHeader)}</div>
 <br>
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
-<table width="100%"><tbody><tr>
-  <td width="20%" valign="top">RE: Loan Number:</td>
-  <td>{[M594]}</td>
-</tr><tr>
-  <td width="20%" valign="top">Property Address:</td>
-  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
-</tr></tbody></table>
+[PROPERTY ADDRESS TABLE - ONLY include if present in Document Content]
+[Extract the EXACT table structure from Document Content - look for "Table X" entries or label-value pairs]
+[Common patterns:
+  - Pattern A: <table width="100%"><tbody><tr><td width="20%" valign="top">Loan Number:</td><td>{[M594]}</td></tr><tr><td width="20%" valign="top">RE:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
+  - Pattern B: <table width="100%"><tbody><tr><td width="20%" valign="top">RE: Loan Number:</td><td>{[M594]}</td></tr><tr><td width="20%" valign="top">Property Address:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
+  - Pattern C: No table at all - just continue to salutation]
 [Conditional FHA/RHS sections if present - format as {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}<div>FHA Case Number: {[M037]}</div>{End If}]
 <br>
 <div>Dear {[Salutation]},</div>
@@ -354,23 +363,64 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - NEVER skip tables - if text references a table/chart/accounting, that table MUST appear in your output
 - CRITICAL: After text that says "The chart below provides an accounting" or "This notice also provides an accounting", you MUST include a table with the header "Payment Supplement Funds Applied as of {[L001]}" followed by a 3-column table with headers "Date(s)" and "Amount"
 - Look in the Document Content for "Table X" entries - if you see table content, extract ALL rows and create the complete table structure
-- Include ALL content until the signature/closing section
+- Include ALL content until the signature/closing section - DO NOT STOP EARLY
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)
-- If a paragraph starts with text that should be bold (like "This notice is to advise you..."), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
+- If a paragraph starts with text that should be bold (like "This notice is to advise you...", "Please note", "IMPORTANT"), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
+- CRITICAL: If you see bullet points (•, -, *) in the Document Content, format them as a TABLE structure - NEVER skip bullet points
+- CRITICAL: Look for ALL paragraphs in the Document Content - count them and make sure you include EVERY SINGLE ONE
+- CRITICAL: If the Document Content shows styled text (bold, centered, larger font), you MUST preserve that styling in the HTML output
 
-NOTE: The property address table should have TWO rows: "RE: Loan Number:" and "Property Address:" - NOT just one row
+CRITICAL BULLET POINTS AND BOLD TEXT:
+- If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:
+  Example: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Bullet point text here</td></tr></tbody></table>
+- If text appears BOLD in the Document Content (or starts with phrases like "This notice is to advise you", "IMPORTANT", "Please note"), wrap it in <b> tags
+- If text appears CENTERED and LARGER in the Document Content, it's likely a title - use style="text-align: center; font-size: 14pt" with <b> tags
+- PRESERVE ALL STYLING - if the Document Content shows bold, underline, center alignment, or font sizes, you MUST include those in the HTML
+
+NOTE: The property address table structure VARIES by document - extract the EXACT structure from Document Content, don't assume it always has "RE: Loan Number:" and "Property Address:"
 NOTE: Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
 YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.
 
-Example of CORRECT formatting:
+Example of CORRECT formatting (showing different header layouts):
 <div>{Insert(H003 TagHeader)}</div>
 <br>
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
+[Example 1 - MI008 style header with "Loan Number:" and "RE:" in separate rows:]
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div style="text-align: center; font-size: 14pt"><b>Notice of Termination of Private Mortgage Insurance (PMI)</b></div>
+<br>
+<div>Your mortgage loan requires Private Mortgage Insurance ("PMI"). PMI protects lenders and others against financial loss when borrowers default.</div>
+<br>
+{If((Date({[M065]}|yyyyMMdd) &gt;= 19990729))}
+<div>For loans closed on or after 7/29/1999, the earlier of (1) the date that the mortgage balance is first scheduled to reach 78% of the original value of the property, or (2) the first day of the month after the date that is the midpoint of the original amortization period is reached.</div>
+{End If}
+<br>
+[Example of bullet point formatted as table:]
+<table width="100%"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Your mortgage loan must be current at the time of cancellation.</td>
+</tr></tbody></table>
+<br>
+<div>Sincerely,</div>
+<br><br><br>
+<div>PMI/MIP Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+<br>
+[Example 2 - Standard header with "RE: Loan Number:" and "Property Address:" in separate rows:]
 <table width="100%"><tbody><tr>
   <td width="20%" valign="top">RE: Loan Number:</td>
   <td>{[M594]}</td>
@@ -379,43 +429,10 @@ Example of CORRECT formatting:
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
 <br>
-<div>Dear {[Salutation]},</div>
-<br>
-<div style="text-align: center; font-size: 12pt"><b><u>Document Title</u></b></div>
-<br>
 <div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
 <div style="text-align: center; font-size: 14pt"><b>MORTGAGE PAYMENT INCREASE BEGINS...</b></div>
 <br>
 <div><b>This notice is to advise you that important information follows.</b> Then continues with regular text.</div>
-<br>
-<div style="font-size: 14pt"><b>Information About Your Payment Supplement</b></div>
-<div>Section content here.</div>
-<br>
-<div><b>Payment Supplement Funds Applied as of {[L001]}</b></div>
-<table width="100%" style="border-collapse: collapse"><tbody><tr>
-  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1)"></td>
-  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Date(s)</b></td>
-  <td width="20%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Amount</b></td>
-</tr><tr>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">Total Payment Supplement note amount (includes amounts used to bring your mortgage current and provide monthly principal reductions)</td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1); background-color: rgba(211, 211, 211, 1)"></td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[J044]})}</td>
-</tr><tr>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">Amount used to bring your mortgage current</td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">{[J048]}</td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[J045]})}</td>
-</tr><tr>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">Amount used to provide monthly principal reductions as of {[L001]}</td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">{[J048]} through {[J049]}</td>
-  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[T318]})}</td>
-</tr></tbody></table>
-<br>
-<div>Contact us at {[plsMatrix.CSPhoneNumber]} or {[plsMatrix.LossPreventionPhoneNumberTollFree]}</div>
-<br>
-<div>Sincerely,</div>
-<br><br><br>
-<div>Department Name</div>
-<div>{[plsMatrix.CompanyLongName]}</div>
 <br>
 
 Example of WRONG formatting (DO NOT DO THIS):

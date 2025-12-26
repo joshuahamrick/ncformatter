@@ -1,0 +1,27 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td colspan="2">Subject: One-Time Draft Confirmation</td>
+</tr><tr>
+  <td colspan="2">Loan Number: {[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">Property:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>{[plsMatrix.CompanyShortName]} is committed to providing you with the best service possible. In staying true to that commitment, we are sending you this confirmation of the one-time draft payment you authorized on {[V001]} in the amount of {Math({[M029]} + {[H703]}|Money)}. The funds will be drafted from the {If('{[H702]}' = 'C')}Checking{Else If('{[H702]}' = 'S')}Savings{End If} account you provided and applied to your mortgage loan effective for {[V001]}.</div>
+<br>
+<div>If this one-time draft is scheduled for a future date and you would like to revoke your authorization to draft the payment, you must contact our Customer Service department at the phone number or email address below at least one business day prior to the effective draft date.</div>
+<br>
+<div>Thank you for doing business with {[plsMatrix.CompanyLongName]}. If you have any questions or concerns, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]} or {[plsMatrix.CSEmail]}. We are available {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Customer Service Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+

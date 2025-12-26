@@ -1,0 +1,66 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<div style="text-align: center"><b>WELCOME!</b></div>
+<br>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%">Mortgage Loan No.</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="50%">First Payment Due Date:</td>
+  <td>{[M026]}</td>
+</tr><tr>
+  <td width="50%">Payment Amount:</td>
+  <td>{Money({[M029]})}</td>
+</tr></tbody></table>
+<br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Congratulations! Welcome to {[plsMatrix.CompanyLongName]}. We are excited to have this opportunity to service your mortgage loan.</div>
+<br>
+<div>Looking for an easy and convenient way to make your mortgage payments? If you have not already enrolled, take advantage of our Automatic Payment Program. Details of this program are provided on the second page of this letter. You can choose from a number of options, including which day of the month (1st-15th).</div>
+<br>
+<div>Each month you will receive a billing statement. It is your option to elect online if you prefer to receive an electronic or paper version. Paper versions include a detachable payment coupon. If interested in this and other benefits, visit our website at {[plsMatrix.WebSite]} which will allow you to do the following:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Make online payments</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center"></td>
+  <td>Setup automatic reoccurring payments</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center"></td>
+  <td>Download your year end 1098 forms</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center"></td>
+  <td>Monitor your mortgage payment history</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Elect to receive electronic statements</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>And more!</td>
+</tr></tbody></table></div>
+<br>
+<div>Should you have any questions about your account, don't hesitate to call us at {[plsMatrix.CSPhoneNumber]}.</div>
+<br>
+<div>Our dedicated mortgage loan servicing specialists are always ready to assist you {[plsMatrix.HoursOfOperation]}. Please have your mortgage loan number available when you call and include it with any correspondence. Written correspondence should be sent to {[plsMatrix.CompanyLongName]}, Attn: Customer Service Department, {Compress({[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|{[plsMatrix.CompanyReturnAddr3]})}.</div>
+<br>
+<div>We value the importance of making timely payments and understand that difficulties may arise. Please make sure you contact our default team at {[plsMatrix.CSPhoneNumber]} if you need to make any payment arrangements. We will make every effort to assist you if you are experiencing any financial burdens. We do report information about your account to the credit repositories every 30 days. Late payments missed payments or other defaults may be reflected in your credit report.</div>
+<br>
+<div>If you have any questions or concerns, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Customer Service Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+
+

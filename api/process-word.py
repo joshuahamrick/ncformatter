@@ -140,7 +140,7 @@ def process_word_document(file_bytes, file_name):
         # DEBUG: Add marker BEFORE calling cleanup rules
         formatted_html = '<!-- BEFORE CLEANUP -->' + formatted_html
         try:
-            formatted_html = apply_universal_formatting_rules(formatted_html)
+        formatted_html = apply_universal_formatting_rules(formatted_html)
         except Exception as e:
             # If cleanup rules fail, add error but keep HTML
             formatted_html = f'<!-- CLEANUP RULES FAILED: {str(e)} -->' + formatted_html

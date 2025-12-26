@@ -1,0 +1,30 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<div>Subject: Automatic Termination of PMI</div>
+<br>
+<div>Loan Number: {[M594]}</div>
+<br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Property:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<br>
+<br>
+<br>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>{[plsMatrix.CompanyShortName]} is committed to providing you with the best service possible. In staying true to that commitment, we are sending you this notification about the private mortgage insurance (PMI) on your loan. Please accept this letter as confirmation that the PMI on your loan has been terminated effective {[M665]}. This is the date that your loan was scheduled to reach a loan-to-value ratio of 78%.</div>
+<br>
+<div>Effective with your payment due on {[M026]}, your monthly payment will be {Money({[M029]})}. Any escrow deposits accumulated towards paying your next PMI premium will be considered in your next escrow analysis.</div>
+<br>
+<div>Thank you for doing business with {[plsMatrix.CompanyLongName]}. If you have any questions or concerns, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]} or {[plsMatrix.CSEmail]}. We are available {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>PMI Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

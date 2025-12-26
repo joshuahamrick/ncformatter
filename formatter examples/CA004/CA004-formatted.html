@@ -1,0 +1,27 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Thank you for allowing {[plsMatrix.CompanyLongName]} to service your mortgage. We recently processed a change affecting your monthly mortgage payment processed through the drafting program. Please contact us immediately if you did not make this change. The bank account number of {[H159]} was authorized for this draft. Your mortgage payment is scheduled to draft monthly based on the date you have chosen.</div>
+<br>
+<div>For more detailed information about your mortgage you can log on to our secure web portal. Please visit {[plsMatrix.WebSite]} to review information such as balances, transactions, and other loan details.</div>
+<br>
+<div>If you have any questions or concerns, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Customer Service Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+
+

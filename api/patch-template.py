@@ -89,32 +89,52 @@ class handler(BaseHTTPRequestHandler):
 			# Build prompt for patching
 			system_prompt = load_system_prompt()
 			
+			# Format IR for context (similar to generate-template)
+			ir_context = ""
+			if ir and isinstance(ir, dict) and 'blocks' in ir:
+				blocks = ir.get('blocks', [])[:20]  # Limit to first 20 blocks for context
+				ir_context = "\n\nDocument Content (for reference):\n"
+				for idx, block in enumerate(blocks):
+					if block.get('type') == 'paragraph':
+						runs = block.get('runs', [])
+						text = ''.join([r.get('text', '') for r in runs]).strip()
+						if text and len(text) > 10:
+							ir_context += f"Paragraph {idx + 1}: {text[:500]}\n"
+					elif block.get('type') == 'table':
+						rows = block.get('rows', [])
+						ir_context += f"Table {idx + 1} ({len(rows)} rows)\n"
+			
 			user_message = f"""Modify the following HTML template according to this instruction:
 
 Instruction: {instruction}
+{ir_context}
 
 Current HTML:
 ```html
 {current_html}
 ```
 
-Apply the instruction while maintaining:
-1. All variable placeholders ({[TAG]} format)
-2. All helper functions (Money, Compress, DateAdd, etc.)
-3. The overall structure and style
-4. Proper formatting (tables, divs, spacing)
+CRITICAL RULES:
+1. Apply the instruction EXACTLY as requested
+2. Maintain all variable placeholders ({[TAG]} format) - DO NOT change them
+3. Maintain all helper functions (Money, Compress, DateAdd, Date, DateDiff, If, etc.) - DO NOT change their syntax
+4. Maintain proper HTML structure (each element on its own line)
+5. Preserve all styling (bold, underline, font-size, text-align)
+6. If adding bullet points, format them as a table: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Text</td></tr></tbody></table>
+7. If fixing header structure, extract the EXACT structure from Document Content above
+8. Return ONLY the complete modified HTML, no explanations, no markdown code blocks
 
-Return ONLY the modified HTML, no explanations:"""
+Return ONLY the modified HTML:"""
 			
-			# Call OpenAI - using gpt-3.5-turbo for lower cost
+			# Call OpenAI - using gpt-4o for better quality (same as generate-template)
 			response = client.chat.completions.create(
-				model="gpt-3.5-turbo",
+				model="gpt-4o",
 				messages=[
 					{"role": "system", "content": system_prompt},
 					{"role": "user", "content": user_message}
 				],
 				temperature=0,  # Deterministic
-				max_tokens=4000
+				max_tokens=8000  # Increased to match generate-template
 			)
 			
 			html = response.choices[0].message.content.strip()

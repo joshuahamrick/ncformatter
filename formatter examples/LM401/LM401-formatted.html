@@ -1,0 +1,66 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">RE: Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+{If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}
+<div>FHA Case Number: {[M037]}</div>
+{End If}
+{If('{[M006]}' = 'RHS' AND {[M923]} &gt; 0)}
+<div>RHS ID #: {[M923]}</div>
+{End If}
+<br>
+<div style="text-align: center; font-size: 12pt"><b><u>Final Payment Supplement Disclosure</u></b></div>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
+<div style="text-align: center; font-size: 14pt"><b>MORTGAGE PAYMENT INCREASE BEGINS {DateAdd({[J049]}|+1|MM/dd/yyyy|Month)}</b></div>
+<br>
+<div>On {[J054]}, you signed a Payment Supplement Agreement and corresponding note and subordinate lien, which brought your Federal Housing Administration (FHA)-insured mortgage current and provided you with a temporary reduction of {Money({[J051]})} to your monthly mortgage payment through {[J049]}.</div>
+<br>
+<div><b>This notice is to advise you that your Payment Supplement Period is ending, and you will be responsible for making your full monthly mortgage payment of {Money({[M029]})} beginning in {DateAdd({[J049]}|+1|MM/dd/yyyy|Month)}</b>. The full amount of your monthly mortgage payment includes escrow amounts, such as property taxes, insurance, or other assessments, as applicable. If your escrow amount changes, your full monthly mortgage payment may also change. If you are unable to afford the full monthly mortgage payment due after your Payment Supplement Period ends, please contact our Loss Mitigation Department at {[plsMatrix.LossPreventionPhoneNumberTollFree]} for assistance.</div>
+<br>
+<div style="font-size: 14pt"><b>Information About Your Payment Supplement</b></div>
+<div>The Payment Supplement is a zero-interest subordinate lien against your property. It does not require repayment until your mortgage is paid in full, the property is sold, the mortgage is assumed, the title to the property is transferred, or under certain types of refinance, whichever occurs first. However, you may pay the outstanding Payment Supplement balance early without penalty. The chart below provides an accounting of the Payment Supplement Account. Any amount that remains in the Payment Supplement Account at the end of the Payment Supplement Period will be returned to FHA to reduce the total amount you owe under the Payment Supplement note.</div>
+<br>
+<div>This notice also provides an accounting of the Payment Supplement.</div>
+<br>
+<div><b>Payment Supplement Funds Applied as of {[L001]}</b></div>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1)"></td>
+  <td width="30%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Date(s)</b></td>
+  <td width="20%" style="border: 1px solid rgba(0, 0, 0, 1); text-align: center"><b>Amount</b></td>
+</tr><tr>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Total Payment Supplement note amount (includes amounts used to bring your mortgage current and provide monthly principal reductions)</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1); background-color: rgba(211, 211, 211, 1)"></td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[J044]})}</td>
+</tr><tr>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Amount used to bring your mortgage current</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{[J048]}</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[J045]})}</td>
+</tr><tr>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">Amount used to provide monthly principal reductions as of {[L001]}</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{[J048]} through {[J049]}</td>
+  <td style="border: 1px solid rgba(0, 0, 0, 1)">{Money({[T318]})}</td>
+</tr></tbody></table>
+<br>
+<div>If you have any further questions regarding this notice, please contact our Loss Mitigation Department at {[plsMatrix.LossPreventionPhoneNumberTollFree]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<br>
+<br>
+<div>Loss Mitigation Department</div>
+<br>
+<br>
+{If('{[M007]}' = '48')}
+<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>
+{End If}

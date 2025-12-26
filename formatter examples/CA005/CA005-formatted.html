@@ -1,0 +1,30 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Thank you for contacting {[plsMatrix.CompanyLongName]}. We want to keep you informed and respond quickly to your needs. We have received your request to be removed from the Automatic Payment Drafting Program. Please contact us immediately if you did not make this change.</div>
+<br>
+<div>As requested, your bank account number used for automatic drafting was removed. Please plan accordingly to remit your monthly payments, as your mortgage is no longer enrolled in the program. You will continue to receive Monthly Statements for your convenience in remitting your payment.</div>
+<br>
+<div>All payments should be mailed to the following address:</div>
+<br>
+<div style="margin-left: 10%">{Compress({[plsMatrix.CompanyLongName]}|Attn: Cashiering Department|{[plsMatrix.LockBoxAddr1]}|{[plsMatrix.LockBoxAddr2]})}</div>
+<br>
+<div>If you have any questions or concerns, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Customer Service Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+

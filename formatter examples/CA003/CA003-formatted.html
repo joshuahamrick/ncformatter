@@ -1,0 +1,28 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Please accept this letter as a confirmation that we will begin automatic payments on your loan beginning with the {[V001]} payment in the amount of {Money({[M029]})} Total Monthly Payment. As requested, your bank account number {[H159]} is to be used for automatic drafting. Please contact us immediately if you did not make this change. {If('{[H703]}' NOT IN ('', '0', '.00', NULL))}In addition to your payment, we will draft an additional principal payment of {Money({[H703]})}. This additional amount, which you elected, is a set dollar amount and does not vary from month to month. {End If}{If('{[H701]}' NOT IN ('', '0', '.00', NULL))}Your payment will draft {[H701]} days after your due date each month. {End If}</div>
+<br>
+<div>If you have an adjustable rate loan, or if you have a loan with an escrow requirement, your payment amount may change from time to time. You will receive a written notification of any change in your payment amount before an automatic payment is drafted at the new amount. Please note that any additional principal that you may have elected to include will remain constant, regardless of any other payment adjustment. If your payment amount changes, then you may want to adjust the additional elected amount accordingly. Should you wish to cancel or adjust the draft, please notify us in writing, at least one week prior to the scheduled draft date. It may be in your best interest to request cancellation of your draft if there is a payoff pending on your loan.</div>
+<br>
+<div>It is a condition that your loan is current in order to draft. We must have the previous month's payment, and it must be posted to your account at least five days prior to the next scheduled draft day.</div>
+<br>
+<div>We appreciate your business and your satisfaction is very important to us. If you have any questions or need to make any changes regarding the automatic deduction of your payment, please contact our office at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Customer Service Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+

@@ -1,0 +1,95 @@
+{Insert(UHM Header)}
+<br>
+<div>{[tagHeader]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+
+
+
+
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%">RE:</td>
+  <td width="20%">Loan Number:</td>
+  <td>{[M594]}</td>
+    </tr><tr>
+  <td width="3%"></td>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table></div>
+<br>
+<div style="text-align: center"><b>FORBEARANCE PLAN OFFER-REDUCED PAYMENT</b></div>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Thank you for contacting us about the mortgage. Based on a careful review of the information you provided to us, you have been approved for a forbearance plan. This forbearance plan is a temporary reduction of the mortgage payments intended to allow you the time and flexibility to manage the financial challenges affecting your ability to pay the mortgage. As a result of making reduced payments, you will become delinquent or more delinquent on the mortgage and your credit score may be negatively impacted. It is important that you read this information in its entirety so that you completely understand the actions you need to take in connection with this forbearance plan.</div>
+<br>
+<div>As of {[L001]}, the loan is due for payments beginning with {[M026]} and the subsequent months thereafter. Monthly payments and the total past due amount on the mortgage is {Math({[C001]}+{[M585]}-{[M013]}|Money)}. This amount includes all past due payments of interest, principal and escrow (if applicable), as well as late charges and amounts that we paid on your behalf (“Servicer Advances”).</div>
+<br><br><br><br><br>
+
+<div><b>Plan Terms</b></div>
+<div>Under the terms of the plan, you must make the initial and each of the remaining plan payments by the date and in the amount shown below for each of the plan payments.</div>
+<br>
+<div>{Q189V2()}</div>
+<br>
+<div><b>Additional Terms of the Plan:</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>If your financial situation changes during the term of the plan, please contact us immediately to reassess your situation and discuss potential alternatives.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>At least 30 days prior to the end of the plan, you must contact us to provide updated financial information and documentation of your financial circumstances. After we receive your updated information, we will provide information on alternatives that may be available to you at the end of the plan term, such as a reinstatement, repayment plan, loan modification or other alternative to foreclosure.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>To Accept This Offer</b></div>
+<div>You must contact {[plsMatrix.CompanyLongName]} at {[plsMatrix.CSPhoneNumber]} to notify us of your intention to accept this plan no later than {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}. In addition, you must send your initial plan payment by the date noted above. Please send your plan payments to:</div>
+<br>
+<div style="text-align: center">{Compress({[plsMatrix.CompanyShortName]}|Attn: Loss Mitigation|922 Walnut|Suite 1100|Mail-Stop: TB11-CM3|Kansas City, MO 64106)}</div>
+<br>
+<div><b>TIME IS OF THE ESSENCE.</b></div>
+<br>
+<div>If you fail to make the Initial Plan Payment by the date specified above, this offer will be revoked and we may refer the mortgage to foreclosure, or if the loan has been referred to foreclosure, foreclosure proceedings may continue, and a foreclosure sale may occur.</div>
+<br>
+<div><b>Additional Plan Information and Legal Notices</b></div>
+<br>
+<div><b>We will not proceed to foreclosure sale during this Plan, provided you are complying with the terms of the Plan:</b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Any pending foreclosure action or proceeding that has been suspended may be resumed if you fail to comply with the terms of the plan.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>This plan offer is contingent on your having provided accurate and complete information. We reserve the right to revoke this offer or terminate the plan following your acceptance if we learn of information that would make you ineligible for the plan.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You agree that we will hold funds received in a suspense account until sufficient funds are available to fully pay the oldest delinquent monthly payment. You also agree that we will not pay you interest on the amounts held in the suspense account. If any funds are left in this account at the end of the Plan, funds will be posted to the account to reduce the principal balance.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Our acceptance and posting of the payment during the plan will not be deemed a waiver of the default and acceleration of the loan as well as related activities, including the right to resume or continue foreclosure, and shall not constitute a cure of the mortgage default unless such payments are sufficient to completely cure the default.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>The current loan documents remain in effect; however, you may make the plan payments instead of the payment required under the loan documents.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You agree that all terms and provisions of the current mortgage note and mortgage security instrument remain in full force and effect and you will comply with those terms and that nothing in the Plan shall be understood or construed to be a satisfaction or release in whole or in part of the obligations contained in the loan documents.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Additionally, the mortgage security instrument must be and remain as a first and superior lien on the property.</td>
+    </tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Should liens, encumbrances or other matters jeopardize or threaten the validity or priority of the lien of our mortgage security instrument, we may revoke or terminate the plan.</td>
+</tr></tbody></table></div>
+<br>
+<div>If you have any questions regarding the plan, please contact us at {If('{[O276]}'&lt;&gt;'')}{[O276]}{Else If('{[O296]}'&lt;&gt;'')}{[O296]}{Else}{[plsMatrix.SPOCContactPhone]}{End If}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>{[plsMatrix.CompanyShortName]}</div>
+<div>Real Estate Lending Servicing Specialist</div>
+<br>
+{If('{[M007]}'='48')}
+{If('{[M007]}'='48')}
+<div><u><b>Wisconsin Property Owners</b></u> – Notice: See Reverse Side (or attached) for Important Information.</div>
+{End If}
+{End If}

@@ -145,10 +145,15 @@ class WordFormatter {
 					throw new Error(`DOCX processing failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 200)}`);
 				}
 				
-				const result = await response.json().catch(jsonError => {
-					const text = await response.text().catch(() => 'Could not read response');
-					throw new Error(`Invalid response from server: ${text.substring(0, 200)}`);
-				});
+				let result;
+				try {
+					result = await response.json();
+				} catch (jsonError) {
+					// If JSON parsing fails, we already read the response, so we can't read it again
+					// This shouldn't happen if response.ok is true, but handle it gracefully
+					console.error('Failed to parse JSON response:', jsonError);
+					throw new Error(`Invalid response from server: Could not parse JSON`);
+				}
 				
 				if (!result.success) throw new Error(result.error || 'DOCX processing error');
 				const ir = result.ir;
@@ -322,14 +327,13 @@ class WordFormatter {
             console.log('Response status:', response.status, response.statusText);
             
             let result;
+            const responseText = await response.text();
+            console.log('Response text (first 500 chars):', responseText.substring(0, 500));
             try {
-                const responseText = await response.text();
-                console.log('Response text (first 500 chars):', responseText.substring(0, 500));
                 result = JSON.parse(responseText);
             } catch (jsonError) {
-                const text = await response.text().catch(() => 'Could not read response');
                 console.error('Failed to parse JSON response:', jsonError);
-                throw new Error(`Invalid response from server (${response.status}): ${text.substring(0, 500)}`);
+                throw new Error(`Invalid response from server (${response.status}): ${responseText.substring(0, 500)}`);
             }
             
             if (!response.ok || !result.success) {

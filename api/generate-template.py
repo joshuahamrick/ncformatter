@@ -508,6 +508,53 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
     <td>Paragraph 3 about step 3</td>
   </tr>
   </tbody></table>
+  
+- CRITICAL EXAMPLE OF MULTIPLE BULLET POINT SETS IN ONE DOCUMENT:
+  If Document Content shows:
+  "Next Steps:
+  Step 1 text
+  Step 2 text
+  
+  Additional Information:
+  Info item 1
+  Info item 2
+  
+  Important Notes:
+  Note 1
+  Note 2"
+  
+  Then format ALL THREE sets as separate tables (NOT just the first one):
+  <div><b>Next Steps:</b></div>
+  <br>
+  <table width="100%"><tbody>
+  <tr><td width="3%" valign="top" style="text-align: center">•</td><td>Step 1 text</td></tr>
+  <tr><td width="3%" valign="top" style="text-align: center">•</td><td>Step 2 text</td></tr>
+  </tbody></table>
+  <br>
+  <div><b>Additional Information:</b></div>
+  <br>
+  <table width="100%"><tbody>
+  <tr><td width="3%" valign="top" style="text-align: center">•</td><td>Info item 1</td></tr>
+  <tr><td width="3%" valign="top" style="text-align: center">•</td><td>Info item 2</td></tr>
+  </tbody></table>
+  <br>
+  <div><b>Important Notes:</b></div>
+  <br>
+  <table width="100%"><tbody>
+  <tr><td width="3%" valign="top" style="text-align: center">•</td><td>Note 1</td></tr>
+  <tr><td width="3%" valign="top" style="text-align: center">•</td><td>Note 2</td></tr>
+  </tbody></table>
+  
+  WRONG: Do NOT format just the first set and leave the rest as regular divs like this:
+  <div><b>Next Steps:</b></div>
+  <br>
+  <table>...</table>  <!-- First set formatted correctly -->
+  <br>
+  <div><b>Additional Information:</b></div>
+  <br>
+  <div>Info item 1</div>  <!-- WRONG - should be a table -->
+  <div>Info item 2</div>  <!-- WRONG - should be a table -->
+  
 - CRITICAL: Documents can have MULTIPLE sets of bullet points throughout - you MUST check for and format ALL of them:
   * After EVERY section header ending with ":", check for bullet points that follow
   * Look for bullet points in the middle of paragraphs (not just after headers)

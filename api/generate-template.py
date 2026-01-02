@@ -335,9 +335,9 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 1. HEADER DETECTION - Look at the Document Content to determine the correct header type:
    - CRITICAL HEADER LOGIC (in priority order):
      a) If Document Content mentions NMLS or NMLSID → Use: <div>{Header(NMLSID)}</div>
-     b) If Document Content has H003 WITH a conditional (e.g., "if {[H003]} = null" or "if {[H003]} = ''" or conditional logic involving H003) → Use: <div>{Insert(H003 TagHeader)}</div>
-     c) Otherwise → Use: <div>{[tagHeader]}</div>
-   - IMPORTANT: H003 header is ONLY used when there's a CONDITIONAL involving H003, not just because H003 is mentioned
+     b) DEFAULT: Use <div>{Insert(H003 TagHeader)}</div> for most documents
+     c) Only use <div>{[tagHeader]}</div> if Document Content explicitly shows tagHeader without H003
+   - IMPORTANT: The default header format is {Insert(H003 TagHeader)} - use this unless NMLS is mentioned or the document explicitly shows tagHeader
    - Extract the EXACT header structure from the Document Content
 
 2. LOAN NUMBER AND RE: TABLE - CRITICAL: Most letters MUST include a table with Loan Number and RE: (Property Address):
@@ -354,7 +354,7 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
    - ONLY skip this table if the Document Content clearly shows NO loan number or property address information
 
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
-<div>{Insert(H003 TagHeader)}</div>  <!-- OR {Header(NMLSID)} OR {[tagHeader]} based on detection above -->
+<div>{Insert(H003 TagHeader)}</div>  <!-- DEFAULT: Use {Insert(H003 TagHeader)} unless NMLS is mentioned. Only use {[tagHeader]} if Document Content explicitly shows tagHeader without H003 -->
 <br>
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
@@ -411,23 +411,31 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - Include any conditional sections at the end (like Wisconsin notice)
 - Include contact information section: <div>Please review the circumstances listed above...</div> with company address lines if present in Document Content
 - If a paragraph starts with text that should be bold (like "This notice is to advise you...", "Please note", "IMPORTANT"), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
-- CRITICAL: If you see bullet points (•, -, *) in the Document Content, format them as a TABLE structure - NEVER skip bullet points
+- CRITICAL: If you see bullet points (•, -, *, or consecutive list items) in the Document Content, format them as a TABLE structure - NEVER skip bullet points
+- CRITICAL: After section headers ending with ":" (like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc.), ALWAYS check for bullet points that follow - these MUST be formatted as tables
+- CRITICAL: If you see multiple consecutive paragraphs after a section header, they are likely bullet points - format them as a table with bullet characters
 - CRITICAL: Look for ALL paragraphs in the Document Content - count them and make sure you include EVERY SINGLE ONE
 - CRITICAL: If the Document Content shows styled text (bold, centered, larger font), you MUST preserve that styling in the HTML output
+- CRITICAL: NEVER stop after a section header - always include the bullet points/content that follows section headers
 
 CRITICAL BULLET POINTS AND BOLD TEXT:
 - If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:
   Example: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Bullet point text here</td></tr></tbody></table>
+- CRITICAL: After section headers like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc., look for bullet points that follow - these MUST be formatted as tables
+- CRITICAL: If you see consecutive paragraphs that appear to be list items (especially after headers ending with ":"), format them as a bullet point table
+- CRITICAL: Look for patterns like multiple paragraphs starting with similar text or appearing as a list - these are likely bullet points that need table formatting
 - If text appears BOLD in the Document Content (or starts with phrases like "This notice is to advise you", "IMPORTANT", "Please note"), wrap it in <b> tags
 - If text appears CENTERED and LARGER in the Document Content, it's likely a title - use style="text-align: center; font-size: 14pt" with <b> tags
 - PRESERVE ALL STYLING - if the Document Content shows bold, underline, center alignment, or font sizes, you MUST include those in the HTML
+- NEVER skip bullet points - if you see a section header followed by multiple related paragraphs, check if they should be formatted as a bullet point table
 
 CRITICAL NOTES:
 - Most letters MUST include a Loan Number and RE: table after mailing address and before salutation
 - The table structure VARIES by document - extract the EXACT structure from Document Content (labels may be "Loan Number:", "Re: Loan Number:", "RE: Loan Number:", etc.)
-- Header type detection: NMLS (if mentioned) > H003 (if conditional present) > tagHeader (default)
-- H003 header is ONLY used when there's conditional logic involving H003, not just because H003 is mentioned
+- Header type detection: NMLS (if mentioned) > {Insert(H003 TagHeader)} (default) > {[tagHeader]} (only if explicitly shown)
+- DEFAULT header format is {Insert(H003 TagHeader)} - use this unless NMLS is mentioned
 - Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
+- CRITICAL: After section headers (especially those ending with ":"), always check for bullet points that follow - format them as tables
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
 YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.

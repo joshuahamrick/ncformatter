@@ -461,14 +461,20 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - CRITICAL: Count the paragraphs in Document Content. If there are 50+ paragraphs, you MUST include ALL of them
 - CRITICAL: If Document Content shows state conditionals like "IF M960 = STATE", include conditionals for EVERY state mentioned
 - CRITICAL: If Document Content shows multiple scenarios (e.g., "A transfer by devise...", "A transfer to a relative...", "Transfer to a spouse...", "Transfer into an inter vivos trust"), include ALL scenarios
+- CRITICAL: Documents can have MULTIPLE conditionals throughout - you MUST include ALL conditionals, not just the first one
+- CRITICAL: After formatting one conditional block ({If()}...{End If}), continue scanning the Document Content for MORE conditionals - include ALL of them
+- CRITICAL: If you see conditional logic patterns like "If [TAG] = VALUE" or "If [TAG] NOT IN (...)" multiple times in the Document Content, format EACH occurrence as a separate {If()}...{End If} block
+- CRITICAL: Do NOT stop after formatting the first conditional - continue reading and include ALL conditionals throughout the ENTIRE document
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)
 - Include contact information section: <div>Please review the circumstances listed above...</div> with company address lines if present in Document Content
 - If a paragraph starts with text that should be bold (like "This notice is to advise you...", "Please note", "IMPORTANT"), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
-- CRITICAL: If you see bullet points (•, -, *, or consecutive list items) in the Document Content, format them as a TABLE structure - NEVER skip bullet points
-- CRITICAL: After section headers ending with ":" (like "Next Steps:", "Forbearance Plan Terms:", "Important:", "Additional Forbearance Plan Information:", etc.), ALWAYS check for bullet points that follow - these MUST be formatted as tables
+- CRITICAL: Only format as bullet point tables when the Document Content ACTUALLY shows bullet points (•, -, *, or numbered lists like 1., 2., 3.)
+- CRITICAL: Do NOT format regular consecutive paragraphs as bullet points unless they are ACTUALLY bullet points in the Document Content
+- CRITICAL: After section headers ending with ":" (like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc.), check if the following paragraphs are ACTUALLY bullet points (look for •, -, *, or numbered lists) - only then format them as tables
+- CRITICAL: If consecutive paragraphs after a section header are just regular text paragraphs (not bullet points), format them as regular <div> tags, NOT as a bullet point table
 - CRITICAL: Documents can have MULTIPLE sets of bullet points - you MUST check for and format ALL sets throughout the ENTIRE document, not just the first one
-- CRITICAL: If you see multiple consecutive paragraphs after a section header, they are likely bullet points - format them as a table with bullet characters
+- CRITICAL: Only format as bullet point tables when you see actual bullet characters (•, -, *) or numbered lists (1., 2., 3.) in the Document Content - do NOT assume consecutive paragraphs are bullet points
 - CRITICAL: After formatting one set of bullet points, CONTINUE scanning the Document Content for MORE sets - do not stop after the first set
 - CRITICAL: If you formatted bullet points as a table, IMMEDIATELY continue reading - if the next paragraphs also look like list items, format THOSE as a table too
 - CRITICAL: Do NOT format just the first set of bullet points and then leave subsequent sets as regular divs - ALL bullet point sets must be formatted as tables
@@ -478,10 +484,11 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - CRITICAL: If the Document Content shows styled text (bold, centered, larger font), you MUST preserve that styling in the HTML output
 - CRITICAL: NEVER stop after a section header - always include the bullet points/content that follows section headers
 - CRITICAL: Scan the ENTIRE Document Content from beginning to end, checking for ALL bullet point sets - there may be multiple sets scattered throughout the document
-- CRITICAL: When you encounter consecutive paragraphs that appear to be list items (especially after section headers), format them as a table - do this for EVERY occurrence, not just the first one
-- CRITICAL: After formatting one bullet point table, IMMEDIATELY check the next paragraphs - if they also look like list items, format THOSE as a table too
+- CRITICAL: When you encounter consecutive paragraphs that are ACTUALLY bullet points (with •, -, *, or numbered lists) in the Document Content, format them as a table - do this for EVERY occurrence, not just the first one
+- CRITICAL: After formatting one bullet point table, IMMEDIATELY check the next paragraphs - if they are ALSO actual bullet points (with •, -, *, or numbered lists), format THOSE as a table too
 - CRITICAL: Do NOT format just the first bullet point set and then stop - continue checking and formatting ALL bullet point sets throughout the ENTIRE document
-- CRITICAL: If you see a section header followed by bullet points, format them as a table. Then continue reading - if you see ANOTHER section header followed by MORE bullet points, format THOSE as a table too. Repeat this process for ALL section headers and ALL bullet point sets in the document.
+- CRITICAL: If you see a section header followed by ACTUAL bullet points (•, -, *, or numbered lists), format them as a table. Then continue reading - if you see ANOTHER section header followed by MORE actual bullet points, format THOSE as a table too. Repeat this process for ALL section headers and ALL bullet point sets in the document.
+- CRITICAL: Do NOT format regular paragraphs as bullet points - only format when you see actual bullet characters (•, -, *) or numbered lists (1., 2., 3.) in the Document Content
 - CRITICAL: NEVER truncate or omit content when converting bullet points to tables - include the COMPLETE text from each bullet point paragraph, including all sentences, clauses, and conditional statements
 - CRITICAL: If a bullet point paragraph contains multiple sentences separated by periods, include ALL sentences in the table cell - do not stop after the first sentence
 - CRITICAL: Preserve ALL content - if the Document Content shows a bullet point with text like "Sentence 1. Sentence 2. Sentence 3.", include ALL three sentences in the <td> tag
@@ -519,18 +526,19 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
   </tbody></table>
   
 - CRITICAL EXAMPLE OF MULTIPLE BULLET POINT SETS IN ONE DOCUMENT:
+  Only format as bullet point tables if Document Content ACTUALLY shows bullet characters (•, -, *, or numbered lists):
   If Document Content shows:
   "Next Steps:
-  Step 1 text
-  Step 2 text
+  • Step 1 text
+  • Step 2 text
   
   Additional Information:
-  Info item 1
-  Info item 2
+  • Info item 1
+  • Info item 2
   
   Important Notes:
-  Note 1
-  Note 2"
+  • Note 1
+  • Note 2"
   
   Then format ALL THREE sets as separate tables (NOT just the first one):
   <div><b>Next Steps:</b></div>
@@ -563,6 +571,18 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
   <br>
   <div>Info item 1</div>  <!-- WRONG - should be a table -->
   <div>Info item 2</div>  <!-- WRONG - should be a table -->
+  
+  ALSO WRONG: Do NOT format regular paragraphs as bullet points:
+  If Document Content shows:
+  "Next Steps:
+  Paragraph 1 text (no bullet character)
+  Paragraph 2 text (no bullet character)"
+  Then format as regular divs:
+  <div><b>Next Steps:</b></div>
+  <br>
+  <div>Paragraph 1 text</div>
+  <div>Paragraph 2 text</div>
+  NOT as a bullet point table (because there are no actual bullet characters)
   
 - CRITICAL: Documents can have MULTIPLE sets of bullet points throughout - you MUST check for and format ALL of them:
   * After EVERY section header ending with ":", check for bullet points that follow

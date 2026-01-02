@@ -1,0 +1,2076 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Re: Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>You may qualify as a successor in interest if an ownership interest in the property located at {Compress({[M567]}|{[M583]}|{[M568]})} was transferred to you by one of the following methods, however we need additional information to make that determination. The list of examples of documents typically accepted to establish identity and ownership interest in the property for each particular situation is not exhaustive; depending on individual state requirements, documents other than those listed below may be acceptable.</div>
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'OH', 'OR', 'PA', 'RI', 'SD', 'TN', 'TX', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'))}
+<div>A transfer by devise, descent, or operation of law on the death of a joint tenant or tenant by the entirety.</div>
+<br>
+<div>To prove borrower’s death:</div>
+<br>
+<div>Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'CO')}
+<div>Supplementary Affidavit</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'CA')}
+<div>Affidavit of death of Joint Tenant with attached Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'OH', 'OR', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'))}
+<div>To prove your identity:</div>
+<br>
+<div>Valid Government Issued ID</div>
+<br>
+<div>To prove that you were transferred an ownership interest in the borrower’s property:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WY')}
+<div>Method of Transfer: Declaration of Trusts, Affidavit of Survivorship, Deed with Life Estate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Trust</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed</td>
+</tr>
+</tbody></table></div><br><div>Affidavit of Survivorship with Certified copy of Death Certificate</div>
+<br>
+<div>Method of Transfer: Probate, Summary Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Will</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Decree of Distribution</td>
+</tr>
+</tbody></table></div><br><div>Decree of Summary Distribution</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WI')}
+<div>Method of Transfer: Nonprobate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Form HT-110</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed and Death Certificate</td>
+</tr>
+</tbody></table></div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WV')}
+<div>Method of Transfer: Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Last Will and Testament</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Intestacy</td>
+</tr>
+</tbody></table></div><br><div>Method of Transfer: Nonprobate</div>
+<br>
+<div>Death Certificate and Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WA')}
+<div>Method of Transfer: Probate (assuming no joint tenancy)</div>
+<br>
+<div>Personal Representative’s Deed</div>
+<br>
+<div>Certified Copy of Decree of Distribution</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'VA')}
+<div>Method of Transfer: Probate and Filing a list of heirs with the Circuit Court</div>
+<br>
+<div>Will filed with the probate court</div>
+<br>
+<div>List of heirs that supports fact of death and listing of heirs</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'VT')}
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed and Death Certificate</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Heir’s Deed</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'TX')}
+<div>Method of Transfer: Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Probate Court Orders filed in real property records of county in which property is located</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Distribution Deeds</td>
+</tr>
+</tbody></table></div><br><div>Method of Transfer: Non-probate</div>
+<br>
+<div>Affidavit of Heirship</div>
+<br>
+<div>Transfer on Death Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'UT')}
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div>Affidavit of Heirship</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'TN')}
+<div>Method of Transfer: Automatically for Joint Tenant or Tenants by the Entirety</div>
+<br>
+<div>This process occurs automatically by operation of law. Please sign the acknowledgement form in order for {[plsMatrix.CompanyLongName]} to confirm your status as a successor in interest.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('RI', 'SC', 'SD'))}
+<div>Method of Transfer: Non-probate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('RI', 'SC'))}
+<div>Death Certificate (tenants in common presumed unless joint tenancy declared in deed)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'SD')}
+<div>Affidavit of Survivorship</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'PA')}
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Death Certificate</td>
+</tr>
+</tbody></table></div><br><div>Affidavit and Notice of Appraisal from Department of Revenue as proof Inheritance Tax was paid.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OR')}
+<div>Primary Method of Transfer: Non-Probate</div>
+<br>
+<div>Recorded Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OH')}
+<div>Method of Transfer: Probate/Administration</div>
+<br>
+<div>Order of the Probate Court and the filing of a Certificate of Transfer</div>
+<br>
+<div>Method of Transfer: Non-Probate</div>
+<br>
+<div>Affidavit of Surviving Spouse</div>
+<br>
+<div>Joint Tenant & Death Certificate</div>
+<br>
+<div>Affidavit for Transfer & Record of Real Estate Inherited</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MI')}
+<div>Primary Method of Transfer: Tenants in Common</div>
+<br>
+<div>Documents evidencing the transfer include a Deed from the Personal Representatives of the Estate of the Deceased or a Court Order</div>
+<br>
+<div>Primary Method of Transfer: Joint Tenants</div>
+<br>
+<div>Recording of a Certified Copy of the Death Certificate of the Deceased</div>
+<br>
+<div>Primary Method of Transfer:  Tenancy by the Entireties</div>
+<br>
+<div>Recording of a Certified Copy of the Death Certificate for the Deceased spouse</div>
+<br>
+<div>A deed from less than all tenants named in the instruments which created the tenancy will not be accepted as conveying full marketable title in the absence of record proof of the death of each such tenant who does not join the Deed.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'CA', 'IN', 'KY', 'LA', 'ME', 'MD', 'MN'))}
+<div>If the primary method of transfer was probate then any of the following will suffice:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MN')}
+<div>Affidavit of Identity and Survivorship & Certified Copy of Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MD')}
+<div>Deed (All MD Deeds must be signed by a MD lawyer or a party to the deed)</div>
+<br>
+<div>The personal representative of the estate needs to present to the clerk of Circuit Court deed must recite the personal representative’s position and the estate’s case number.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'LA')}
+<div>Judgement of Possession in a succession proceeding</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'CA', 'ME'))}
+<div>Deed of Distribution (Formal Administration), or</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'CA'))}
+<div>Order of Summary of Administration (Summary Administration), or</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'CA'))}
+<div>Order Determining Homestead (Summary Administration or Formal Administration)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('IN', 'KY', 'ME'))}
+<div>Personal Representative Deed/ Affidavit</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'KY')}
+<div>Method of Transfer: Joint Tenancy with Right of Survivorship</div>
+<br>
+<div>Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'CA', 'DE', 'FL', 'GA', 'ID', 'IL', 'KS', 'ME', 'MA', 'MS'))}
+<div>If the primary method of transfer was non-probate then the following will serve as proof:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MS')}
+<div>Deed to Trustee accompanied by Trust</div>
+<br>
+<div>Memorandum/ Certificate of Trust</div>
+<br>
+<div>Will</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ME')}
+<div>Affidavit containing the following:</div>
+<br>
+<div>Legal Description</div>
+<br>
+<div>Recording information establishing Joint Tenancy</div>
+<br>
+<div>Name of deceased and surviving tenants</div>
+<br>
+<div>Certified Copy of Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'KS')}
+<div>Affidavit of Death filed with the register of Deeds (The affiant should be a responsible person who knows the facts)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'CA', 'IN'))}
+<div>Deed signed by the owner or grantor with a survivorship provision.  If there is no will, you will need to provide 2 heirship affidavits from disinterested parties.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'DE')}
+<div>Combined Affidavit of Joint Property/ No Estate Tax, Original Will, if any</div>
+<br>
+<div>Deed</div>
+<br>
+<div>Note: In Delaware when property is acquired by husband and wife there exists a presumption that the property is held as tenancy by the entirety, however since the Courts will look to the original intent of the parties the deed should make clear that the property is owned by husband and wife.  Delaware has a Civil Union and Equality Act which became effective on January 12, 2011.  Same sex couples who either enter into civil unions in Delaware or who were married or entered in civil unions or domestic partnerships granting marriage equivalent rights in other jurisdictions, will be entitled to all the same rights, benefits and protections, and will be subject to the same responsibilities and obligations, as married spouses under Delaware law.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MA')}
+<div>Record a Certified or Authenticated Copy of a Death Certificate</div>
+<br>
+<div>If registered land, affidavit of no divorce must be included</div>
+<br>
+<div>If registered land, the Land Court Guidelines be reviewed and followed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('FL', 'ID'))}
+<div>Affidavit of Survivorship or</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'FL')}
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed of Distribution</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Order of Summary Administration</td>
+</tr>
+</tbody></table></div><br><div>Order determining Homestead</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'GA')}
+<div>Affidavit</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IL')}
+<div>Deceased Joint Tenancy Affidavit</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'))}
+<div>A transfer to a relative resulting from the death of a borrower;</div>
+<br>
+<div>To prove borrower’s death:</div>
+<br>
+<div>Death Certificate</div>
+<br>
+<div>To prove your identity:</div>
+<br>
+<div>Valid Government Issued ID</div>
+<br>
+<div>To prove that you were transferred an ownership interest in the borrower’s property:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WY')}
+<div>Method of Transfer: Declaration of Trust, Affidavit of Survivorship, Deed with life Estate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Trust</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed</td>
+</tr>
+</tbody></table></div><br><div>Affidavit of Survivorship with certified copy of Death Certificate</div>
+<br>
+<div>Method of Transfer: Probate, Summary Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Will</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Decree of Distribution</td>
+</tr>
+</tbody></table></div><br><div>Decree of Summary Distribution</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WI')}
+<div>Method of Transfer: Nonprobate</div>
+<br>
+<div>If held in trust during life, you will need a Trustee’s Deed</div>
+<br>
+<div>If designated as a Transfer on Death,  you will need Form 110 or and an Affidavit</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WV')}
+<div>Method of Transfer: Probate</div>
+<br>
+<div>Last Will and Testament</div>
+<br>
+<div>Intestacy</div>
+<br>
+<div>Joint Ownership with Right of Survivorship</div>
+<br>
+<div>Method of Transfer: Nonprobate Transfer on Death Deed and Certificate</div>
+<br>
+<div>Transfer on Death Deed (Must state that a transfer to a designated beneficiary is to occur at the transferor’s death)</div>
+<br>
+<div>Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WA')}
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div>For real property</div>
+<br>
+<div>Death Certificate and Affidavit of Survivorship</div>
+<br>
+<div>For personal property</div>
+<br>
+<div>Death Certificate and form required by bank or other entity</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'VA')}
+<div>Method of Transfer: Probate, Trustee under a revocable trust, Filing a list of heirs with the circuit court</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Will filed with probate court</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed recorded of record</td>
+</tr>
+</tbody></table></div><br><div>List of heirs form filed</div>
+<br>
+<div>Method of Transfer: Transfer on Death Deed</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>The Last Will and Testament</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>List of Heirs</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Certificate of Trust</td>
+</tr>
+</tbody></table></div><br><div>Transfer on Death Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'VT')}
+<div>Method of Transfer: Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed and Death Certificate</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Probate Court Order</td>
+</tr>
+</tbody></table></div><br><div>Method of Transfer: Non-probate</div>
+<br>
+<div>Heir’s Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'TN')}
+<div>Method of Transfer: Probate</div>
+<br>
+<div>Order of Probate Court granting Letters of Testamentary of letters of Administration</div>
+<br>
+<div>Method of Transfer: Small Estates Procedure, Probate as Muniment of Title</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Certified copy of Affidavit as to small estate</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Copy of Order Admitting Will to Probate as a Muniment of Title</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'TX')}
+<div>Method of Transfer: Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Order Admitting Will to Probate as a Muniment of Title</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Distribution Deed from Executor/Administrator having been granted letters</td>
+</tr>
+</tbody></table></div><br><div>Small Estate Affidavit</div>
+<br>
+<div>Order Declaring Heirship</div>
+<br>
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div>Affidavit of Heirship</div>
+<br>
+<div>Transfer on Death Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('RI', 'UT', 'SC', 'SD'))}
+<div>Method of Transfer: Probate (Assuming no joint tenancy)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('RI', 'UT'))}
+<div>Deed of Distribution & Certificate of Descent or Distribution signed by fiduciary and recorded</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'UT')}
+<div>Certified copy of Decree of Distribution</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'SC')}
+<div>Deed of Distribution with respect to real property</div>
+<br>
+<div>Appropriate Instrument of Conveyance with respect to personal property</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'SD')}
+<div>Deed of Distribution</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'PA')}
+<div>Method of Transfer: Probate</div>
+<br>
+<div>Will</div>
+<br>
+<div>Deed</div>
+<br>
+<div>Probate Documents (Letters) and Notice of Appraisal from Department of Revenue as proof Inhertiance Tax was paid</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OR')}
+<div>Method of Transfer: or Small Estate Affidavit</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Personal Representatives Deed</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Affiant’s or claiming Successor’s Deed</td>
+</tr>
+</tbody></table></div><br><div>(An heir or devisee, as a "claiming successor," may file a small-estate affidavit with the clerk of the probate court in any county having venue for a probate proceeding. ORS 114.515(1) A small-estate affidavit must include (1) a statement that "reasonable efforts have been made to ascertain creditors of the estate"; and (2) a list of decedent's debts remaining unpaid, including the amounts of the debts and the names and addresses of the creditors that are known to the affiant. ORS 114.525(9))</div>
+<br>
+<div>Method of Transfer: Transfer on Death Deed</div>
+<br>
+<div>Transfer on Death</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OK')}
+<div>Method of Transfer: Probate and Non-Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Decree of Distribution in Probate Court</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Trust</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Joint Tenancy</td>
+</tr>
+</tbody></table></div><br><div>Payable on Death Account</div>
+<br>
+<div>Method of Transfer: Small Estate Affidavit, Transfer on Death, Entity Agreements</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Affidavit of Successor in Interest for personal not exceeding $50,000</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Affidavit of Heirship for spendthrift trust not exceeding</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'MD')}
+<div>You only need to show the death certificate of the deceased joint tenant or tenant by the entirety when a new deed is done.</div>
+<br>
+<div>There are no Transfer on Death Deeds in Maryland.  Note also that if any of the beneficiaries are minors, transfer can be done Uniform Transfers to Minors Act MD</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MI')}
+<div>Primary Method of Transfer: Tenants in Common</div>
+<br>
+<div>Documents evidencing the transfer include a Deed from the Personal Representatives of the Estate of the Deceased or a Court Order.</div>
+<br>
+<div>Primary Method of Transfer: Joint Tenants</div>
+<br>
+<div>Recording of a Certified Copy of the Death Certificate of the Deceased</div>
+<br>
+<div>Primary Method of Transfer: Tenancy by the Entireties</div>
+<br>
+<div>Recording of a Certified Copy of the Death Certificate for the Deceased spouse.</div>
+<br>
+<div>A deed from less than all tenants named in the instruments which created the tenancy will not be accepted as conveying full marketable title in the absence of record proof of the death of each such tenant who does not join the Deed.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MA')}
+<div>Method of Transfer: Devise by Will</div>
+<br>
+<div>Order of Probate of the Will</div>
+<br>
+<div>A probate order court order of complete settlement of the estate for formal estate proceedings.</div>
+<br>
+<div>A sworn statement of the personal representative for informal estate proceedings</div>
+<br>
+<div>Method of transfer: Distribution in Kind from the Estate</div>
+<br>
+<div>Deed from the Personal Representative of the Estate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NJ')}
+<div>Method of Transfer: Probate (Unless property is held as joint tenants with right of survivorship)</div>
+<br>
+<div>Self-Proving Will</div>
+<br>
+<div>Certified Copy of Death Certificate</div>
+<br>
+<div>Deed</div>
+<br>
+{End If}
+<br>
+<div>THEN:</div>
+<br>
+<div>If the method of transfer is non-probate:</div>
+<br>
+<div>If you were transferred the property by deed:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NM')}
+<div>Affidavit of Surviving Spouse (signed by Surviving Spouse)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MT')}
+<div>Recorded Beneficiary Deed and Proof of Death</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NV')}
+<div>To effectuate a right of survivorship, a court proceeding or recorded affidavit with the county recorder.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'LA')}
+<div>Judgement of Possession in a Succession Proceeding</div>
+<br>
+<div>Judgement of Possession in a Foreclosure</div>
+<br>
+<div>Judgement of Dation En Paiement</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('KS', 'NE'))}
+<div>Transfer on Death Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NM')}
+<div>Transfer of Death on Deed (signed by owner of the property)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'FL'))}
+<div>Deed conveying the property to you , that is signed by the owner or grantor with survivorship provision</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA'))}
+<div>Evidence that the borrower is your parent, spouse, or child. (Birth Certificate, Marriage License, Death Certificate, or affidavit)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'GA')}
+<div>Deed (Usually a quit-claim deed, tenants in common or joint tenancy with right or survivorship)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('IL', 'KS'))}
+<div>Notice of Death Affidavit for a Transfer on Death Instrument</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IL')}
+<div>A deed signed by all heirs of an estate along with proof of heirship entered by a court or bond in lieu of probate issued by a title company.</div>
+<br>
+<div>Proof that an Independent  Adminstrator conveyed property owned by an Estate without leave of court.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'GA')}
+<div>If the method of transfer is year’s support:</div>
+<br>
+<div>Order for Year’s support transferring property filed in superior court real estate records</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'DE'))}
+<div>If the property was transferred to an entity in which you have an ownership interest (LLC, LP, etc.):</div>
+<br>
+<div>Deed conveying the property to the entity</div>
+<br>
+<div>Affidavit affirming that you have an ownership in the entity, and</div>
+<br>
+<div>Evidence that the borrower is your parent, spouse, or child.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'CA')}
+<div>If the property was transferred by an affidavit of Real Property of Small Value ($50,000 or less), a petition to determind succession to real property (estates of $150,000 or less) or a spousal property petition or a certified probate court order for distribution:</div>
+<br>
+<div>Affidavit (Court Form DE – 305)</div>
+<br>
+<div>Certified Copy of Court Order on Petition to Determine Succession (Court Form DE 315)</div>
+<br>
+<div>Certified Copy of Court Order on Spousal Property Petition (Court Form DE – 226)</div>
+<br>
+<div>Certified Court Order</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MS')}
+<div>If the Method of Transfer is Administration or Probate</div>
+<br>
+<div>Executor’s Deed</div>
+<br>
+<div>Will</div>
+<br>
+<div>No deed is required if property is real property and is located in the county of probate/administration; Executor’s deed is required if real property is outside of the county of probate.</div>
+<br>
+<div>Method of Transfer: Transfer by Affidavit</div>
+<br>
+<div>Affidavit</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('ME', 'LA', 'IA', 'CO', 'IN', 'KY', 'IA', 'KS', 'IL', 'CO', 'AL', 'AZ', 'CA', 'DE', 'MN', 'MT', 'NE', 'NH', 'ND'))}
+<div>If the method of transfer is probate:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MT')}
+<div>Personal Representatives Deed (Please note a copy of the letters testamentary should be recorded along with the deed to show the personal representative have authority at the time the deed was executed)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('NH', 'NY'))}
+<div>Will</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NH')}
+<div>If no will, a list of heirs provided by the administrator</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NY')}
+<div>Trust naming relative as beneficiary</div>
+<br>
+<div>A real property deed naming spouse or children as beneficiaries</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ME')}
+<div>Personal Representative’s Deed of Sale</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NE')}
+<div>Deed of Distribution</div>
+<br>
+<div>F M960 (State Abbreviation) = ND THEN:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Personal Representatives Deed</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Certified copy of Letters of Appointment</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'LA')}
+<div>Judgement of Possession in a Succession Proceeding</div>
+<br>
+<div>Judgement of Possession in a Foreclosure</div>
+<br>
+<div>Judgement of Dation En Paiement</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IA')}
+<div>Last Will and Testament (if testate decedent); Court Officer Deed from Personal Representative to Devisee(s), surviving spouse or heirs</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('CO', 'IN', 'KY'))}
+<div>Recorded Personal Representatives Deed and Certified copy of court issued letters</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('CO', 'IN', 'KY'))}
+<div>If the estate is a small estate (less than $50,000), a small estate affidavit can be used</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OH')}
+<div>Order of the Probate Court and the filing of a Certificate of Transfer</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OH')}
+<div>Method of Transfer: Transfer on Death Designation Affidavit</div>
+<br>
+<div>Transfer on Death Designation Affidavit and Affidavit of Confirmation</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IA')}
+<div>If the method of transfer is a will or intestate succession:</div>
+<br>
+<div>Final report of Personal Representative</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('KS', 'IL', 'CO', 'NV', 'AL', 'AZ', 'CA', 'DE', 'ND'))}
+<div>If the method of transfer is probate:  (if no joint tenancy)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'KS')}
+<div>Court Order and Executor’s Deed</div>
+<br>
+<div>Administrator’s Deed</div>
+<br>
+<div>Decree of Descent</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IL')}
+<div>Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'CO')}
+<div>Recorded Decree determining heir and interest in real property (This process is used when normal probate has not occurred  and the deceased has left rela property that requires distribution.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NV')}
+<div>Letters of Testamentary or an Order admitted the will to Probate or Administration</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'CA', 'NV'))}
+<div>Court order authorizing, directing, or approving final distribution of Estate and Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'DE')}
+<div>Deed conveying the property to you, and</div>
+<br>
+<div>Evidence that the borrower is your parent, spouse, or child.  (Birth Certificate, Marriage License, Death Certificate, or affidavit)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ND')}
+<div>Method of Transfer: Joint Tenancy</div>
+<br>
+<div>Record certified copies of Death Certificate</div>
+<br>
+<div>Affidavit of Death</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MN')}
+<div>Method of Transfer: Informal Testacy and Appointment Proceedings</div>
+<br>
+<div>If Testate:</div>
+<br>
+<div>Certified Copy of Unrestricted Letters Testamentary</div>
+<br>
+<div>Certified Copy of Will</div>
+<br>
+<div>Certified copy of Statement of Informal Probate of Will</div>
+<br>
+<div>Personal  Representative’s Deed of Distribution (together with consent of surviving spouse)</div>
+<br>
+<div>If Intestate:</div>
+<br>
+<div>Certified Copy of Unrestricted Letters of General Administration</div>
+<br>
+<div>Certified Copy of Registrar’s Statement Determining heirs of Decedent</div>
+<br>
+<div>Setting forth the name relationship and interest or fractional share of each heir in the property</div>
+<br>
+<div>Personal Representative’s Deed of Distribution in accordance with Registrars Determination</div>
+<br>
+<div>Method of Transfer: Formal Testacy and Appointment Proceedings with Unsupervised Administration</div>
+<br>
+<div>If Testate:</div>
+<br>
+<div>Certified Copy of Unrestricted Letters of Testamentary in full force and effect</div>
+<br>
+<div>Certified Copy of Probate Court Order</div>
+<br>
+<div>Certified Copy of Will</div>
+<br>
+<div>Personal Representatives Deed of Distribution in accordance with Registrars Determination</div>
+<br>
+<div>Method of Transfer: Formal Testacy and Appointment Proceedings with Supervised Administration</div>
+<br>
+<div>Certified Copy of Letter</div>
+<br>
+<div>Certified Copy of Order of Distribution</div>
+<br>
+<div>Personal Representatives Deed of Distribution</div>
+<br>
+<div>Certified Copy of Decree of Distribution</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MT', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'))}
+<div>A transfer where the spouse or children of the borrower become an owner of the property.</div>
+<br>
+<div>To prove borrower’s death:</div>
+<br>
+<div>Death Certificate</div>
+<br>
+<div>To prove your identity:</div>
+<br>
+<div>Government Issued ID</div>
+<br>
+<div>To prove that you were transferred an ownership interest in the borrower’s property:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WY')}
+<div>Method of Transfer: Declaration of Trust, Affidavit of Survivorship, Deed with Life Estate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Trust</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed</td>
+</tr>
+</tbody></table></div><br><div>Affidavit of Survivorship with certified copy of Death Certificate</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Probate, Summary Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Will</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Decree of Distribution</td>
+</tr>
+</tbody></table></div><br><div>Decree of Summary Distribution</div>
+<br>
+<div>Method of Transfer: Probate, List of Heirs filed with Circuit Court Clerk, Revocable Trust</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Probate will</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>File statutory list of heirs</td>
+</tr>
+</tbody></table></div><br><div>File Certificate of Trust</div>
+<br>
+<div>Method of Transfer: Transfer of Death Deed</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Will</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>List of Heirs</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed from Successor Trustee</td>
+</tr>
+</tbody></table></div><br><div>Transfer on Death Deed</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Nonprobate</div>
+<br>
+<div>Deed executed by Grantor</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Joint Tenants with the Right of Survivorship and Elective Share Action</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Marriage Certificate</td>
+</tr>
+</tbody></table></div><br><div>Petition for Elective Share and Deed</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Probate</div>
+<br>
+<div>Deed and Death Certificate</div>
+<br>
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div>Probate Court Order</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Deed for Real Estate, Bill of Sale for Personal Property</div>
+<br>
+<div>Deed</div>
+<br>
+<div>Bill of Sale</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Non-Probate</div>
+<br>
+<div>Deed signed by owner as transferor(assuming inter-vivos transfer)</div>
+<br>
+{End If}
+<br>
+<div>Deed signed by  “attorney in fact” named  in General or Special power of attorney</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Non-Probate</div>
+<br>
+<div>Deed Conveying title to husband and wife as “joint tenants with right of survivorship and not as tenants in common”</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Probate</div>
+<br>
+<div>Will</div>
+<br>
+<div>Deed</div>
+<br>
+<div>Probate Documents (Letters) and Notice of Appraisal from Department of Revenue as proof Inheritance Tax was paid</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Nonprobate</div>
+<br>
+<div>Deed signed by owner as grantor (assuming inter-vivos transfer, if transfer is due to death of borrower)</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Probate or Non-Probate by Affidavit or Contractual Agreement</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Decree of Distribution (either by Will or Intestate Succession)</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Joint Tenancy Deed & Affidavit of Surviving Join Tenant with death certificate attached (with survivorship clause)</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Payable on Death Clause for intangible accounts</td>
+</tr>
+</tbody></table></div><br><div>Trust</div>
+<br>
+<div>Method of Transfer: Small Estate Affidavits or Transfer on Death Deed</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Affidavit of Successor in Interest for personal property not exceeding $50,000</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Transfer on Death Deed</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+<div>Method of Transfer: Deed</div>
+<br>
+<div>Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MD')}
+<div>Method of Transfer: Deed</div>
+<br>
+<div>Deed – The personal representative of the estate needs to present to the clerk of the Circuit Court – deed must recite the personal representative’s position and the estate’s case number.</div>
+<br>
+<div>Certificate of Preparation – All MD Deeds must be signed by a MD lawyer or a party to the dead.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MI')}
+<div>Primary Method of Transfer: Tenants in Common</div>
+<br>
+<div>Documents evidencing the transfer include a Deed from the Personal Representatives of the Estate of the Deceased or a Court Order.</div>
+<br>
+<div>Primary Method of Transfer: Joint Tenants</div>
+<br>
+<div>Recording of a Certified Copy of the Death Certificate of the Deceased.</div>
+<br>
+<div>Primary Method of Transfer: Tenancy by the Entireties</div>
+<br>
+<div>Recording of a Certified Copy of the Death Certificate for the Deceased spouse.</div>
+<br>
+<div>A deed from less than all tenants named in the instruments which created the tenancy will not be accepted as conveying full marketable title in the absence of record proof of the death of each such tenant who does not join the Deed.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NY')}
+<div>Method of Transfer: Court Order/ Probate</div>
+<br>
+<div>Will, Trust or other document naming spouse or children as beneficiaries</div>
+<br>
+<div>Real Property Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MA')}
+<div>Method of Transfer: Deed</div>
+<br>
+<div>Deed executed by the grantor, describing the land conveyed, the consideration and containing an acknowledgement before a notary public.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('ME', 'MN', 'ME', 'LA', 'KS', 'AL', 'AZ', 'AR', 'CA', 'FL', 'IL', 'ID', 'MS', 'MT', 'NC'))}
+<div>If the primary method of transfer was non-probate:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MS')}
+<div>Deed signed by owner as grantor if inter-vivos transfer</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MT')}
+<div>Beneficiary Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NC')}
+<div>Deed signed by Owner as Grantor</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ME')}
+<div>Legal Description</div>
+<br>
+<div>Recording information establishing Joint-Tenancy</div>
+<br>
+<div>Names of Deceased and Surviving Tenants</div>
+<br>
+<div>Certified Copy of Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NM')}
+<div>Affidavit of Surviving Spouse(Singed by Surviving Spouse)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'LA')}
+<div>Judgement of Possession in a Succession Proceeding</div>
+<br>
+<div>Act of Sale</div>
+<br>
+<div>Act of Donation</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('KS', 'MN'))}
+<div>Transfer on Death Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'FL', 'IL'))}
+<div>Deed signed by the owner</div>
+<br>
+<div>Evidence that the borrower is your parent, spouse, or child. (Birth Certificate, Marriage License, Death Certificate, or affidavit)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('ID', 'MN'))}
+<div>Affidavit of Survivorship</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MN')}
+<div>Affidavit of Identity and Survivorship</div>
+<br>
+<div>Medical Assistance Clearance</div>
+<br>
+<div>Deed from grantor to grantee</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'FL', 'IL'))}
+<div>If the property was transferred to an entity in which you have an ownership interest (LLC, LP, etc.):</div>
+<br>
+<div>Deed conveying the property to the entity</div>
+<br>
+<div>Affidavit affirming that you have an ownership in the entity, and</div>
+<br>
+<div>Evidence that the borrower is your parent, spouse, or child.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'DE')}
+<div>If you were transferred the property by deed (assuming intervivos transfer, if transfer is due to death contact TFS staff and request notice of transfer by death or operation of law):</div>
+<br>
+<div>Deed conveying the property to you, that is signed by the owner or grantor with survivorship provision</div>
+<br>
+<div>Evidence that the borrower is your parent, spouse, or child.  (Birth Certificate, Marriage License, Death Certificate, or affidavit)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('FL', 'MN', 'LA', 'FL', 'ID', 'IA', 'IN', 'KY', 'MS', 'NH', 'MT', 'ND'))}
+<div>If the method of transfer is probate:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MS')}
+<div>Administration or Probate (if testamentary)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MT')}
+<div>Personal Representatives Deed (Please note that a copy of letters of testamentary should be recorded along with the deed to show the personal representative have authority at the time the deed was executed.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ND')}
+<div>Personal Representative’s Deed</div>
+<br>
+<div>Certified copy of Letters of Appointment</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MN')}
+<div>Certified Copy of Decree of Descent</div>
+<br>
+<div>Transfer on Death Deed</div>
+<br>
+<div>Affidavit of identity and Surviviorship</div>
+<br>
+<div>Medical Assistance Clearance</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'LA')}
+<div>Judgement of Possession in a Succession Proceeding</div>
+<br>
+<div>Act of Sale</div>
+<br>
+<div>Act of Donation</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('FL', 'ID'))}
+<div>Letters of Testamentary or an Order admitted the will to Probate or Administration</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IA')}
+<div>Last Will and Testament (if testate decendent); Court Officer Deed from Personal Representative to Devisee(s), surviving spouse or heirs</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('FL', 'ID', 'IN', 'KY'))}
+<div>Personal Representatives Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IN')}
+<div>If the estate is a small (less than $50,000), a small estate affidavit can be used</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ND')}
+<div>Method of Transfer is Warranty Deed:</div>
+<br>
+<div>Deed with reserved life estate</div>
+<br>
+<div>Joint Tenancy</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IA')}
+<div>If the method of transfer is a will or intestate succession:</div>
+<br>
+<div>Final report of Personal Representative</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('GA', 'KS'))}
+<div>If the method of transfer is probate or administration:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Executors Deed</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Administrators Deed referencing probate court proceedings</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'NJ')}
+<div>Method of Transfer: Probate (Unless property is held as joint tenants with right of survivorship)</div>
+<br>
+<div>Self-Proving Will</div>
+<br>
+<div>Cerftified Copy of Death Certificate</div>
+<br>
+<div>Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'KY')}
+<div>If the method of transfer is Joint Tenancy with a Right of Survivorship:</div>
+<br>
+<div>Death Certificate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NV')}
+<div>Method of Transfer: Judicial Set Aside Procedure</div>
+<br>
+<div>A court order to set aside property to minor children or a surviving spouse if the total estate is $100,000 or less.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MT', 'NE', 'NV', 'NH', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'))}
+<div>Transfer to a spouse resulting from a divorce decree of a dissolution of marriage, legal separatioin agreement, or from an incidental property settlement agreement.</div>
+<br>
+<div>To prove your identity:</div>
+<br>
+<div>Government Issued ID</div>
+<br>
+<div>To prove that there was a divorce or separation:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Divorce Decree</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Decree of Legal Separation (Legal Separation may not be Recognized in your state)</td>
+</tr>
+</tbody></table></div><br><div>To prove that you were transferred an ownership interest in the borrower’s property:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NY')}
+<div>Copy of the Decree or;</div>
+<br>
+<div>Separation Agreement or;</div>
+<br>
+<div>Court Order referencing the transfer of the property</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MI')}
+<div>Judgment of Divorce</div>
+<br>
+<div>Judgment of Separation Maintenance</div>
+<br>
+<div>Judgment of Annulment</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ND')}
+<div>Summary Real Estate Disposition Judgment</div>
+<br>
+<div>Judgment of Divorce</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MD')}
+<div>Deed after Court Order</div>
+<br>
+<div>Property Settlement Agreement</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('IA', 'KS', 'ME', 'MN'))}
+<div>Decree of Dissolution of Marriage</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ME')}
+<div>Abstract of the Decree</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('IA', 'KS'))}
+<div>Deed by relinquishing spouse</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'KY')}
+<div>Recorded Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WY')}
+<div>Method of Transfer: Decree of Divorce</div>
+<br>
+<div>Quitclaim Deed</div>
+<br>
+<div>Method of Transfer: Order signed by the judge and filed in the recorder’s office</div>
+<br>
+<div>Wyoming Rules of Civil Procedure-Rule 70 Order signed by Judge Vesting Title in the Spouse</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'VA')}
+<div>Method of Transfer: Deed</div>
+<br>
+<div>Recorded Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WI')}
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div>Deed executed by Grantor</div>
+<br>
+<div>Method of Transfer: Probate</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Certified copy of portion of judgment of divorce affecting title</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>A deed consistent with judgment</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'WV')}
+<div>Method of Transfer: Final Dispositive Order</div>
+<br>
+<div>Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'TN')}
+<div>Method of Transfer: Deed for Real Estate to implement Order, Bill of Sale for Personal Property</div>
+<br>
+<div>Deed</div>
+<br>
+<div>Bill of Sale</div>
+<br>
+<div>Method of Transfer: Certified Copy of Order</div>
+<br>
+<div>Certified Copy of Order</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('RI SC', 'SD', 'UT', 'WA', 'VT', 'PA', 'OR'))}
+<div>Method of Transfer: Non-Probate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('RI SC', 'SD'))}
+<div>Deed signed by owner as grantor</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'SC')}
+<div>A family court may direct the party execute and deliver a deed to carry out equitable appoitionment order.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'UT')}
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed signed by owner as grantor</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed signed by Court Clerk or another appointed person</td>
+</tr>
+</tbody></table></div><br><div>Certified Copy of Decree of Divorce</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WA')}
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed signed by owner as Grantor (Assuming inter-vivos transfer)</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Trust Instrument executed by owner identifying property as held in trust</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'VT')}
+<div>Quitclaim Deed</div>
+<br>
+<div>Divorce Decree</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'PA')}
+<div>Marital/Property Settlement Agreement and Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OR')}
+<div>Judgement of the court</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OK')}
+<div>Method of Transfer: Court Order, Non- Probate</div>
+<br>
+<div>Judgement of District Court (A settlement agreement that is not incorporated in a decree and lacks a legal description will not convey title)</div>
+<br>
+<div>Method of Transfer: Automatic Revocation of Spousal Interest</div>
+<br>
+<div>Rather than a transfer, an extinction of a spousal interest as a beneficiary occurs upon divorce or annulment of rights under a will, trust, or contractual arrangement such as life insurance, annuities, retirement benefits, payable on death benefits</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OH')}
+<div>If the property was transferred by deed, a copy of the deed of the deed transferring the property to you can serve as proof.</div>
+<br>
+<div>If a divorce decree or judgment affecting the property was issued by a court in a state other than the subject state, a copy of the deed transferring the property to you can serve as proof.</div>
+<br>
+<div>If you do not have a deed, but do have a divorce decree or decree of legal separation that includes specific language of conveyance of title to you, either a divorce decree or decree of legal separation can serve as proof.</div>
+<br>
+<div>If you do not have a deed, but do have a divorce decree or decree of legal separation that incorporates a separation and property settlement agreement and includes specific language of conveyance of title to you; then the Settlement agreement along with a Divorce Decree or a Decree of Legal separation can serve as proof.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NH')}
+<div>Method of Transfer: Superior Court Family Division</div>
+<br>
+<div>Quitclaim deed from one spouse to the other</div>
+<br>
+<div>Method of Transfer: Decree</div>
+<br>
+<div>Certified Copy of Court Decree Recorded at Registry of Deeds</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('MA', 'MT', 'ND'))}
+<div>Method of Transfer: Court Order or Decree</div>
+<br>
+{End If}
+<br>
+<div>The recoding or registration of a duly certified copy of such decree, attested by the clerk, assistant clerk, register or assistant register, recorder or deputy recorder, as the case may be.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MT')}
+<div>Court Order and Quit Claim Deed</div>
+<br>
+<div>Warranty Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ND')}
+<div>Quit Claim Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MA')}
+<div>Method of Transfer: Deed by Order of the Court</div>
+<br>
+<div>Duly certified or attested copy of the judgment directing the grantor spouse to act.</div>
+<br>
+<div>Duly certified or attested copy of the order appointing another person to act for the grantor spouse.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NV')}
+<div>Method of Transfer: Deed or Court Order</div>
+<br>
+<div>Deed or court order is required to effectuate the transfer of title.</div>
+<br>
+<div>Method of Transfer: Informal Agreement</div>
+<br>
+<div>Informal Agreement (For real property where there is no court decree, a recorded deed is required to change title)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'ID', 'IL'))}
+<div>Method of Transfer: Probate</div>
+<br>
+<div>If the property was transferred by deed, a copy of the deed transferring the property to you can serve as proof.</div>
+<br>
+<div>If a divorce decree or judgment affecting the property was issued by a court in a state other than the subject state, a copy of the deed transferring the property to you can serve as proof.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('LA', 'KS', 'IN', 'AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS', 'MS', 'NE'))}
+<div>Method of Transfer: Non Probate</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'LA')}
+<div>Judgement of Partition</div>
+<br>
+<div>Acts of Partition</div>
+<br>
+<div>Acts of Sale</div>
+<br>
+<div>Quit Claim Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'KS')}
+<div>Decree of Divorce (A property description should appear in both a Decree of Divorce and, when included, the property settlement agreement</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IN')}
+<div>Deed signed by court appointed commissioner</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('MS', 'NE', 'NJ', 'NC', 'TX'))}
+<div>Deed signed by owner as grantor</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'TX')}
+<div>Filing of Certified Copy of Final Deceree of Divorce in the real property records</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NM')}
+<div>Deed signed by owner of interest in property</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NC')}
+<div>Deed signed by clerk of the court</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'GA', 'ID'))}
+<div>If you do not have a deed, but do have a divorce decree or decree of legal separation that includes specific language of conveyance of title to you, either a divorce decree or decree of legal separation can serve as proof.</div>
+<br>
+<div>If you do not have a deed, but do have a divorce decree or decree of legal separation that incorporates a separation and property settlement agreement and includes specific language of conveyance of title to you; then the Settlement agreement along with a Divorce Decree or a Decree of Legal separation can serve as proof.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'AZ')}
+<div>Trust instrument executed by owner identifying property as held in trust by owner.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'IL', 'IN', 'IA', 'KS', 'MS', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'))}
+<div>Note: In order to remove a borrower from the Original Note and become the sole owner. You would need to refinance the loan in your name only or pay off the mortgage loan entirely.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('AL', 'AZ', 'AR', 'CA', 'CO', 'DE', 'FL', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'))}
+<div>A transfer into an inter vivos trust in which the borrower is and remains a beneficiary and which does not relate to a transfer of rights of occupancy in the property</div>
+<br>
+<div>To prove your identity:</div>
+<br>
+<div>Valid Government Issued ID</div>
+<br>
+<div>To prove that you were transferred an ownership interest in the borrower’s property:</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WY')}
+<div>Method of Transfer: Declaration of Trust</div>
+<br>
+<div>Warranty Deed from Settlor to Trustee</div>
+<br>
+<div>Method of Transfer: Certificate of Trust</div>
+<br>
+<div>Certificate of Trust</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WI')}
+<div>Method of Transfer: Nonprobate</div>
+<br>
+<div>Deed executed by Grantor</div>
+<br>
+<div>Assignment of Property to Trust executed by Grantor.  (Trust can be created by declaration   WIS. Stat. 701.0401)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'VA')}
+<div>Method of Transfer: Deed to Transfer Title into the Trustee of Revocable Trust</div>
+<br>
+<div>Record Deed</div>
+<br>
+<div>Transferring to Trustee for Estate planning purposes</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'VT')}
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div>Deed of Trust Grantor/ Settlor to Trustee with reserved life estate and power of appointment (LBJ Deed)</div>
+<br>
+<div>Method of Transfer: Deed</div>
+<br>
+<div>Deed of Trust Grantor/Settlor to Trustee without reserved life estate and power of appointment</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'TN')}
+<div>Method of Transfer: Deed for Real Estate, Bill of Sale for Personal Property</div>
+<br>
+<div>Deed</div>
+<br>
+<div>Bill of Sale</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('RI', 'SC', 'SD', 'TX', 'UT', 'WA'))}
+<div>Method of Transfer: Non-probate</div>
+<br>
+<div>Deed signed by owner as grantor</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' IN ('UT', 'WA'))}
+<div>Trust Instrument executed by owner identifying property as held in trust</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'PA')}
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Trust and Notice of Appraisal from Department of Revenue as proof Inheritance Tax was paid</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed indicating transfer of property from Trust to beneficiary and Notice of Appraisal from Department of Revenue as proof Inheritance Tax was paid</td>
+</tr>
+</tbody></table></div><br>{End If}
+<br>
+{If('{[M960]}' = 'OR')}
+<div>Method of Transfer:Non-probate</div>
+<br>
+<div>Deed signed by owner to trustee(s) of the trust</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OK')}
+<div>Method of Transfer: Conveyance, Non-probate</div>
+<br>
+<div>A trust holding real property must be written</div>
+<br>
+<div>A memorandum of Trust stating date of creation and the names of the trustee must be filed in the records of the county clerk where real property is located</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NY')}
+<div>Method of Transfer: Transferor would only need paperwork indicating the property has been transferred</div>
+<br>
+<div>Real Property Deed transferring the property to the Trust</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'OH')}
+<div>Method of Transfer: Deed</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Memorandum of Trust</td>
+</tr>
+<tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Deed</td>
+</tr>
+</tbody></table></div><br><div>Method of Transfer: Certificate of Transfer from Probate Court</div>
+<br>
+<div>Order of the Probate Court and the filing of a Certificate of Transfer</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'WV')}
+<div>Method of Transfer: Deed</div>
+<br>
+<div>Revocable trust</div>
+<br>
+<div>Deed to Trust via Trustee and Memorandum of Trust</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MI')}
+<div>Real estate may be conveyed to the Trustee of the Trust or the Trust by grantor(s) who own the real estate.</div>
+<br>
+<div>The Michigan statute of frauds prohibits an oral trust in real property.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MD')}
+<div>Deed</div>
+<br>
+<div>Certificate of Trust must be presented to Circuit Court at time of recording the deed putting the property into the trust.</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'KY')}
+<div>Recorded Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'IA')}
+<div>Warranty Deed</div>
+<br>
+<div>Trustee’s Affidavit by Individual Trustee (Iowa State Bar Association Official Form #113)</div>
+<br>
+<div>Corporate Trustee (Iowa  State Bar Association Official Form #114)</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'ND')}
+<div>Warranty Deed</div>
+<br>
+<div>Quitclaim Deed to Trust (May by revocable or irrevovable)</div>
+<br>
+{End If}
+<br>
+<div>A deed or instrument that conveys the property into the trust, AND either a:</div>
+<br>
+<div>Trust Document and an affidavit signed or otherwise authenticated by the trustee that states the document has not been revoked, modified, or amended in any manner.</div>
+<br>
+<div>Certificate of Trust signed or otherwise authenticated by the trustee that states the trust has not been revoked, modified, or amended so as to render the certificate incorrect.</div>
+<br>
+{End If}
+<br>
+<div>Trust in Real Property that arose by implication or operation of law without a writing signed by the party granting the interest in the property.  If this is the case , provide evidence of such that is clear, statisfactory and convincing.</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer – Probate:</div>
+<br>
+<div>Transfer on Death Deed</div>
+<br>
+<div>Affidavit of Identity and Survivorship</div>
+<br>
+<div>Certified Copy of Death</div>
+<br>
+<div>Medical Assistant Clearance Certificate</div>
+<br>
+{End If}
+<br>
+<div>Personal Representatives Deed (Please note a copy of the letters testamentary should be recorded along with the deed to show the personal representative have authority at the time the deed was executed)</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Deed</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NH')}
+<div>Quitclaim Deed from Current Owners to Trustee</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NV')}
+<div>Deed or equivalent is required to transfer title</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'MA')}
+<div>Deed from the grantor/borrower either declaring that the borrower holds the real property in trust or to another person as trustee.</div>
+<br>
+<div>The settlor must have the capacity to create a trust and must indicate an intention to create the trust.  A definite beneficiary is required, and the trustee must have duties to perform.  To be actual, as opposed to merely a nominee trust or agency, the same person cannot be both the sole trustee</div>
+<br>
+{End If}
+<br>
+{If('{[M960]}' = 'NV')}
+<div>Method of Transfer: Written Declaration</div>
+<br>
+<div>One may declare property to be trust property without a formal transfer document</div>
+<br>
+{End If}
+<br>
+<div>To prove that you are and remain a beneficiary to the trust and the transfer into the trust does not relate to a transfer of rights of occupancy in the property:</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer – Non Probate:</div>
+<br>
+{End If}
+<br>
+<div>Deed signed by settlor</div>
+<br>
+<div>Declaration by owner of property</div>
+<br>
+{End If}
+<br>
+<div>Deed signed by owner as grantor</div>
+<br>
+{End If}
+<br>
+<div>Acts of Sales</div>
+<br>
+<div>Acts of Donations to the Trust</div>
+<br>
+{End If}
+<br>
+<div>Deed from Borrower to Trust</div>
+<br>
+{End If}
+<br>
+<div>Deed from grantor to trustee</div>
+<br>
+{End If}
+<br>
+<div>Deed signed by owner as grantor</div>
+<br>
+{End If}
+<br>
+<div>Deed to Trustee accompanied by Trust</div>
+<br>
+<div>Memorandum/ Certificate of Trust</div>
+<br>
+<div>Will</div>
+<br>
+{End If}
+<br>
+<div>Recorded Beneficiary Deed and Proof of Death</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Non-probate and Probate</div>
+<br>
+<div>Deed signed by grantor or personal representative</div>
+<br>
+{End If}
+<br>
+<div>Method of Transfer: Non-Probate(In Maine, the probate court has jurisdiction regardless)</div>
+<br>
+<div>Simple deed from Borrower to Trustee and Incorporating Trust Document (Both of which should be recorded)</div>
+<br>
+{End If}
+<br>
+<div>An affidavit signed by the trustee stating:</div>
+<br>
+{End If}
+<br>
+<div>The identities of all present beneficiaries</div>
+<br>
+<div>That you are and remain a beneficiary to the trust and</div>
+<br>
+<div>The transfer of the property into the trust does not relate to a transfer of rights of occupancy in the property.</div>
+<br>
+{End If}
+<br>
+<div>A person may create a custodial trust of property by a written transfer of the property to another person.  This can be evidenced by registration of the property OR by an instrument of transfer.</div>
+<br>
+{End If}
+<br>
+<div>Please review the circumstances listed above, and provide us with the appropriate documentation for the option that best describes your situation via fax to {[plsMatrix.CSFax]}, email to {[plsMatrix.CSEmail]}, or by mail to:</div>
+<br>
+<div>{[plsMatrix.CompanyLongName]}</div>
+<div>{[plsMatrix.CompanyReturnAddr1]}</div>
+<div>{[plsMatrix.CompanyReturnAddr2]}</div>
+<div>{[plsMatrix.CompanyReturnAddr3]}</div>
+<br>
+<div>You may obtain a more individualized description of required documents by providing additional information. If you have any questions or concerns regarding this request, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Customer Service Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

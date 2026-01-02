@@ -81,7 +81,8 @@ def load_few_shot_examples():
 		'GB001/GB001-formatted.html',  # Transfer letter
 		'CA005/CA005-formatted.html',  # ACH removal
 		'CS101/CS101-formatted.html',  # One-time draft
-		'LM401/LM401-formatted.html'  # Complex table + conditionals
+		'LM401/LM401-formatted.html',  # Complex table + conditionals
+		'SI002/SI002-formatted.html'  # Complex document with many state conditionals - shows how to include ALL content
 	]
 	
 	examples = []
@@ -228,7 +229,18 @@ def format_ir_for_prompt(ir):
 				for i, row_text in enumerate(table_text):
 					formatted.append(f"  Row {i+1}: {row_text}")
 	
-	return '\n'.join(formatted[:50])  # Increased limit to capture more content blocks
+	# CRITICAL: Include ALL content blocks - do not truncate for large documents
+	# For documents with many paragraphs (like SI002 with 800+), we need ALL of them
+	total_blocks = len(formatted)
+	if total_blocks > 50:
+		# Increase limit significantly for large documents - include up to 1000 blocks
+		max_blocks = min(1000, total_blocks)
+		result = '\n'.join(formatted[:max_blocks])
+		if total_blocks > max_blocks:
+			result += f"\n\n[CRITICAL NOTE: Document has {total_blocks} total content blocks (showing first {max_blocks}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure. Do NOT stop early - continue until you reach the closing signature section.]"
+		return result
+	
+	return '\n'.join(formatted)
 
 def build_prompt(ir, few_shot_examples, user_instruction=None):
 	"""Build the complete prompt for OpenAI"""
@@ -318,9 +330,11 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 1. HEADER DETECTION - Look at the Document Content to determine:
    - If you see "Loan Number:" and "RE:" or "Property Address:" in separate rows or together, extract the EXACT structure from the document
    - Some documents have: "Loan Number:" in first row, "RE:" in second row (like MI008)
+   - Some documents have: "Re: Loan Number:" in first row, "RE:" in second row (like SI002)
    - Some documents have: "RE: Loan Number:" in first row, "Property Address:" in second row
    - Some documents have NO property address table at all - only include it if it appears in the Document Content
-   - Extract the EXACT label text from the document (e.g., "Loan Number:" vs "RE: Loan Number:")
+   - Extract the EXACT label text from the document (e.g., "Loan Number:" vs "RE: Loan Number:" vs "Re: Loan Number:")
+   - CRITICAL: If Document Content shows "Re: Loan Number: [M594]" and "RE: [M567]", include BOTH rows in the table
 
 2. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
 <div>{Insert(H003 TagHeader)}</div>
@@ -340,11 +354,15 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <br>
 [Content paragraphs here - match spacing from source document]
 
-CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
-- Include EVERY paragraph shown in the Document Content above
+CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
+- Include EVERY paragraph shown in the Document Content above - COUNT THEM and make sure you include ALL
+- For documents with many state conditionals (like SI002), you MUST include ALL state-specific sections
 - Include styled titles (with style attributes like text-align: center, font-size)
 - Include ALL sections, tables, and content
-- Don't stop after just the title - continue with all paragraphs
+- Don't stop after just the title or first few paragraphs - continue with ALL paragraphs until the closing
+- If the Document Content shows "IF M960 (State Abbreviation) = STATE", you MUST include conditionals for ALL states mentioned
+- If you see multiple transfer scenarios (death, divorce, trust, etc.), include ALL of them
+- The document may have 100+ or even 800+ paragraphs - you MUST include ALL of them, not just the first 20-30
 - PRESERVE ALL STYLING from the source document:
   - If text is centered, use style="text-align: center"
   - If text has a specific font size, include font-size in the style attribute
@@ -364,8 +382,12 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT:
 - CRITICAL: After text that says "The chart below provides an accounting" or "This notice also provides an accounting", you MUST include a table with the header "Payment Supplement Funds Applied as of {[L001]}" followed by a 3-column table with headers "Date(s)" and "Amount"
 - Look in the Document Content for "Table X" entries - if you see table content, extract ALL rows and create the complete table structure
 - Include ALL content until the signature/closing section - DO NOT STOP EARLY
+- CRITICAL: Count the paragraphs in Document Content. If there are 50+ paragraphs, you MUST include ALL of them
+- CRITICAL: If Document Content shows state conditionals like "IF M960 = STATE", include conditionals for EVERY state mentioned
+- CRITICAL: If Document Content shows multiple scenarios (e.g., "A transfer by devise...", "A transfer to a relative...", "Transfer to a spouse...", "Transfer into an inter vivos trust"), include ALL scenarios
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
 - Include any conditional sections at the end (like Wisconsin notice)
+- Include contact information section: <div>Please review the circumstances listed above...</div> with company address lines if present in Document Content
 - If a paragraph starts with text that should be bold (like "This notice is to advise you...", "Please note", "IMPORTANT"), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
 - CRITICAL: If you see bullet points (•, -, *) in the Document Content, format them as a TABLE structure - NEVER skip bullet points
 - CRITICAL: Look for ALL paragraphs in the Document Content - count them and make sure you include EVERY SINGLE ONE
@@ -515,6 +537,19 @@ class handler(BaseHTTPRequestHandler):
 				print(f"Calling OpenAI API with model: {model_name}")
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")
+				
+				# Determine max_tokens based on document size
+				# For large documents like SI002 (800+ paragraphs), need more tokens
+				ir_blocks = len(ir.get('blocks', []))
+				if ir_blocks > 500:
+					max_tokens = 16000  # Very large documents need more tokens
+				elif ir_blocks > 200:
+					max_tokens = 12000  # Large documents
+				else:
+					max_tokens = 8000  # Standard documents
+				
+				print(f"Document has {ir_blocks} blocks, using max_tokens={max_tokens}")
+				
 				response = client.chat.completions.create(
 					model=model_name,
 					messages=[
@@ -522,7 +557,7 @@ class handler(BaseHTTPRequestHandler):
 						{"role": "user", "content": user_message}
 					],
 					temperature=0,  # Deterministic
-					max_tokens=8000  # Increased to handle longer documents
+					max_tokens=max_tokens
 				)
 				
 				html = response.choices[0].message.content.strip()

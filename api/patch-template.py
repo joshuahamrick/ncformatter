@@ -9,44 +9,26 @@ try:
 except ImportError:
 	OPENAI_AVAILABLE = False
 
-# Import normalization
+# Import normalization - MINIMAL normalization that PRESERVES formatting
 def normalize_html(html):
-	"""Normalize HTML for deterministic exact snapshot matching"""
+	"""Minimal normalization - preserve newlines and formatting structure"""
 	if not html or not isinstance(html, str):
 		return ''
 	
 	normalized = html
 	
-	# Normalize line endings
+	# Normalize line endings only
 	normalized = normalized.replace('\r\n', '\n').replace('\r', '\n')
 	
-	# Normalize <br> tags
+	# Normalize <br> tags only (standardize format, but keep them)
 	import re
 	normalized = re.sub(r'<br\s*/?>', '<br>', normalized, flags=re.IGNORECASE)
 	
-	# Normalize whitespace around tags
-	normalized = re.sub(r'\s+</', '</', normalized)
-	normalized = re.sub(r'>\s+', '>', normalized)
+	# DO NOT remove newlines or collapse whitespace - preserve formatting structure
+	# Only normalize trailing whitespace at end of file
+	normalized = normalized.rstrip()
 	
-	# Normalize conditional blocks
-	normalized = re.sub(r'\{If\([^}]+\}\)\s+', lambda m: m.group(0).strip() + ' ', normalized)
-	normalized = re.sub(r'\s+\{End If\}', lambda m: ' ' + m.group(0).strip(), normalized)
-	
-	# Normalize multiple <br> tags
-	normalized = re.sub(r'(<br>\s*){3,}', lambda m: '<br>' * len(re.findall(r'<br>', m.group(0))), normalized)
-	
-	# Normalize whitespace between tags
-	normalized = re.sub(r'>\s+<', '><', normalized)
-	normalized = re.sub(r'>\s+([^<])', r'>\1', normalized)
-	normalized = re.sub(r'([^>])\s+<', r'\1<', normalized)
-	
-	# Normalize trailing whitespace
-	normalized = re.sub(r'\s+$', '', normalized, flags=re.MULTILINE)
-	
-	# Normalize empty lines
-	normalized = re.sub(r'\n{3,}', '\n\n', normalized)
-	
-	return normalized.strip()
+	return normalized
 
 def load_system_prompt():
 	"""Load the system prompt from file"""
@@ -163,23 +145,70 @@ Current HTML:
 {current_html}
 ```
 
-CRITICAL RULES:
-1. Apply the instruction EXACTLY as requested
-2. Maintain all variable placeholders ({{[TAG]}} format) - DO NOT change them
-3. Maintain all helper functions (Money, Compress, DateAdd, Date, DateDiff, If, etc.) - DO NOT change their syntax
-4. Maintain proper HTML structure (each element on its own line)
+CRITICAL FORMATTING RULES - PRESERVE EXACT STRUCTURE:
+1. **PRESERVE ALL NEWLINES AND INDENTATION**: The HTML must maintain the exact same formatting structure as the input:
+   - Each <div> tag MUST be on its own line
+   - Each <br> tag MUST be on its own line
+   - Each <table>, <tr>, <td> MUST be on its own line with proper indentation
+   - DO NOT collapse everything into one line
+   - DO NOT remove newlines between elements
+   - Look at the Current HTML above - it has proper newlines and formatting. You MUST preserve this exact structure.
+
+2. Apply the instruction EXACTLY as requested
+
+3. Maintain all variable placeholders ({{[TAG]}} format) - DO NOT change them
+
+4. Maintain all helper functions (Money, Compress, DateAdd, Date, DateDiff, Math, If, etc.) - DO NOT change their syntax
+
 5. Preserve all styling (bold, underline, font-size, text-align)
-6. If adding bullet points, format them as a table: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Text</td></tr></tbody></table>
+
+6. CRITICAL BULLET POINTS: If adding or fixing bullet points (especially after section headers like "Next Steps:", "Forbearance Plan Terms:", etc.), format them as a table:
+   <table width="100%"><tbody>
+   <tr>
+     <td width="3%" valign="top" style="text-align: center">•</td>
+     <td>First bullet point text</td>
+   </tr>
+   <tr>
+     <td width="3%" valign="top" style="text-align: center">•</td>
+     <td>Second bullet point text</td>
+   </tr>
+   </tbody></table>
+   - Each bullet point MUST be in its own <tr> row
+   - Each row MUST be on its own line with proper indentation
+   - After section headers ending with ":", ALWAYS check for bullet points that follow
+
 7. HEADER LOGIC (if fixing header structure):
+   - DEFAULT: Use <div>{{Insert(H003 TagHeader)}}</div> unless NMLS is mentioned
    - If Document Content mentions NMLS/NMLSID → Use: <div>{{Header(NMLSID)}}</div>
-   - If Document Content has H003 WITH a conditional (e.g., "if {{[H003]}} = null") → Use: <div>{{Insert(H003 TagHeader)}}</div>
-   - Otherwise → Use: <div>{{[tagHeader]}}</div>
-   - IMPORTANT: H003 header is ONLY used when there's conditional logic involving H003, not just because H003 is mentioned
+   - Only use <div>{{[tagHeader]}}</div> if Document Content explicitly shows tagHeader without H003
+
 8. LOAN NUMBER AND RE: TABLE: Most letters MUST include a table with Loan Number and RE: after mailing address and before salutation. Extract the EXACT structure from Document Content.
+
 9. Return ONLY the complete modified HTML, no explanations, no markdown code blocks
+
 10. If the HTML is very large, make sure to return the COMPLETE modified HTML, not just a portion
 
-Return ONLY the modified HTML:"""
+11. **FORMATTING EXAMPLE**: The output should look like this (with proper newlines):
+<div>{{Insert(H003 TagHeader)}}</div>
+<br>
+<div>{{[L001]}}</div>
+<div>{{[mailingAddress]}}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{{[M594]}}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{{Compress({{[M567]}}|{{[M583]}}|{{[M568]}})}}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {{[Salutation]}},</div>
+<br>
+
+NOT like this (all on one line):
+<div>{{Insert(H003 TagHeader)}}</div><br><div>{{[L001]}}</div><div>{{[mailingAddress]}}</div>...
+
+Return ONLY the modified HTML with proper newlines and formatting:"""
 			
 			# Call OpenAI - using gpt-4o for better quality (same as generate-template)
 			system_prompt_length = len(system_prompt)
@@ -230,7 +259,8 @@ Return ONLY the modified HTML:"""
 			elif html.startswith('```'):
 				html = html.replace('```', '').strip()
 			
-			# Normalize HTML
+			# MINIMAL normalization - preserve formatting structure
+			# Only normalize line endings, don't remove newlines or collapse whitespace
 			html = normalize_html(html)
 			
 			return self._send(200, {

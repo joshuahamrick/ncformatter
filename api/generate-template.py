@@ -424,10 +424,33 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
 - CRITICAL: After section headers like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc., look for bullet points that follow - these MUST be formatted as tables
 - CRITICAL: If you see consecutive paragraphs that appear to be list items (especially after headers ending with ":"), format them as a bullet point table
 - CRITICAL: Look for patterns like multiple paragraphs starting with similar text or appearing as a list - these are likely bullet points that need table formatting
+- CRITICAL EXAMPLE: If Document Content shows:
+  "Next Steps:
+  Paragraph 1 about step 1
+  Paragraph 2 about step 2
+  Paragraph 3 about step 3"
+  Then format as:
+  <div><b>Next Steps:</b></div>
+  <br>
+  <table width="100%"><tbody>
+  <tr>
+    <td width="3%" valign="top" style="text-align: center">•</td>
+    <td>Paragraph 1 about step 1</td>
+  </tr>
+  <tr>
+    <td width="3%" valign="top" style="text-align: center">•</td>
+    <td>Paragraph 2 about step 2</td>
+  </tr>
+  <tr>
+    <td width="3%" valign="top" style="text-align: center">•</td>
+    <td>Paragraph 3 about step 3</td>
+  </tr>
+  </tbody></table>
 - If text appears BOLD in the Document Content (or starts with phrases like "This notice is to advise you", "IMPORTANT", "Please note"), wrap it in <b> tags
 - If text appears CENTERED and LARGER in the Document Content, it's likely a title - use style="text-align: center; font-size: 14pt" with <b> tags
 - PRESERVE ALL STYLING - if the Document Content shows bold, underline, center alignment, or font sizes, you MUST include those in the HTML
 - NEVER skip bullet points - if you see a section header followed by multiple related paragraphs, check if they should be formatted as a bullet point table
+- ALWAYS check for bullet points after section headers - count the paragraphs after headers ending with ":" and format consecutive related paragraphs as bullet point tables
 
 CRITICAL NOTES:
 - Most letters MUST include a Loan Number and RE: table after mailing address and before salutation

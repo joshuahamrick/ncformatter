@@ -354,12 +354,14 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
-<!-- CRITICAL: Most letters MUST include Loan Number and RE: table - extract exact structure from Document Content -->
+<!-- CRITICAL: Most letters MUST include Loan Number and RE: table - extract EXACT labels from Document Content -->
+<!-- DO NOT combine or modify labels - use EXACTLY what appears in Document Content -->
+<!-- Example: If Document Content shows "Loan Number: [M594]" and "RE: [M567]", use those EXACT labels -->
 <table width="100%"><tbody><tr>
-  <td width="20%" valign="top">Re: Loan Number:</td>  <!-- Extract exact label from Document Content -->
+  <td width="20%" valign="top">Loan Number:</td>  <!-- Extract EXACT label from Document Content - DO NOT modify -->
   <td>{[M594]}</td>
 </tr><tr>
-  <td width="20%" valign="top">RE:</td>  <!-- Extract exact label from Document Content -->
+  <td width="20%" valign="top">RE:</td>  <!-- Extract EXACT label from Document Content - DO NOT modify -->
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
 <br>
@@ -461,14 +463,17 @@ Example of CORRECT formatting (showing different header layouts):
 <div>PMI/MIP Department</div>
 <div>{[plsMatrix.CompanyLongName]}</div>
 <br>
-[Example 2 - Standard header with "RE: Loan Number:" and "Property Address:" in separate rows:]
-<table width="100%"><tbody><tr>
-  <td width="20%" valign="top">RE: Loan Number:</td>
+[Example 2 - Only use this pattern if Document Content shows "RE: Loan Number:" as a SINGLE label:]
+If Document Content shows: "RE: Loan Number: [M594]" (as ONE label, not separate "Loan Number:" and "RE:")
+Then use: <table width="100%"><tbody><tr>
+  <td width="20%" valign="top">RE: Loan Number:</td>  <!-- Only if this EXACT text appears in Document Content -->
   <td>{[M594]}</td>
 </tr><tr>
-  <td width="20%" valign="top">Property Address:</td>
+  <td width="20%" valign="top">Property Address:</td>  <!-- Extract EXACT label from Document Content -->
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
+
+CRITICAL: If Document Content shows "Loan Number:" and "RE:" as SEPARATE labels, use them separately - DO NOT combine them.
 <br>
 <div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
 <div style="text-align: center; font-size: 14pt"><b>MORTGAGE PAYMENT INCREASE BEGINS...</b></div>

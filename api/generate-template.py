@@ -238,7 +238,7 @@ def format_ir_for_prompt(ir):
 					formatted.append(f"  Row {i+1}: {row_text}")
 	
 	# Balance between including content and staying within token limits
-	# For very large documents, we need to truncate but still provide enough context
+	# For very large documents, use smart sampling instead of just taking first N blocks
 	total_blocks = len(formatted)
 	
 	# Estimate tokens: roughly 3 chars per token for text
@@ -248,11 +248,40 @@ def format_ir_for_prompt(ir):
 	# Use ~20,000 tokens max for input (system + user + few-shot), leaving ~10,000 for response
 	# IR content should be ~12,000 tokens max (~36,000 chars)
 	max_ir_chars = 30000  # ~10,000 tokens for IR content (more conservative)
+	max_blocks_to_include = 250  # Reduced from 300
 	
-	if total_blocks > 50:
-		# For large documents, include up to 300 blocks initially
-		max_blocks = min(300, total_blocks)
-		result = '\n'.join(formatted[:max_blocks])
+	if total_blocks > max_blocks_to_include:
+		# Smart sampling: take beginning, sample middle, take end
+		# This gives better coverage of document structure
+		beginning_count = 80  # First 80 blocks (header, intro, early content)
+		end_count = 80  # Last 80 blocks (closing, signature, final content)
+		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle
+		
+		sampled = []
+		
+		# Add beginning blocks
+		sampled.extend(formatted[:beginning_count])
+		
+		# Sample evenly from the middle
+		if total_blocks > beginning_count + end_count:
+			middle_start = beginning_count
+			middle_end = total_blocks - end_count
+			middle_range = middle_end - middle_start
+			
+			if middle_range > 0 and middle_count > 0:
+				# Calculate step size to sample evenly
+				step = max(1, middle_range // middle_count)
+				for i in range(middle_start, middle_end, step):
+					if len(sampled) < max_blocks_to_include - end_count:
+						sampled.append(formatted[i])
+		
+		# Add end blocks
+		sampled.extend(formatted[-end_count:])
+		
+		# Ensure we don't exceed max_blocks_to_include
+		sampled = sampled[:max_blocks_to_include]
+		
+		result = '\n'.join(sampled)
 		
 		# Check if we're approaching token limit
 		result_length = len(result)
@@ -260,8 +289,8 @@ def format_ir_for_prompt(ir):
 			# Truncate to stay within limits
 			result = result[:max_ir_chars]
 			result += f"\n\n[NOTE: Document truncated at {max_ir_chars} chars due to token limits. Document has {total_blocks} total content blocks. You MUST still include ALL conditional sections, ALL state-specific content patterns, and ALL paragraph structures from the ENTIRE document. Use the patterns shown above to generate the complete template.]"
-		elif total_blocks > max_blocks:
-			result += f"\n\n[CRITICAL NOTE: Document has {total_blocks} total content blocks (showing first {max_blocks}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure. Do NOT stop early - continue until you reach the closing signature section.]"
+		else:
+			result += f"\n\n[CRITICAL NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)} blocks: first {beginning_count}, middle samples, last {end_count}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure. Do NOT stop early - continue until you reach the closing signature section.]"
 		return result
 	
 	return '\n'.join(formatted)

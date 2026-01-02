@@ -215,8 +215,11 @@ def format_ir_for_prompt(ir):
 			
 			# This looks like actual content - include it
 			# CRITICAL: Include FULL text, not truncated - we need ALL content for accurate bullet point conversion
-			# Limit to 350 chars per paragraph (reduced further to stay within token limits)
-			formatted.append(f"Paragraph {idx + 1}: {text[:350]}")
+			# For ALL-CAPS text (likely important legal notices), include more characters
+			# Check if text is mostly uppercase - if so, include more to preserve complete notices
+			is_mostly_uppercase = len([c for c in text if c.isupper()]) > len(text) * 0.5
+			char_limit = 600 if is_mostly_uppercase else 450  # More chars for ALL-CAPS, more for regular too
+			formatted.append(f"Paragraph {idx + 1}: {text[:char_limit]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -247,7 +250,7 @@ def format_ir_for_prompt(ir):
 	# Use ~20,000 tokens max for input (system + user + few-shot), leaving ~10,000 for response
 	# IR content should be ~9,000 tokens max (~27,000 chars)
 	max_ir_chars = 24000  # ~8,000 tokens for IR content (reduced further)
-	max_blocks_to_include = 180  # Further reduced to stay within token limits
+	max_blocks_to_include = 170  # Further reduced to compensate for increased paragraph limits
 	
 	if total_blocks > max_blocks_to_include:
 		# Smart sampling: take beginning, sample middle, take end
@@ -490,6 +493,9 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - CRITICAL: NEVER truncate or omit content when converting bullet points to tables - include the COMPLETE text from each bullet point paragraph, including all sentences, clauses, and conditional statements
 - CRITICAL: If a bullet point paragraph contains multiple sentences separated by periods, include ALL sentences in the table cell - do not stop after the first sentence
 - CRITICAL: Preserve ALL content - if the Document Content shows a bullet point with text like "Sentence 1. Sentence 2. Sentence 3.", include ALL three sentences in the <td> tag
+- CRITICAL: For ALL-CAPS text (like legal notices, warnings, or important statements), preserve the COMPLETE text - do not truncate ALL-CAPS paragraphs
+- CRITICAL: If Document Content shows ALL-CAPS text with multiple sentences (e.g., "FIRST SENTENCE. SECOND SENTENCE. THIRD SENTENCE."), include ALL sentences - these are often important legal notices that must be complete
+- CRITICAL: When you see ALL-CAPS text in Document Content, it's likely an important legal notice - preserve it COMPLETELY, including all sentences and clauses
 
 CRITICAL BULLET POINTS AND BOLD TEXT:
 - If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:

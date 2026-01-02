@@ -216,8 +216,9 @@ def format_ir_for_prompt(ir):
 				continue
 			
 			# This looks like actual content - include it
-			# Limit to 300 chars per paragraph to reduce token usage
-			formatted.append(f"Paragraph {idx + 1}: {text[:300]}")
+			# CRITICAL: Include FULL text, not truncated - we need ALL content for accurate bullet point conversion
+			# Limit to 500 chars per paragraph (increased from 300) to preserve more content
+			formatted.append(f"Paragraph {idx + 1}: {text[:500]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -481,10 +482,16 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - CRITICAL: After formatting one bullet point table, IMMEDIATELY check the next paragraphs - if they also look like list items, format THOSE as a table too
 - CRITICAL: Do NOT format just the first bullet point set and then stop - continue checking and formatting ALL bullet point sets throughout the ENTIRE document
 - CRITICAL: If you see a section header followed by bullet points, format them as a table. Then continue reading - if you see ANOTHER section header followed by MORE bullet points, format THOSE as a table too. Repeat this process for ALL section headers and ALL bullet point sets in the document.
+- CRITICAL: NEVER truncate or omit content when converting bullet points to tables - include the COMPLETE text from each bullet point paragraph, including all sentences, clauses, and conditional statements
+- CRITICAL: If a bullet point paragraph contains multiple sentences separated by periods, include ALL sentences in the table cell - do not stop after the first sentence
+- CRITICAL: Preserve ALL content - if the Document Content shows a bullet point with text like "Sentence 1. Sentence 2. Sentence 3.", include ALL three sentences in the <td> tag
 
 CRITICAL BULLET POINTS AND BOLD TEXT:
 - If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:
   Example: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Bullet point text here</td></tr></tbody></table>
+- CRITICAL: When converting bullet points to tables, you MUST include the COMPLETE text from each bullet point - NEVER truncate or omit any part of the content
+- CRITICAL: If a bullet point has multiple sentences or clauses, include ALL of them in the table cell - do not stop after the first sentence
+- CRITICAL: Preserve ALL content from bullet points - if the Document Content shows a long bullet point with multiple sentences, include ALL sentences in the <td> tag
 - CRITICAL: After section headers like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc., look for bullet points that follow - these MUST be formatted as tables
 - CRITICAL: If you see consecutive paragraphs that appear to be list items (especially after headers ending with ":"), format them as a bullet point table
 - CRITICAL: Look for patterns like multiple paragraphs starting with similar text or appearing as a list - these are likely bullet points that need table formatting

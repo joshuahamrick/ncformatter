@@ -465,12 +465,14 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - Include contact information section: <div>Please review the circumstances listed above...</div> with company address lines if present in Document Content
 - If a paragraph starts with text that should be bold (like "This notice is to advise you...", "Please note", "IMPORTANT"), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
 - CRITICAL: If you see bullet points (•, -, *, or consecutive list items) in the Document Content, format them as a TABLE structure - NEVER skip bullet points
-- CRITICAL: After section headers ending with ":" (like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc.), ALWAYS check for bullet points that follow - these MUST be formatted as tables
+- CRITICAL: After section headers ending with ":" (like "Next Steps:", "Forbearance Plan Terms:", "Important:", "Additional Forbearance Plan Information:", etc.), ALWAYS check for bullet points that follow - these MUST be formatted as tables
 - CRITICAL: Documents can have MULTIPLE sets of bullet points - you MUST check for and format ALL sets throughout the ENTIRE document, not just the first one
 - CRITICAL: If you see multiple consecutive paragraphs after a section header, they are likely bullet points - format them as a table with bullet characters
 - CRITICAL: After formatting one set of bullet points, CONTINUE scanning the Document Content for MORE sets - do not stop after the first set
 - CRITICAL: If you formatted bullet points as a table, IMMEDIATELY continue reading - if the next paragraphs also look like list items, format THOSE as a table too
 - CRITICAL: Do NOT format just the first set of bullet points and then leave subsequent sets as regular divs - ALL bullet point sets must be formatted as tables
+- CRITICAL: Even if you've already formatted one bullet point table, continue reading the Document Content - if you encounter another section header followed by consecutive paragraphs that look like list items, format THOSE as a table as well
+- CRITICAL: Look for patterns throughout the ENTIRE document: section header → consecutive paragraphs → these should be bullet point tables. This pattern can occur MULTIPLE times in one document.
 - CRITICAL: Look for ALL paragraphs in the Document Content - count them and make sure you include EVERY SINGLE ONE
 - CRITICAL: If the Document Content shows styled text (bold, centered, larger font), you MUST preserve that styling in the HTML output
 - CRITICAL: NEVER stop after a section header - always include the bullet points/content that follows section headers

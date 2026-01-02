@@ -212,7 +212,15 @@ class WordFormatter {
                 })
             });
             
-            const result = await response.json();
+            let result;
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                // If JSON parsing fails, try to get text response
+                const text = await response.text();
+                console.error('Failed to parse JSON response:', text);
+                throw new Error(`Invalid response from server: ${text.substring(0, 200)}`);
+            }
             
             if (!response.ok || !result.success) {
                 // Get the actual error message from the API response

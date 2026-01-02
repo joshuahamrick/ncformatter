@@ -595,24 +595,40 @@ class handler(BaseHTTPRequestHandler):
 			error_type = type(e).__name__
 			print(f"ERROR in generate-template: {error_type}: {error_msg}")
 			print(f"Traceback: {error_trace}")
-			# Return a user-friendly error message
+			# Return a user-friendly error message - ALWAYS include the error message
 			try:
+				# Build a helpful error message
+				user_error_msg = f"{error_type}: {error_msg}"
+				
+				# Add more context for common errors
+				if 'API' in error_type or 'openai' in error_msg.lower():
+					user_error_msg = f"OpenAI API Error: {error_msg}. Please check that OPENAI_API_KEY is set correctly."
+				elif 'token' in error_msg.lower() or 'limit' in error_msg.lower():
+					user_error_msg = f"Token Limit Error: {error_msg}. The document may be too large to process."
+				elif 'JSON' in error_type:
+					user_error_msg = f"Invalid Request: {error_msg}. Please check the request format."
+				elif 'ImportError' in error_type or 'ModuleNotFoundError' in error_type:
+					user_error_msg = f"Missing Dependency: {error_msg}. Please install required packages."
+				
 				err = {
 					'success': False,
-					'error': f"{error_type}: {error_msg}",
+					'error': user_error_msg,
 					'trace': error_trace if 'VERCEL' not in os.environ else None
 				}
 				return self._send(500, err)
 			except Exception as send_error:
 				print(f"Failed to send error response: {send_error}")
+				traceback.print_exc()
 				# Last resort - try to send a simple error
 				try:
 					self.send_response(500)
 					self.send_header('Content-type', 'application/json')
+					self.send_header('Access-Control-Allow-Origin', '*')
 					self.end_headers()
 					self.wfile.write(json.dumps({'success': False, 'error': error_msg}).encode('utf-8'))
-				except:
-					pass
+				except Exception as final_error:
+					print(f"Final error send failed: {final_error}")
+					traceback.print_exc()
 	
 	def do_OPTIONS(self):
 		self.send_response(200)
@@ -623,16 +639,44 @@ class handler(BaseHTTPRequestHandler):
 	
 	def _send(self, status, payload):
 		try:
+			# Ensure payload has 'error' field if it's an error response
+			if status >= 400 and 'error' not in payload:
+				payload['error'] = payload.get('error', 'Unknown error occurred')
+			
 			self.send_response(status)
 			self.send_header('Content-type', 'application/json')
 			self.send_header('Access-Control-Allow-Origin', '*')
 			self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 			self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
 			self.end_headers()
-			response_body = json.dumps(payload).encode('utf-8')
+			
+			# Ensure payload can be serialized
+			try:
+				response_body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+			except Exception as json_error:
+				print(f"JSON serialization error: {json_error}")
+				# Fallback to a simple error message
+				response_body = json.dumps({
+					'success': False,
+					'error': f'Failed to serialize response: {str(json_error)}'
+				}).encode('utf-8')
+			
 			self.wfile.write(response_body)
 			print(f"Sent response: status={status}, body_length={len(response_body)}")
 		except Exception as e:
 			print(f"Error in _send: {e}")
 			traceback.print_exc()
+			# Try to send a basic error response
+			try:
+				# Only send if headers haven't been sent yet
+				if not hasattr(self, '_headers_sent') or not self._headers_sent:
+					self.send_response(500)
+					self.send_header('Content-type', 'application/json')
+					self.send_header('Access-Control-Allow-Origin', '*')
+					self.end_headers()
+					error_payload = {'success': False, 'error': f'Failed to send response: {str(e)}'}
+					self.wfile.write(json.dumps(error_payload).encode('utf-8'))
+			except Exception as final_error:
+				print(f"Final error send failed: {final_error}")
+				traceback.print_exc()
 

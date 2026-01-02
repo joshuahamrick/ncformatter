@@ -633,23 +633,23 @@ class handler(BaseHTTPRequestHandler):
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")
 				
-			# Estimate token count and set max_tokens accordingly
-			# Rate limit: 30,000 TPM (tokens per minute)
-			total_input_chars = len(full_system_prompt) + len(user_message)
-			estimated_input_tokens = total_input_chars // 3  # Conservative estimate
-			
-			# Reserve tokens for output: 30,000 - estimated_input_tokens
-			# But cap at reasonable limits - be more conservative
-			available_output_tokens = 30000 - estimated_input_tokens
-			if estimated_input_tokens > 20000:
-				# Too large - reject before API call
-				return self._send(400, {
-					'success': False,
-					'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~20,000). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
-				})
-			
-			# Set max_tokens based on available budget, but cap at reasonable limits
-			max_tokens = min(6000, max(3000, available_output_tokens - 2000))  # Leave 2000 token buffer for safety
+				# Estimate token count and set max_tokens accordingly
+				# Rate limit: 30,000 TPM (tokens per minute)
+				total_input_chars = len(full_system_prompt) + len(user_message)
+				estimated_input_tokens = total_input_chars // 3  # Conservative estimate
+				
+				# Reserve tokens for output: 30,000 - estimated_input_tokens
+				# But cap at reasonable limits - be more conservative
+				available_output_tokens = 30000 - estimated_input_tokens
+				if estimated_input_tokens > 20000:
+					# Too large - reject before API call
+					return self._send(400, {
+						'success': False,
+						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~20,000). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
+					})
+				
+				# Set max_tokens based on available budget, but cap at reasonable limits
+				max_tokens = min(6000, max(3000, available_output_tokens - 2000))  # Leave 2000 token buffer for safety
 				
 				ir_blocks = len(ir.get('blocks', []))
 				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}")

@@ -303,7 +303,10 @@ class WordFormatter {
             }
             
             // Call patch API
-            const response = await fetch('/api/patch-template.py', {
+            const apiUrl = '/api/patch-template.py';
+            console.log('Calling patch-template endpoint:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -311,23 +314,31 @@ class WordFormatter {
                     instruction: instruction,
                     ir: this.lastIr
                 })
+            }).catch(fetchError => {
+                console.error('Fetch error:', fetchError);
+                throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel.`);
             });
             
-            if (!response.ok) {
-                // Try to get error message from response
-                let errorMsg = `Patch failed: ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    if (errorData.error) {
-                        errorMsg = errorData.error;
-                    }
-                } catch (e) {
-                    // If JSON parsing fails, use status code
-                }
-                throw new Error(errorMsg);
+            console.log('Response status:', response.status, response.statusText);
+            
+            let result;
+            try {
+                const responseText = await response.text();
+                console.log('Response text (first 500 chars):', responseText.substring(0, 500));
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                const text = await response.text().catch(() => 'Could not read response');
+                console.error('Failed to parse JSON response:', jsonError);
+                throw new Error(`Invalid response from server (${response.status}): ${text.substring(0, 500)}`);
             }
             
-            const result = await response.json();
+            if (!response.ok || !result.success) {
+                // Get the actual error message from the API response
+                const errorMsg = result.error || `HTTP ${response.status}: ${response.statusText}`;
+                console.error('API Error:', errorMsg);
+                console.error('Full response:', result);
+                throw new Error(errorMsg);
+            }
             if (!result.success) {
                 throw new Error(result.error || 'Patch error');
             }

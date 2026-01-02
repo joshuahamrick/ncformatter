@@ -413,8 +413,12 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
 - If text appears CENTERED and LARGER in the Document Content, it's likely a title - use style="text-align: center; font-size: 14pt" with <b> tags
 - PRESERVE ALL STYLING - if the Document Content shows bold, underline, center alignment, or font sizes, you MUST include those in the HTML
 
-NOTE: The property address table structure VARIES by document - extract the EXACT structure from Document Content, don't assume it always has "RE: Loan Number:" and "Property Address:"
-NOTE: Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
+CRITICAL NOTES:
+- Most letters MUST include a Loan Number and RE: table after mailing address and before salutation
+- The table structure VARIES by document - extract the EXACT structure from Document Content (labels may be "Loan Number:", "Re: Loan Number:", "RE: Loan Number:", etc.)
+- Header type detection: NMLS (if mentioned) > H003 (if conditional present) > tagHeader (default)
+- H003 header is ONLY used when there's conditional logic involving H003, not just because H003 is mentioned
+- Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
 YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.

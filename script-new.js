@@ -126,13 +126,30 @@ class WordFormatter {
 					reader.readAsDataURL(file);
 				});
 				const base64String = String(arrayBuffer).split(',')[1];
-				const response = await fetch('/api/process-doc.py', {
+				const apiUrl = '/api/process-doc.py';
+				console.log('Calling process-doc endpoint:', apiUrl);
+				
+				const response = await fetch(apiUrl, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ fileData: base64String, fileName: file.name })
+				}).catch(fetchError => {
+					console.error('Fetch error:', fetchError);
+					throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel.`);
 				});
-				if (!response.ok) throw new Error('DOCX processing failed: ' + response.status);
-				const result = await response.json();
+				
+				console.log('Response status:', response.status, response.statusText);
+				
+				if (!response.ok) {
+					const errorText = await response.text().catch(() => 'Unknown error');
+					throw new Error(`DOCX processing failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 200)}`);
+				}
+				
+				const result = await response.json().catch(jsonError => {
+					const text = await response.text().catch(() => 'Could not read response');
+					throw new Error(`Invalid response from server: ${text.substring(0, 200)}`);
+				});
+				
 				if (!result.success) throw new Error(result.error || 'DOCX processing error');
 				const ir = result.ir;
 				
@@ -201,7 +218,10 @@ class WordFormatter {
 
     async generateTemplateWithAI(ir, userInstruction = null) {
         try {
-            const response = await fetch('/api/generate-template.py', {
+            const apiUrl = '/api/generate-template.py';
+            console.log('Calling AI generation endpoint:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -210,21 +230,29 @@ class WordFormatter {
                     userInstruction: userInstruction,
                     chatHistory: this.chatHistoryData
                 })
+            }).catch(fetchError => {
+                // Network error - endpoint might not exist or CORS issue
+                console.error('Fetch error:', fetchError);
+                throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel. Check that the file exists at /api/generate-template.py`);
             });
+            
+            console.log('Response status:', response.status, response.statusText);
             
             let result;
             try {
-                result = await response.json();
+                const responseText = await response.text();
+                console.log('Response text (first 500 chars):', responseText.substring(0, 500));
+                result = JSON.parse(responseText);
             } catch (jsonError) {
-                // If JSON parsing fails, try to get text response
-                const text = await response.text();
-                console.error('Failed to parse JSON response:', text);
-                throw new Error(`Invalid response from server: ${text.substring(0, 200)}`);
+                // If JSON parsing fails, show the actual response
+                console.error('Failed to parse JSON response:', jsonError);
+                const text = await response.text().catch(() => 'Could not read response');
+                throw new Error(`Invalid response from server (${response.status}): ${text.substring(0, 500)}`);
             }
             
             if (!response.ok || !result.success) {
                 // Get the actual error message from the API response
-                const errorMsg = result.error || `HTTP ${response.status}`;
+                const errorMsg = result.error || `HTTP ${response.status}: ${response.statusText}`;
                 console.error('API Error:', errorMsg);
                 console.error('Full response:', result);
                 throw new Error(errorMsg);
@@ -235,7 +263,18 @@ class WordFormatter {
             console.error('AI generation error:', error);
             // Show the actual error message to help debug
             const errorMsg = error.message || 'Unknown error';
-            this.showError(`AI generation failed: ${errorMsg}\n\nPlease check:\n1. OPENAI_API_KEY environment variable is set\n2. OpenAI library is installed (pip install openai)\n3. Check server logs for details`);
+            
+            // Provide more helpful error messages based on error type
+            let userMessage = `AI generation failed: ${errorMsg}`;
+            if (errorMsg.includes('Network error') || errorMsg.includes('Failed to fetch')) {
+                userMessage += '\n\nThis usually means:\n1. The API endpoint is not deployed correctly on Vercel\n2. Check Vercel function logs in the dashboard\n3. Verify the file exists at /api/generate-template.py';
+            } else if (errorMsg.includes('OPENAI_API_KEY')) {
+                userMessage += '\n\nPlease set OPENAI_API_KEY in Vercel project settings → Environment Variables';
+            } else {
+                userMessage += '\n\nPlease check:\n1. OPENAI_API_KEY environment variable is set\n2. OpenAI library is installed (pip install openai)\n3. Check Vercel function logs for details';
+            }
+            
+            this.showError(userMessage);
             // Don't fall back to renderer - force user to fix AI setup
             throw error;
         }

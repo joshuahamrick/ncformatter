@@ -301,8 +301,13 @@ STEP 1 - CONTENT EXTRACTION:
    - CORRECT: {[plsMatrix.LossPreventionPhoneNumberTollFree]}, {[plsMatrix.CSPhoneNumber]}, {[plsMatrix.CompanyLongName]}
    - WRONG: {[LossPreventionPhoneNumberTollFree]}, {[CSPhoneNumber]}, {[CompanyLongName]} ← Missing plsMatrix prefix
 4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
-5. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
-6. CRITICAL CONDITIONAL SYNTAX - Follow this EXACT format:
+5. Convert math expressions properly:
+   - If you see "[Q178E2 ÷ Q177]" or "[Q178 ÷ Q177]" → Convert to {Math({[Q178]} / {[Q177]}|Money)}
+   - Remove E suffixes from tags (Q178E2 → {[Q178]})
+   - Use / for division, + for addition, - for subtraction, * for multiplication
+   - Format: {Math({[TAG1]} / {[TAG2]}|Money)} or {Math({[TAG1]} + {[TAG2]} - {[TAG3]}|Money)}
+6. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
+7. CRITICAL CONDITIONAL SYNTAX - Follow this EXACT format:
    CORRECT: {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}
    WRONG: {If({[M006]} = 'FHA' AND {[M037]} > 0)}  ← Missing quotes around variable, wrong comparison operator
    - Variables in string comparisons need quotes: '{[TAG]}'

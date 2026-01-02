@@ -38,7 +38,9 @@ Generate HTML templates that:
 
 ### Helper Functions
 - Money: {Money({[TAG]})}
-- Math: {Math({[TAG1]} + {[TAG2]}|Money)}
+- Math: {Math({[TAG1]} + {[TAG2]}|Money)} or {Math({[TAG1]} / {[TAG2]}|Money)} for division
+  - Supports: + (addition), - (subtraction), * (multiplication), / (division)
+  - Example: {Math({[Q178]} / {[Q177]}|Money)} for [Q178E2 ÷ Q177]
 - DateAdd: {DateAdd({[TAG]}|+1|MM/dd/yyyy|Month)}
 - Date: {Date({[TAG]}|FORMAT)} - The second parameter is the format string (uses C# DateTime format)
   - Examples: {Date({[M035]}|MMMM yyyy)} produces "September 2034"

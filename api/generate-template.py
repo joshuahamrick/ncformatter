@@ -217,8 +217,8 @@ def format_ir_for_prompt(ir):
 			
 			# This looks like actual content - include it
 			# CRITICAL: Include FULL text, not truncated - we need ALL content for accurate bullet point conversion
-			# Limit to 500 chars per paragraph (increased from 300) to preserve more content
-			formatted.append(f"Paragraph {idx + 1}: {text[:500]}")
+			# Limit to 400 chars per paragraph (balance between preserving content and staying within token limits)
+			formatted.append(f"Paragraph {idx + 1}: {text[:400]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -247,15 +247,15 @@ def format_ir_for_prompt(ir):
 	# user message structure (~1000 tokens), and response (~4000 tokens)
 	# Total budget: ~30,000 tokens, but rate limit is 30,000 TPM, so we need to be conservative
 	# Use ~20,000 tokens max for input (system + user + few-shot), leaving ~10,000 for response
-	# IR content should be ~11,000 tokens max (~33,000 chars)
-	max_ir_chars = 28000  # ~9,300 tokens for IR content (reduced further)
-	max_blocks_to_include = 220  # Reduced further to stay within limits
+	# IR content should be ~10,000 tokens max (~30,000 chars)
+	max_ir_chars = 26000  # ~8,700 tokens for IR content (reduced further)
+	max_blocks_to_include = 200  # Further reduced to stay within token limits
 	
 	if total_blocks > max_blocks_to_include:
 		# Smart sampling: take beginning, sample middle, take end
 		# This gives better coverage of document structure
-		beginning_count = 70  # First 70 blocks (header, intro, early content)
-		end_count = 70  # Last 70 blocks (closing, signature, final content)
+		beginning_count = 60  # First 60 blocks (header, intro, early content)
+		end_count = 60  # Last 60 blocks (closing, signature, final content)
 		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle
 		
 		sampled = []

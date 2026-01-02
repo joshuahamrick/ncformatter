@@ -469,10 +469,13 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - CRITICAL: Documents can have MULTIPLE sets of bullet points - you MUST check for and format ALL sets throughout the ENTIRE document, not just the first one
 - CRITICAL: If you see multiple consecutive paragraphs after a section header, they are likely bullet points - format them as a table with bullet characters
 - CRITICAL: After formatting one set of bullet points, CONTINUE scanning the Document Content for MORE sets - do not stop after the first set
+- CRITICAL: If you formatted bullet points as a table, IMMEDIATELY continue reading - if the next paragraphs also look like list items, format THOSE as a table too
+- CRITICAL: Do NOT format just the first set of bullet points and then leave subsequent sets as regular divs - ALL bullet point sets must be formatted as tables
 - CRITICAL: Look for ALL paragraphs in the Document Content - count them and make sure you include EVERY SINGLE ONE
 - CRITICAL: If the Document Content shows styled text (bold, centered, larger font), you MUST preserve that styling in the HTML output
 - CRITICAL: NEVER stop after a section header - always include the bullet points/content that follows section headers
 - CRITICAL: Scan the ENTIRE Document Content from beginning to end, checking for ALL bullet point sets - there may be multiple sets scattered throughout the document
+- CRITICAL: When you encounter consecutive paragraphs that appear to be list items (especially after section headers), format them as a table - do this for EVERY occurrence, not just the first one
 
 CRITICAL BULLET POINTS AND BOLD TEXT:
 - If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:
@@ -509,6 +512,9 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
   * If you formatted one set of bullet points, continue scanning the Document Content for MORE sets
   * DO NOT stop after formatting the first set - continue checking the ENTIRE document
   * Count how many section headers end with ":" - each one might have bullet points after it
+  * CRITICAL: After formatting bullet points as a table, continue reading the Document Content - if you see MORE consecutive paragraphs that look like list items, format THOSE as a table too
+  * CRITICAL: Do NOT convert just the first set of bullet points and then leave the rest as regular divs - ALL bullet point sets must be formatted as tables
+  * CRITICAL: Scan through the ENTIRE Document Content from start to finish, identifying ALL sets of consecutive paragraphs that should be bullet points, and format EACH set as its own table
 - If text appears BOLD in the Document Content (or starts with phrases like "This notice is to advise you", "IMPORTANT", "Please note"), wrap it in <b> tags
 - If text appears CENTERED and LARGER in the Document Content, it's likely a title - use style="text-align: center; font-size: 14pt" with <b> tags
 - PRESERVE ALL STYLING - if the Document Content shows bold, underline, center alignment, or font sizes, you MUST include those in the HTML

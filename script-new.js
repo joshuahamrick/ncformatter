@@ -244,15 +244,14 @@ class WordFormatter {
             console.log('Response status:', response.status, response.statusText);
             
             let result;
+            const responseText = await response.text();
+            console.log('Response text (first 500 chars):', responseText.substring(0, 500));
             try {
-                const responseText = await response.text();
-                console.log('Response text (first 500 chars):', responseText.substring(0, 500));
                 result = JSON.parse(responseText);
             } catch (jsonError) {
                 // If JSON parsing fails, show the actual response
                 console.error('Failed to parse JSON response:', jsonError);
-                const text = await response.text().catch(() => 'Could not read response');
-                throw new Error(`Invalid response from server (${response.status}): ${text.substring(0, 500)}`);
+                throw new Error(`Invalid response from server (${response.status}): ${responseText.substring(0, 500)}`);
             }
             
             if (!response.ok || !result.success) {

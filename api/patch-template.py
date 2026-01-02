@@ -71,10 +71,10 @@ def load_system_prompt():
 	print("WARNING: Using fallback system prompt - file not found")
 	return """You are an expert HTML template generator for mortgage servicing documents. 
 Generate HTML templates that match the exact formatting style shown in examples.
-Use {[TAG]} format for variables, {[plsMatrix.*]} for company variables.
+Use {{[TAG]}} format for variables, {{[plsMatrix.*]}} for company variables.
 Remove last 2 characters from tag variables ending in digits/letters.
-Always use {Compress({[M567]}|{[M583]}|{[M568]})} for property addresses.
-Use <div>Dear {[Salutation]},</div> for salutations.
+Always use {{Compress({{[M567]}}|{{[M583]}}|{{[M568]}})}} for property addresses.
+Use <div>Dear {{[Salutation]}},</div> for salutations.
 Return ONLY valid HTML, no explanations."""
 
 class handler(BaseHTTPRequestHandler):
@@ -153,21 +153,14 @@ class handler(BaseHTTPRequestHandler):
 			elif html_size > 20000:  # Large HTML
 				max_tokens = 12000
 			
-			# Escape braces in current_html and instruction to prevent f-string interpretation
-			# Double braces {{ and }} become literal { and } in f-strings
-			escaped_html = current_html.replace('{', '{{').replace('}', '}}')
-			escaped_instruction = instruction.replace('{', '{{').replace('}', '}}')
-			escaped_ir_context = ir_context.replace('{', '{{').replace('}', '}}')
-			
-			# Now we can safely use f-string with the escaped content
 			user_message = f"""Modify the following HTML template according to this instruction:
 
-Instruction: {escaped_instruction}
-{escaped_ir_context}
+Instruction: {instruction}
+{ir_context}
 
 Current HTML:
 ```html
-{escaped_html}
+{current_html}
 ```
 
 CRITICAL RULES:

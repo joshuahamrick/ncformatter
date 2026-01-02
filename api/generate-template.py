@@ -413,10 +413,13 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - If a paragraph starts with text that should be bold (like "This notice is to advise you...", "Please note", "IMPORTANT"), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
 - CRITICAL: If you see bullet points (•, -, *, or consecutive list items) in the Document Content, format them as a TABLE structure - NEVER skip bullet points
 - CRITICAL: After section headers ending with ":" (like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc.), ALWAYS check for bullet points that follow - these MUST be formatted as tables
+- CRITICAL: Documents can have MULTIPLE sets of bullet points - you MUST check for and format ALL sets throughout the ENTIRE document, not just the first one
 - CRITICAL: If you see multiple consecutive paragraphs after a section header, they are likely bullet points - format them as a table with bullet characters
+- CRITICAL: After formatting one set of bullet points, CONTINUE scanning the Document Content for MORE sets - do not stop after the first set
 - CRITICAL: Look for ALL paragraphs in the Document Content - count them and make sure you include EVERY SINGLE ONE
 - CRITICAL: If the Document Content shows styled text (bold, centered, larger font), you MUST preserve that styling in the HTML output
 - CRITICAL: NEVER stop after a section header - always include the bullet points/content that follows section headers
+- CRITICAL: Scan the ENTIRE Document Content from beginning to end, checking for ALL bullet point sets - there may be multiple sets scattered throughout the document
 
 CRITICAL BULLET POINTS AND BOLD TEXT:
 - If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:
@@ -446,11 +449,19 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
     <td>Paragraph 3 about step 3</td>
   </tr>
   </tbody></table>
+- CRITICAL: Documents can have MULTIPLE sets of bullet points throughout - you MUST check for and format ALL of them:
+  * After EVERY section header ending with ":", check for bullet points that follow
+  * Look for bullet points in the middle of paragraphs (not just after headers)
+  * Look for bullet points near the end of the document
+  * If you formatted one set of bullet points, continue scanning the Document Content for MORE sets
+  * DO NOT stop after formatting the first set - continue checking the ENTIRE document
+  * Count how many section headers end with ":" - each one might have bullet points after it
 - If text appears BOLD in the Document Content (or starts with phrases like "This notice is to advise you", "IMPORTANT", "Please note"), wrap it in <b> tags
 - If text appears CENTERED and LARGER in the Document Content, it's likely a title - use style="text-align: center; font-size: 14pt" with <b> tags
 - PRESERVE ALL STYLING - if the Document Content shows bold, underline, center alignment, or font sizes, you MUST include those in the HTML
 - NEVER skip bullet points - if you see a section header followed by multiple related paragraphs, check if they should be formatted as a bullet point table
 - ALWAYS check for bullet points after section headers - count the paragraphs after headers ending with ":" and format consecutive related paragraphs as bullet point tables
+- CRITICAL: Scan the ENTIRE Document Content from start to finish, checking for ALL bullet point sets - do not stop after finding the first set
 
 CRITICAL NOTES:
 - Most letters MUST include a Loan Number and RE: table after mailing address and before salutation

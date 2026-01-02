@@ -126,7 +126,7 @@ class WordFormatter {
 					reader.readAsDataURL(file);
 				});
 				const base64String = String(arrayBuffer).split(',')[1];
-				const apiUrl = '/api/process-doc.py';
+				const apiUrl = '/api/process-doc';
 				console.log('Calling process-doc endpoint:', apiUrl);
 				
 				const response = await fetch(apiUrl, {
@@ -176,7 +176,7 @@ class WordFormatter {
 							r.onerror = () => reject(new Error('Failed to read file'));
 							r.readAsDataURL(file);
 						});
-						const resp = await fetch('/api/process-pdf.py', {
+						const resp = await fetch('/api/process-pdf', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({ fileData: base64String, fileName: file.name })
@@ -223,7 +223,7 @@ class WordFormatter {
 
     async generateTemplateWithAI(ir, userInstruction = null) {
         try {
-            const apiUrl = '/api/generate-template.py';
+            const apiUrl = '/api/generate-template';
             console.log('Calling AI generation endpoint:', apiUrl);
             
             const response = await fetch(apiUrl, {
@@ -238,7 +238,7 @@ class WordFormatter {
             }).catch(fetchError => {
                 // Network error - endpoint might not exist or CORS issue
                 console.error('Fetch error:', fetchError);
-                throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel. Check that the file exists at /api/generate-template.py`);
+                throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel. Check that the file exists at /api/generate-template`);
             });
             
             console.log('Response status:', response.status, response.statusText);
@@ -271,7 +271,7 @@ class WordFormatter {
             // Provide more helpful error messages based on error type
             let userMessage = `AI generation failed: ${errorMsg}`;
             if (errorMsg.includes('Network error') || errorMsg.includes('Failed to fetch')) {
-                userMessage += '\n\nThis usually means:\n1. The API endpoint is not deployed correctly on Vercel\n2. Check Vercel function logs in the dashboard\n3. Verify the file exists at /api/generate-template.py';
+                userMessage += '\n\nThis usually means:\n1. The API endpoint is not deployed correctly on Vercel\n2. Check Vercel function logs in the dashboard\n3. Verify the file exists at /api/generate-template';
             } else if (errorMsg.includes('OPENAI_API_KEY')) {
                 userMessage += '\n\nPlease set OPENAI_API_KEY in Vercel project settings → Environment Variables';
             } else {
@@ -307,7 +307,7 @@ class WordFormatter {
             }
             
             // Call patch API
-            const apiUrl = '/api/patch-template.py';
+            const apiUrl = '/api/patch-template';
             console.log('Calling patch-template endpoint:', apiUrl);
             
             const response = await fetch(apiUrl, {
@@ -480,7 +480,7 @@ class WordFormatter {
                     const base64String = dataURL.split(',')[1];
                     
                     // Call Vercel Python serverless function
-                    const response = await fetch('/api/process-word.py', {
+                    const response = await fetch('/api/process-word', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 		// Health status
 		try {
-			const hr = await fetch('/api/health.py', { cache: 'no-store' });
+			const hr = await fetch('/api/health', { cache: 'no-store' });
 			let text = 'API: ';
 			if (hr.ok) {
 				const json = await hr.json();

@@ -476,6 +476,9 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - CRITICAL: NEVER stop after a section header - always include the bullet points/content that follows section headers
 - CRITICAL: Scan the ENTIRE Document Content from beginning to end, checking for ALL bullet point sets - there may be multiple sets scattered throughout the document
 - CRITICAL: When you encounter consecutive paragraphs that appear to be list items (especially after section headers), format them as a table - do this for EVERY occurrence, not just the first one
+- CRITICAL: After formatting one bullet point table, IMMEDIATELY check the next paragraphs - if they also look like list items, format THOSE as a table too
+- CRITICAL: Do NOT format just the first bullet point set and then stop - continue checking and formatting ALL bullet point sets throughout the ENTIRE document
+- CRITICAL: If you see a section header followed by bullet points, format them as a table. Then continue reading - if you see ANOTHER section header followed by MORE bullet points, format THOSE as a table too. Repeat this process for ALL section headers and ALL bullet point sets in the document.
 
 CRITICAL BULLET POINTS AND BOLD TEXT:
 - If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:

@@ -352,12 +352,15 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
-[PROPERTY ADDRESS TABLE - ONLY include if present in Document Content]
-[Extract the EXACT table structure from Document Content - look for "Table X" entries or label-value pairs]
-[Common patterns:
-  - Pattern A: <table width="100%"><tbody><tr><td width="20%" valign="top">Loan Number:</td><td>{[M594]}</td></tr><tr><td width="20%" valign="top">RE:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
-  - Pattern B: <table width="100%"><tbody><tr><td width="20%" valign="top">RE: Loan Number:</td><td>{[M594]}</td></tr><tr><td width="20%" valign="top">Property Address:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
-  - Pattern C: No table at all - just continue to salutation]
+<!-- CRITICAL: Most letters MUST include Loan Number and RE: table - extract exact structure from Document Content -->
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Re: Loan Number:</td>  <!-- Extract exact label from Document Content -->
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>  <!-- Extract exact label from Document Content -->
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
 [Conditional FHA/RHS sections if present - format as {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}<div>FHA Case Number: {[M037]}</div>{End If}]
 <br>
 <div>Dear {[Salutation]},</div>

@@ -267,7 +267,17 @@ class WordFormatter {
             });
             
             if (!response.ok) {
-                throw new Error(`Patch failed: ${response.status}`);
+                // Try to get error message from response
+                let errorMsg = `Patch failed: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData.error) {
+                        errorMsg = errorData.error;
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, use status code
+                }
+                throw new Error(errorMsg);
             }
             
             const result = await response.json();

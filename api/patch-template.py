@@ -133,12 +133,14 @@ class handler(BaseHTTPRequestHandler):
 			html_size = len(current_html)
 			print(f"Patching HTML template: size={html_size} chars, instruction='{instruction[:100]}...'")
 			
-			# Estimate token count (roughly 4 chars per token)
-			estimated_tokens = html_size // 4
+			# Estimate token count (roughly 4 chars per token for HTML)
+			# But HTML tags compress well, so estimate more conservatively
+			estimated_tokens = html_size // 3  # More conservative estimate
 			
 			# For very large HTML files, we might exceed input token limits
 			# GPT-4o has ~128k context window, but we need room for system prompt, instruction, and response
-			if estimated_tokens > 100000:  # Very large - might exceed limits
+			# Let's be more lenient - only reject if it's clearly too large
+			if estimated_tokens > 120000:  # Very large - might exceed limits
 				return self._send(400, {
 					'success': False, 
 					'error': f'HTML template is too large ({html_size} chars, ~{estimated_tokens} tokens). Please use a smaller template or break the change into smaller parts.'
@@ -175,19 +177,47 @@ CRITICAL RULES:
 Return ONLY the modified HTML:"""
 			
 			# Call OpenAI - using gpt-4o for better quality (same as generate-template)
-			print(f"Calling OpenAI API: model=gpt-4o, max_tokens={max_tokens}, message_length={len(user_message)}")
-			response = client.chat.completions.create(
-				model="gpt-4o",
-				messages=[
-					{"role": "system", "content": system_prompt},
-					{"role": "user", "content": user_message}
-				],
-				temperature=0,  # Deterministic
-				max_tokens=max_tokens
-			)
-			print(f"OpenAI API call successful, response length: {len(response.choices[0].message.content)}")
+			system_prompt_length = len(system_prompt)
+			user_message_length = len(user_message)
+			total_estimated_tokens = (system_prompt_length + user_message_length) // 3
+			
+			print(f"Calling OpenAI API: model=gpt-4o")
+			print(f"  System prompt: {system_prompt_length} chars (~{system_prompt_length//3} tokens)")
+			print(f"  User message: {user_message_length} chars (~{user_message_length//3} tokens)")
+			print(f"  Total input: ~{total_estimated_tokens} tokens")
+			print(f"  Max output tokens: {max_tokens}")
+			
+			if total_estimated_tokens > 120000:
+				return self._send(400, {
+					'success': False,
+					'error': f'Request is too large (~{total_estimated_tokens} tokens). The HTML template or instruction is too large to process.'
+				})
+			
+			try:
+				response = client.chat.completions.create(
+					model="gpt-4o",
+					messages=[
+						{"role": "system", "content": system_prompt},
+						{"role": "user", "content": user_message}
+					],
+					temperature=0,  # Deterministic
+					max_tokens=max_tokens
+				)
+				print(f"OpenAI API call successful, response length: {len(response.choices[0].message.content)}")
+			except Exception as api_error:
+				error_msg = f"OpenAI API error: {str(api_error)}"
+				print(f"ERROR: {error_msg}")
+				print(f"API Error type: {type(api_error).__name__}")
+				traceback.print_exc()
+				return self._send(500, {'success': False, 'error': error_msg})
+			
+			if not response or not response.choices or len(response.choices) == 0:
+				return self._send(500, {'success': False, 'error': 'Empty response from OpenAI API'})
 			
 			html = response.choices[0].message.content.strip()
+			
+			if not html:
+				return self._send(500, {'success': False, 'error': 'Empty HTML returned from OpenAI API'})
 			
 			# Remove markdown code blocks if present
 			if html.startswith('```html'):
@@ -203,6 +233,10 @@ Return ONLY the modified HTML:"""
 				'html': html
 			})
 			
+		except json.JSONDecodeError as e:
+			error_msg = f"Invalid JSON in request: {str(e)}"
+			print(f"ERROR: {error_msg}")
+			return self._send(400, {'success': False, 'error': error_msg})
 		except Exception as e:
 			error_trace = traceback.format_exc()
 			error_msg = str(e)
@@ -219,6 +253,7 @@ Return ONLY the modified HTML:"""
 				return self._send(500, err)
 			except Exception as send_error:
 				print(f"Failed to send error response: {send_error}")
+				traceback.print_exc()
 				# Last resort - try to send a simple error
 				try:
 					self.send_response(500)
@@ -226,8 +261,9 @@ Return ONLY the modified HTML:"""
 					self.send_header('Access-Control-Allow-Origin', '*')
 					self.end_headers()
 					self.wfile.write(json.dumps({'success': False, 'error': error_msg}).encode('utf-8'))
-				except:
-					pass
+				except Exception as final_error:
+					print(f"Final error send failed: {final_error}")
+					traceback.print_exc()
 	
 	def do_OPTIONS(self):
 		self.send_response(200)

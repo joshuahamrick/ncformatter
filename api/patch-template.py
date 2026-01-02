@@ -153,19 +153,26 @@ class handler(BaseHTTPRequestHandler):
 			elif html_size > 20000:  # Large HTML
 				max_tokens = 12000
 			
+			# Escape braces in current_html and instruction to prevent f-string interpretation
+			# Double braces {{ and }} become literal { and } in f-strings
+			escaped_html = current_html.replace('{', '{{').replace('}', '}}')
+			escaped_instruction = instruction.replace('{', '{{').replace('}', '}}')
+			escaped_ir_context = ir_context.replace('{', '{{').replace('}', '}}')
+			
+			# Now we can safely use f-string with the escaped content
 			user_message = f"""Modify the following HTML template according to this instruction:
 
-Instruction: {instruction}
-{ir_context}
+Instruction: {escaped_instruction}
+{escaped_ir_context}
 
 Current HTML:
 ```html
-{current_html}
+{escaped_html}
 ```
 
 CRITICAL RULES:
 1. Apply the instruction EXACTLY as requested
-2. Maintain all variable placeholders ({[TAG]} format) - DO NOT change them
+2. Maintain all variable placeholders ({{[TAG]}} format) - DO NOT change them
 3. Maintain all helper functions (Money, Compress, DateAdd, Date, DateDiff, If, etc.) - DO NOT change their syntax
 4. Maintain proper HTML structure (each element on its own line)
 5. Preserve all styling (bold, underline, font-size, text-align)

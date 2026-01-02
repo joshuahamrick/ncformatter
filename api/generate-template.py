@@ -107,7 +107,7 @@ def load_few_shot_examples():
 					
 					# Limit example size to reduce token usage
 					# Large examples like SI002 should be truncated but still show structure
-					max_example_chars = 8000  # ~2,700 tokens per example (more conservative)
+					max_example_chars = 6000  # ~2,000 tokens per example (reduced further)
 					if len(html) > max_example_chars:
 						# For very large examples, take first part and note about truncation
 						html = html[:max_example_chars] + "\n\n[... Example truncated - document continues with similar structure ...]"
@@ -246,15 +246,15 @@ def format_ir_for_prompt(ir):
 	# user message structure (~1000 tokens), and response (~4000 tokens)
 	# Total budget: ~30,000 tokens, but rate limit is 30,000 TPM, so we need to be conservative
 	# Use ~20,000 tokens max for input (system + user + few-shot), leaving ~10,000 for response
-	# IR content should be ~12,000 tokens max (~36,000 chars)
-	max_ir_chars = 30000  # ~10,000 tokens for IR content (more conservative)
-	max_blocks_to_include = 250  # Reduced from 300
+	# IR content should be ~11,000 tokens max (~33,000 chars)
+	max_ir_chars = 28000  # ~9,300 tokens for IR content (reduced further)
+	max_blocks_to_include = 220  # Reduced further to stay within limits
 	
 	if total_blocks > max_blocks_to_include:
 		# Smart sampling: take beginning, sample middle, take end
 		# This gives better coverage of document structure
-		beginning_count = 80  # First 80 blocks (header, intro, early content)
-		end_count = 80  # Last 80 blocks (closing, signature, final content)
+		beginning_count = 70  # First 70 blocks (header, intro, early content)
+		end_count = 70  # Last 70 blocks (closing, signature, final content)
 		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle
 		
 		sampled = []
@@ -670,11 +670,13 @@ class handler(BaseHTTPRequestHandler):
 				# Reserve tokens for output: 30,000 - estimated_input_tokens
 				# But cap at reasonable limits - be more conservative
 				available_output_tokens = 30000 - estimated_input_tokens
-				if estimated_input_tokens > 20000:
+				# Allow slightly more tokens (21,000) since we're often just slightly over
+				# This leaves ~9,000 tokens for output, which should be sufficient
+				if estimated_input_tokens > 21000:
 					# Too large - reject before API call
 					return self._send(400, {
 						'success': False,
-						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~20,000). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
+						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~21,000). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
 					})
 				
 				# Set max_tokens based on available budget, but cap at reasonable limits

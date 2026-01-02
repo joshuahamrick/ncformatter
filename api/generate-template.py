@@ -337,13 +337,15 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 
 2. LOAN NUMBER AND RE: TABLE - CRITICAL: Most letters MUST include a table with Loan Number and RE: (Property Address):
    - ALWAYS include this table after the mailing address and before the salutation
-   - Extract the EXACT structure from Document Content:
-     * Some documents have: "Loan Number:" in first row, "RE:" in second row (like MI008)
-     * Some documents have: "Re: Loan Number:" in first row, "RE:" in second row (like SI002)
-     * Some documents have: "RE: Loan Number:" in first row, "Property Address:" in second row
-   - Extract the EXACT label text from the document (e.g., "Loan Number:" vs "RE: Loan Number:" vs "Re: Loan Number:")
-   - CRITICAL: If Document Content shows "Re: Loan Number: [M594]" and "RE: [M567]", include BOTH rows in the table
-   - Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">Label:</td><td>{[TAG]}</td></tr>...</tbody></table>
+   - Extract the EXACT structure from Document Content - DO NOT combine or modify labels:
+     * If Document Content shows "Loan Number: [M594]" → Use EXACTLY "Loan Number:" as the label
+     * If Document Content shows "RE: [M567]" → Use EXACTLY "RE:" as the label
+     * If Document Content shows "Re: Loan Number: [M594]" → Use EXACTLY "Re: Loan Number:" as the label
+     * DO NOT combine "Loan Number:" with "RE:" to create "Re: Loan Number:" if that's not what's in the document
+     * DO NOT modify labels - extract them EXACTLY as they appear in the Document Content
+   - CRITICAL: Look at the Document Content for the EXACT label text - if it says "Loan Number:" use that, if it says "RE:" use that, if it says "Re: Loan Number:" use that
+   - DO NOT create labels that don't exist in the Document Content
+   - Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">EXACT_LABEL_FROM_DOCUMENT:</td><td>{[TAG]}</td></tr>...</tbody></table>
    - ONLY skip this table if the Document Content clearly shows NO loan number or property address information
 
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):

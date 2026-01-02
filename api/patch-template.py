@@ -170,9 +170,14 @@ CRITICAL RULES:
 4. Maintain proper HTML structure (each element on its own line)
 5. Preserve all styling (bold, underline, font-size, text-align)
 6. If adding bullet points, format them as a table: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Text</td></tr></tbody></table>
-7. If fixing header structure, extract the EXACT structure from Document Content above
-8. Return ONLY the complete modified HTML, no explanations, no markdown code blocks
-9. If the HTML is very large, make sure to return the COMPLETE modified HTML, not just a portion
+7. HEADER LOGIC (if fixing header structure):
+   - If Document Content mentions NMLS/NMLSID → Use: <div>{{Header(NMLSID)}}</div>
+   - If Document Content has H003 WITH a conditional (e.g., "if {{[H003]}} = null") → Use: <div>{{Insert(H003 TagHeader)}}</div>
+   - Otherwise → Use: <div>{{[tagHeader]}}</div>
+   - IMPORTANT: H003 header is ONLY used when there's conditional logic involving H003, not just because H003 is mentioned
+8. LOAN NUMBER AND RE: TABLE: Most letters MUST include a table with Loan Number and RE: after mailing address and before salutation. Extract the EXACT structure from Document Content.
+9. Return ONLY the complete modified HTML, no explanations, no markdown code blocks
+10. If the HTML is very large, make sure to return the COMPLETE modified HTML, not just a portion
 
 Return ONLY the modified HTML:"""
 			

@@ -327,17 +327,27 @@ STEP 1 - CONTENT EXTRACTION:
 STEP 2 - STRUCTURE (MANDATORY - DETECT FROM DOCUMENT):
 CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header structure - different documents have different layouts!
 
-1. HEADER DETECTION - Look at the Document Content to determine:
-   - If you see "Loan Number:" and "RE:" or "Property Address:" in separate rows or together, extract the EXACT structure from the document
-   - Some documents have: "Loan Number:" in first row, "RE:" in second row (like MI008)
-   - Some documents have: "Re: Loan Number:" in first row, "RE:" in second row (like SI002)
-   - Some documents have: "RE: Loan Number:" in first row, "Property Address:" in second row
-   - Some documents have NO property address table at all - only include it if it appears in the Document Content
+1. HEADER DETECTION - Look at the Document Content to determine the correct header type:
+   - CRITICAL HEADER LOGIC (in priority order):
+     a) If Document Content mentions NMLS or NMLSID → Use: <div>{Header(NMLSID)}</div>
+     b) If Document Content has H003 WITH a conditional (e.g., "if {[H003]} = null" or "if {[H003]} = ''" or conditional logic involving H003) → Use: <div>{Insert(H003 TagHeader)}</div>
+     c) Otherwise → Use: <div>{[tagHeader]}</div>
+   - IMPORTANT: H003 header is ONLY used when there's a CONDITIONAL involving H003, not just because H003 is mentioned
+   - Extract the EXACT header structure from the Document Content
+
+2. LOAN NUMBER AND RE: TABLE - CRITICAL: Most letters MUST include a table with Loan Number and RE: (Property Address):
+   - ALWAYS include this table after the mailing address and before the salutation
+   - Extract the EXACT structure from Document Content:
+     * Some documents have: "Loan Number:" in first row, "RE:" in second row (like MI008)
+     * Some documents have: "Re: Loan Number:" in first row, "RE:" in second row (like SI002)
+     * Some documents have: "RE: Loan Number:" in first row, "Property Address:" in second row
    - Extract the EXACT label text from the document (e.g., "Loan Number:" vs "RE: Loan Number:" vs "Re: Loan Number:")
    - CRITICAL: If Document Content shows "Re: Loan Number: [M594]" and "RE: [M567]", include BOTH rows in the table
+   - Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">Label:</td><td>{[TAG]}</td></tr>...</tbody></table>
+   - ONLY skip this table if the Document Content clearly shows NO loan number or property address information
 
-2. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
-<div>{Insert(H003 TagHeader)}</div>
+3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
+<div>{Insert(H003 TagHeader)}</div>  <!-- OR {Header(NMLSID)} OR {[tagHeader]} based on detection above -->
 <br>
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>

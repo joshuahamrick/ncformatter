@@ -104,6 +104,14 @@ def load_few_shot_examples():
 			try:
 				with open(full_path, 'r', encoding='utf-8') as f:
 					html = f.read().strip()
+					
+					# Limit example size to reduce token usage
+					# Large examples like SI002 should be truncated but still show structure
+					max_example_chars = 15000  # ~5000 tokens per example
+					if len(html) > max_example_chars:
+						# For very large examples, take first part and note about truncation
+						html = html[:max_example_chars] + "\n\n[... Example truncated - document continues with similar structure ...]"
+					
 					examples.append({
 						'name': os.path.basename(rel_path).replace('-formatted.html', ''),
 						'html': html
@@ -208,8 +216,8 @@ def format_ir_for_prompt(ir):
 				continue
 			
 			# This looks like actual content - include it
-			# Increase limit to capture more content
-			formatted.append(f"Paragraph {idx + 1}: {text[:1000]}")
+			# Limit to 500 chars per paragraph to reduce token usage
+			formatted.append(f"Paragraph {idx + 1}: {text[:500]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -229,14 +237,28 @@ def format_ir_for_prompt(ir):
 				for i, row_text in enumerate(table_text):
 					formatted.append(f"  Row {i+1}: {row_text}")
 	
-	# CRITICAL: Include ALL content blocks - do not truncate for large documents
-	# For documents with many paragraphs (like SI002 with 800+), we need ALL of them
+	# Balance between including content and staying within token limits
+	# For very large documents, we need to truncate but still provide enough context
 	total_blocks = len(formatted)
+	
+	# Estimate tokens: roughly 4 chars per token, but be conservative (3 chars per token for text)
+	# We need to leave room for system prompt (~2000 tokens), few-shot examples (~5000 tokens), 
+	# user message structure (~1000 tokens), and response (~8000 tokens)
+	# Total budget: ~30,000 tokens, so we can use ~14,000 tokens for IR content
+	max_ir_chars = 40000  # ~13,000 tokens for IR content
+	
 	if total_blocks > 50:
-		# Increase limit significantly for large documents - include up to 1000 blocks
-		max_blocks = min(1000, total_blocks)
+		# For large documents, include up to 400 blocks initially
+		max_blocks = min(400, total_blocks)
 		result = '\n'.join(formatted[:max_blocks])
-		if total_blocks > max_blocks:
+		
+		# Check if we're approaching token limit
+		result_length = len(result)
+		if result_length > max_ir_chars:
+			# Truncate to stay within limits
+			result = result[:max_ir_chars]
+			result += f"\n\n[NOTE: Document truncated at {max_ir_chars} chars due to token limits. Document has {total_blocks} total content blocks. You MUST still include ALL conditional sections, ALL state-specific content patterns, and ALL paragraph structures from the ENTIRE document. Use the patterns shown above to generate the complete template.]"
+		elif total_blocks > max_blocks:
 			result += f"\n\n[CRITICAL NOTE: Document has {total_blocks} total content blocks (showing first {max_blocks}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure. Do NOT stop early - continue until you reach the closing signature section.]"
 		return result
 	

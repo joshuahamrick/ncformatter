@@ -73,16 +73,14 @@ def load_few_shot_examples():
 		os.path.join(os.getcwd(), 'formatter examples')
 	]
 	
-	# Load MORE examples to give AI better context - diverse patterns
+	# Load fewer examples to reduce token usage - keep most important ones
 	curated = [
 		'ES114/ES114-formatted.html',  # Simple PMI termination
 		'MI008/MI008-formatted.html',  # PMI Auto Term with bullet points and different header layout
 		'CA003/CA003-formatted.html',  # ACH with conditionals
 		'GB001/GB001-formatted.html',  # Transfer letter
-		'CA005/CA005-formatted.html',  # ACH removal
-		'CS101/CS101-formatted.html',  # One-time draft
-		'LM401/LM401-formatted.html',  # Complex table + conditionals
-		'SI002/SI002-formatted.html'  # Complex document with many state conditionals - shows how to include ALL content
+		'LM401/LM401-formatted.html'  # Complex table + conditionals
+		# Removed: CA005, CS101, SI002 to reduce token usage
 	]
 	
 	examples = []
@@ -107,7 +105,7 @@ def load_few_shot_examples():
 					
 					# Limit example size to reduce token usage
 					# Large examples like SI002 should be truncated but still show structure
-					max_example_chars = 6000  # ~2,000 tokens per example (reduced further)
+					max_example_chars = 5000  # ~1,700 tokens per example (reduced further)
 					if len(html) > max_example_chars:
 						# For very large examples, take first part and note about truncation
 						html = html[:max_example_chars] + "\n\n[... Example truncated - document continues with similar structure ...]"
@@ -217,8 +215,8 @@ def format_ir_for_prompt(ir):
 			
 			# This looks like actual content - include it
 			# CRITICAL: Include FULL text, not truncated - we need ALL content for accurate bullet point conversion
-			# Limit to 400 chars per paragraph (balance between preserving content and staying within token limits)
-			formatted.append(f"Paragraph {idx + 1}: {text[:400]}")
+			# Limit to 350 chars per paragraph (reduced further to stay within token limits)
+			formatted.append(f"Paragraph {idx + 1}: {text[:350]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -247,15 +245,15 @@ def format_ir_for_prompt(ir):
 	# user message structure (~1000 tokens), and response (~4000 tokens)
 	# Total budget: ~30,000 tokens, but rate limit is 30,000 TPM, so we need to be conservative
 	# Use ~20,000 tokens max for input (system + user + few-shot), leaving ~10,000 for response
-	# IR content should be ~10,000 tokens max (~30,000 chars)
-	max_ir_chars = 26000  # ~8,700 tokens for IR content (reduced further)
-	max_blocks_to_include = 200  # Further reduced to stay within token limits
+	# IR content should be ~9,000 tokens max (~27,000 chars)
+	max_ir_chars = 24000  # ~8,000 tokens for IR content (reduced further)
+	max_blocks_to_include = 180  # Further reduced to stay within token limits
 	
 	if total_blocks > max_blocks_to_include:
 		# Smart sampling: take beginning, sample middle, take end
 		# This gives better coverage of document structure
-		beginning_count = 60  # First 60 blocks (header, intro, early content)
-		end_count = 60  # Last 60 blocks (closing, signature, final content)
+		beginning_count = 50  # First 50 blocks (header, intro, early content)
+		end_count = 50  # Last 50 blocks (closing, signature, final content)
 		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle
 		
 		sampled = []

@@ -631,17 +631,26 @@ class handler(BaseHTTPRequestHandler):
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")
 				
-				# Determine max_tokens based on document size
-				# For large documents like SI002 (800+ paragraphs), need more tokens
-				ir_blocks = len(ir.get('blocks', []))
-				if ir_blocks > 500:
-					max_tokens = 16000  # Very large documents need more tokens
-				elif ir_blocks > 200:
-					max_tokens = 12000  # Large documents
-				else:
-					max_tokens = 8000  # Standard documents
+				# Estimate token count and set max_tokens accordingly
+				# Rate limit: 30,000 TPM (tokens per minute)
+				total_input_chars = len(full_system_prompt) + len(user_message)
+				estimated_input_tokens = total_input_chars // 3  # Conservative estimate
 				
-				print(f"Document has {ir_blocks} blocks, using max_tokens={max_tokens}")
+				# Reserve tokens for output: 30,000 - estimated_input_tokens
+				# But cap at reasonable limits
+				available_output_tokens = 30000 - estimated_input_tokens
+				if estimated_input_tokens > 22000:
+					# Too large - reject before API call
+					return self._send(400, {
+						'success': False,
+						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~22,000). Please use a smaller document or contact support.'
+					})
+				
+				# Set max_tokens based on available budget, but cap at reasonable limits
+				max_tokens = min(8000, max(4000, available_output_tokens - 1000))  # Leave 1000 token buffer
+				
+				ir_blocks = len(ir.get('blocks', []))
+				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}")
 				
 				response = client.chat.completions.create(
 					model=model_name,

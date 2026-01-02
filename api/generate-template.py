@@ -499,14 +499,15 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
 - CRITICAL: When converting bullet points to tables, you MUST include the COMPLETE text from each bullet point - NEVER truncate or omit any part of the content
 - CRITICAL: If a bullet point has multiple sentences or clauses, include ALL of them in the table cell - do not stop after the first sentence
 - CRITICAL: Preserve ALL content from bullet points - if the Document Content shows a long bullet point with multiple sentences, include ALL sentences in the <td> tag
-- CRITICAL: After section headers like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc., look for bullet points that follow - these MUST be formatted as tables
-- CRITICAL: If you see consecutive paragraphs that appear to be list items (especially after headers ending with ":"), format them as a bullet point table
-- CRITICAL: Look for patterns like multiple paragraphs starting with similar text or appearing as a list - these are likely bullet points that need table formatting
-- CRITICAL EXAMPLE: If Document Content shows:
+- CRITICAL: After section headers like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc., check if the following paragraphs are ACTUALLY bullet points (with •, -, *, or numbered lists) - only then format them as tables
+- CRITICAL: If you see consecutive paragraphs that are ACTUALLY bullet points (with •, -, *, or numbered lists), format them as a bullet point table
+- CRITICAL: Do NOT format regular consecutive paragraphs as bullet points - only format when you see actual bullet characters (•, -, *) or numbered lists (1., 2., 3.) in the Document Content
+- CRITICAL EXAMPLE: Only format as bullet point table if Document Content ACTUALLY shows bullet characters:
+  If Document Content shows:
   "Next Steps:
-  Paragraph 1 about step 1
-  Paragraph 2 about step 2
-  Paragraph 3 about step 3"
+  • Paragraph 1 about step 1
+  • Paragraph 2 about step 2
+  • Paragraph 3 about step 3"
   Then format as:
   <div><b>Next Steps:</b></div>
   <br>
@@ -524,6 +525,16 @@ CRITICAL BULLET POINTS AND BOLD TEXT:
     <td>Paragraph 3 about step 3</td>
   </tr>
   </tbody></table>
+  
+  If Document Content shows (NO bullet characters):
+  "Next Steps:
+  Paragraph 1 about step 1
+  Paragraph 2 about step 2"
+  Then format as regular divs (NOT a bullet point table):
+  <div><b>Next Steps:</b></div>
+  <br>
+  <div>Paragraph 1 about step 1</div>
+  <div>Paragraph 2 about step 2</div>
   
 - CRITICAL EXAMPLE OF MULTIPLE BULLET POINT SETS IN ONE DOCUMENT:
   Only format as bullet point tables if Document Content ACTUALLY shows bullet characters (•, -, *, or numbered lists):

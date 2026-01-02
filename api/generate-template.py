@@ -107,7 +107,7 @@ def load_few_shot_examples():
 					
 					# Limit example size to reduce token usage
 					# Large examples like SI002 should be truncated but still show structure
-					max_example_chars = 15000  # ~5000 tokens per example
+					max_example_chars = 8000  # ~2,700 tokens per example (more conservative)
 					if len(html) > max_example_chars:
 						# For very large examples, take first part and note about truncation
 						html = html[:max_example_chars] + "\n\n[... Example truncated - document continues with similar structure ...]"
@@ -216,8 +216,8 @@ def format_ir_for_prompt(ir):
 				continue
 			
 			# This looks like actual content - include it
-			# Limit to 500 chars per paragraph to reduce token usage
-			formatted.append(f"Paragraph {idx + 1}: {text[:500]}")
+			# Limit to 300 chars per paragraph to reduce token usage
+			formatted.append(f"Paragraph {idx + 1}: {text[:300]}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -241,15 +241,17 @@ def format_ir_for_prompt(ir):
 	# For very large documents, we need to truncate but still provide enough context
 	total_blocks = len(formatted)
 	
-	# Estimate tokens: roughly 4 chars per token, but be conservative (3 chars per token for text)
-	# We need to leave room for system prompt (~2000 tokens), few-shot examples (~5000 tokens), 
-	# user message structure (~1000 tokens), and response (~8000 tokens)
-	# Total budget: ~30,000 tokens, so we can use ~14,000 tokens for IR content
-	max_ir_chars = 40000  # ~13,000 tokens for IR content
+	# Estimate tokens: roughly 3 chars per token for text
+	# We need to leave room for system prompt (~2000 tokens), few-shot examples (~3000 tokens), 
+	# user message structure (~1000 tokens), and response (~4000 tokens)
+	# Total budget: ~30,000 tokens, but rate limit is 30,000 TPM, so we need to be conservative
+	# Use ~20,000 tokens max for input (system + user + few-shot), leaving ~10,000 for response
+	# IR content should be ~12,000 tokens max (~36,000 chars)
+	max_ir_chars = 30000  # ~10,000 tokens for IR content (more conservative)
 	
 	if total_blocks > 50:
-		# For large documents, include up to 400 blocks initially
-		max_blocks = min(400, total_blocks)
+		# For large documents, include up to 300 blocks initially
+		max_blocks = min(300, total_blocks)
 		result = '\n'.join(formatted[:max_blocks])
 		
 		# Check if we're approaching token limit
@@ -631,23 +633,23 @@ class handler(BaseHTTPRequestHandler):
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")
 				
-				# Estimate token count and set max_tokens accordingly
-				# Rate limit: 30,000 TPM (tokens per minute)
-				total_input_chars = len(full_system_prompt) + len(user_message)
-				estimated_input_tokens = total_input_chars // 3  # Conservative estimate
-				
-				# Reserve tokens for output: 30,000 - estimated_input_tokens
-				# But cap at reasonable limits
-				available_output_tokens = 30000 - estimated_input_tokens
-				if estimated_input_tokens > 22000:
-					# Too large - reject before API call
-					return self._send(400, {
-						'success': False,
-						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~22,000). Please use a smaller document or contact support.'
-					})
-				
-				# Set max_tokens based on available budget, but cap at reasonable limits
-				max_tokens = min(8000, max(4000, available_output_tokens - 1000))  # Leave 1000 token buffer
+			# Estimate token count and set max_tokens accordingly
+			# Rate limit: 30,000 TPM (tokens per minute)
+			total_input_chars = len(full_system_prompt) + len(user_message)
+			estimated_input_tokens = total_input_chars // 3  # Conservative estimate
+			
+			# Reserve tokens for output: 30,000 - estimated_input_tokens
+			# But cap at reasonable limits - be more conservative
+			available_output_tokens = 30000 - estimated_input_tokens
+			if estimated_input_tokens > 20000:
+				# Too large - reject before API call
+				return self._send(400, {
+					'success': False,
+					'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~20,000). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
+				})
+			
+			# Set max_tokens based on available budget, but cap at reasonable limits
+			max_tokens = min(6000, max(3000, available_output_tokens - 2000))  # Leave 2000 token buffer for safety
 				
 				ir_blocks = len(ir.get('blocks', []))
 				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}")

@@ -437,24 +437,37 @@ STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
      * Variable tags followed by +, -, *, /, or ÷
      * Multiple variable tags with operators: "[M591] + [M015] + [M497] + [M585] + [C004] - [M013]"
      * Expressions with division: "[Q178E2 ÷ Q177]" or "[Q178 ÷ Q177]"
-   - STEP 2: Convert ALL math expressions to a SINGLE Math() function - NEVER use multiple Money() calls
-   - STEP 3: Remove E suffixes from tags BEFORE putting in Math():
+     * Expressions that span multiple lines or have many variables
+     * Expressions wrapped in parentheses: "$([M591E6] + [M015E6] + [M497E6] + [M585E6] + [C004E6] - [M013E6])"
+   - STEP 2: CRITICAL - Scan the ENTIRE expression from start to finish:
+     * Find the opening parenthesis or start of the expression
+     * Scan through ALL variables and operators until you reach the closing parenthesis or end
+     * DO NOT stop after the first few variables - capture ALL of them
+     * Look for BOTH additions (+) AND subtractions (-) - expressions can have both
+     * Count all variables: if you see 6 variables, include all 6; if you see 10, include all 10
+   - STEP 3: Convert ALL math expressions to a SINGLE Math() function - NEVER use multiple Money() calls
+   - STEP 4: Remove E suffixes from tags BEFORE putting in Math():
      * M591E6 → {[M591]}, M015E6 → {[M015]}, M497E6 → {[M497]}, M585E6 → {[M585]}, C004E6 → {[C004]}, M013E6 → {[M013]}
      * Q178E2 → {[Q178]}
-   - STEP 4: Convert operators:
+   - STEP 5: Convert operators:
      * ÷ → /
      * Keep +, -, * as-is
-   - STEP 5: Wrap entire expression in ONE Math() function with |Money format
+   - STEP 6: Wrap entire expression in ONE Math() function with |Money format
    - CORRECT EXAMPLES:
+     * "$([M591E6] (Delinquent Balance) + [M015E6] (Accrued Late Charge Balance) + [M497E6] (NSF Balance) + [M585E6] (Mortgagor Recoverable Corporate Advance Balance) + [C004E6] (Other Fees)) - [M013E6] (Suspense Balance))" → {Math({[M591]} + {[M015]} + {[M497]} + {[M585]} + {[C004]} - {[M013]}|Money)}
      * "[M591] + [M015] + [M497] + [M585] + [C004] - [M013]" → {Math({[M591]} + {[M015]} + {[M497]} + {[M585]} + {[C004]} - {[M013]}|Money)}
      * "[Q178E2 ÷ Q177]" → {Math({[Q178]} / {[Q177]}|Money)}
-     * "$([M591E6]) + ([M015E6]) + ([M497E6]) + ([M585E6]) + ([C004E6]) - ([M013E6])" → {Math({[M591]} + {[M015]} + {[M497]} + {[M585]} + {[C004]} - {[M013]}|Money)}
    - WRONG EXAMPLES (DO NOT DO THIS):
+     * {Math({[M591]} + {[M015]} + {[M497]} + {[M585]}|Money)} ← WRONG: Missing C004 and M013
      * {Money({[M591]})} + {Money({[M015]})} + {Money({[M497]})} ← WRONG: Multiple Money() calls
      * {Money({[M591]} + {[M015]})} ← WRONG: Money() doesn't do math, use Math()
-   - CRITICAL: If you see a calculation with multiple variables and operators, it MUST be ONE Math() function
-   - CRITICAL: Remove ALL parenthesis descriptions like "(Delinquent Balance)", "(NSF Balance)" BEFORE converting to Math()
+   - CRITICAL: Scan the ENTIRE expression - do NOT stop after the first few variables
+   - CRITICAL: Include ALL variables in the expression - count them and verify you have them all
+   - CRITICAL: Look for BOTH additions (+) AND subtractions (-) - expressions often have both
+   - CRITICAL: If you see a calculation with multiple variables and operators, it MUST be ONE Math() function with ALL variables
+   - CRITICAL: Remove ALL parenthesis descriptions like "(Delinquent Balance)", "(NSF Balance)", "(Other Fees)", "(Suspense Balance)" BEFORE converting to Math()
    - CRITICAL: The Math() function handles the entire calculation - do NOT break it into multiple Money() calls
+   - CRITICAL: When you see an expression like "$([M591E6] + [M015E6] + [M497E6] + [M585E6] + [C004E6] - [M013E6])", you MUST include ALL 6 variables (M591, M015, M497, M585, C004, M013) - do NOT stop at 4
 
 6. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
 

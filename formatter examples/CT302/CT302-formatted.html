@@ -7,7 +7,7 @@
 <br>
 <div>Dear {[Salutation]},</div>
 <br>
-<div>Our records indicate that your mortgage loan for the property located at {[M567]}{If('{[M583]}' NOT IN ('', '0', NULL))} {[M583]}{End If}, {[M568]} is currently delinquent. As of {[M026]}, you are past due in the amount of {Math({[M591]} + {[M015]} + {[M497]} + {[M585]}|Money)}.</div>
+<div>Our records indicate that your mortgage loan for the property located at {[M567]}{If('{[M583]}' NOT IN ('', '0', NULL))} {[M583]}{End If}, {[M568]} is currently delinquent. As of {[M026]}, you are past due in the amount of {Math({[M591]} + {[M015]} + {[M497]} + {[M585]} + {[C004]} - {[M013]}|Money)}.</div>
 <br>
 <div>Connecticut law (Conn. Gen. Stat. § 8-265cc et seq.) requires us to notify you of your rights under the <b>Emergency Mortgage Assistance Program (EMAP)</b>, administered by the Connecticut Housing Finance Authority (CHFA). This program may help you bring your mortgage current and avoid foreclosure.</div>
 <br>

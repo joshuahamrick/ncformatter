@@ -396,7 +396,7 @@ CRITICAL RULES:
   * Keep: "(the Property)" - this is actual content, not metadata
   * Pattern: If parentheses contain words like "Balance", "Date", "Address", "Number", "Line", "Code" after a variable tag, it's likely metadata - REMOVE IT
 - NEVER include conditional salutation logic - ALWAYS use <div>Dear {[Salutation]},</div>
-- ALWAYS include property address table after mailing address
+- ONLY include Loan Number/RE table if Document Content shows EXPLICIT labels ("Loan Number:", "RE:") as separate sections - DO NOT create table just because property address variables appear in content
 - ALWAYS format with newlines - each tag on its own line
 - CRITICAL: Check Document Content order - subject lines may appear BEFORE or AFTER salutation depending on document - extract them in the order they appear
 

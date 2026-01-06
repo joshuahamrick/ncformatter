@@ -214,10 +214,44 @@ def format_ir_for_prompt(ir):
 				continue
 			
 			# This looks like actual content - include it
-			# CRITICAL: Include FULL text, not truncated - we need ALL content for accurate bullet point conversion
+			# CRITICAL: Remove metadata descriptions in parentheses BEFORE including in prompt
+			# These are variable descriptions like "(Property Line 1/Street Address)", "(Due Date)", "(Delinquent Balance)", etc.
+			# Pattern: (Description text) that appears after variable tags or in variable definitions
+			cleaned_text = text
+			
+			# Remove parenthesis descriptions that are metadata (not actual content)
+			# These typically appear after variable tags like {[M567]} (Property Line 1/Street Address)
+			# Or in calculations like {[M591]} (Delinquent Balance) + {[M015]} (Accrued Late Charge Balance)
+			# Pattern: Look for parentheses containing descriptive metadata
+			metadata_patterns = [
+				r'\s*\(Property Line \d+/[^)]+\)',  # (Property Line 1/Street Address)
+				r'\s*\(New Property [^)]+\)',  # (New Property Unit Number), (New Property Line 2/...)
+				r'\s*\(Due Date\)',  # (Due Date)
+				r'\s*\(Delinquent Balance\)',  # (Delinquent Balance)
+				r'\s*\(Accrued Late Charge Balance\)',  # (Accrued Late Charge Balance)
+				r'\s*\(NSF Balance\)',  # (NSF Balance)
+				r'\s*\(Mortgagor Recoverable Corporate Advance Balance\)',  # (Mortgagor Recoverable Corporate Advance Balance)
+				r'\s*\(Other Fees\)',  # (Other Fees)
+				r'\s*\(Suspense Balance\)',  # (Suspense Balance)
+				r'\s*\(the Property\)',  # (the Property) - this one should stay, it's actual content
+			]
+			
+			# Remove metadata descriptions but keep "(the Property)" as it's actual content
+			for pattern in metadata_patterns:
+				if pattern != r'\s*\(the Property\)':  # Don't remove this one
+					cleaned_text = re.sub(pattern, '', cleaned_text, flags=re.IGNORECASE)
+			
+			# Also remove generic patterns: (Description) that appear after variable tags
+			# But be careful - only remove if it looks like metadata, not actual content
+			# Pattern: (Capitalized Description) after a variable tag or in a calculation
+			cleaned_text = re.sub(r'\s*\([A-Z][^)]*(?:Balance|Date|Address|Number|Line|Code|Indicator|Name)\)', '', cleaned_text)
+			
+			# Clean up extra spaces
+			cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+			
 			# For ALL-CAPS text (likely important legal notices), include more characters
 			# Check if text is mostly uppercase - if so, include more to preserve complete notices
-			is_mostly_uppercase = len([c for c in text if c.isupper()]) > len(text) * 0.5
+			is_mostly_uppercase = len([c for c in cleaned_text if c.isupper()]) > len(cleaned_text) * 0.5
 			char_limit = 600 if is_mostly_uppercase else 450  # More chars for ALL-CAPS, more for regular too
 			
 			# Extract formatting information (bold, underline, font size, alignment)
@@ -243,7 +277,7 @@ def format_ir_for_prompt(ir):
 			
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
-			formatted.append(f"Paragraph {idx + 1}: {text[:char_limit]}{formatting_note}")
+			formatted.append(f"Paragraph {idx + 1}: {cleaned_text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -357,9 +391,14 @@ CRITICAL RULES:
 - IGNORE variable definitions like "[H002] Company Address Line 1" - those are metadata
 - IGNORE conditional logic text like "(or if [H581] and/or [H582] present)" - do NOT include this
 - IGNORE instructions like "If [M065] ≥ 'July 29, 1999' then print:" - convert to proper {If()} syntax
+- CRITICAL: REMOVE ALL parenthesis descriptions that are metadata - these are NOT actual content:
+  * Remove: "(Property Line 1/Street Address)", "(Due Date)", "(Delinquent Balance)", "(Accrued Late Charge Balance)", "(NSF Balance)", "(Mortgagor Recoverable Corporate Advance Balance)", "(Other Fees)", "(Suspense Balance)"
+  * Keep: "(the Property)" - this is actual content, not metadata
+  * Pattern: If parentheses contain words like "Balance", "Date", "Address", "Number", "Line", "Code" after a variable tag, it's likely metadata - REMOVE IT
 - NEVER include conditional salutation logic - ALWAYS use <div>Dear {[Salutation]},</div>
 - ALWAYS include property address table after mailing address
 - ALWAYS format with newlines - each tag on its own line
+- CRITICAL: Check Document Content order - subject lines may appear BEFORE or AFTER salutation depending on document - extract them in the order they appear
 
 Document Content:
 """ + ir_content + """
@@ -376,6 +415,14 @@ Generate the HTML template following these EXACT rules:
 STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
 
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
+   - CRITICAL: Remove ALL parenthesis descriptions that are metadata (variable descriptions):
+     * These appear after variable tags: {[M567]} (Property Line 1/Street Address) → {[M567]}
+     * These appear in calculations: {[M591]} (Delinquent Balance) + {[M015]} (Accrued Late Charge Balance) → {[M591]} + {[M015]}
+     * Common patterns: (Property Line X/...), (Due Date), (Delinquent Balance), (Accrued Late Charge Balance), (NSF Balance), (Mortgagor Recoverable Corporate Advance Balance), (Other Fees), (Suspense Balance)
+     * REMOVE these - they are NOT actual document content, just metadata descriptions
+     * EXCEPTION: Keep "(the Property)" as it's actual content, not metadata
+     * CRITICAL: When you see text like "{[M567]} (Property Line 1/Street Address), {[M583]} (New Property Unit Number), {[M568]} (New Property Line 2/City State and Zip Code) (the Property)", remove ALL the parenthesis descriptions EXCEPT "(the Property)"
+     * CRITICAL: In math expressions, remove ALL parenthesis descriptions BEFORE converting to Math() function
 
 2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]}, M591E6 → {[M591]}, M015E6 → {[M015]})
 
@@ -385,12 +432,29 @@ STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
 
 4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
 
-5. Convert math expressions properly:
-   - If you see calculations like "[M591] + [M015] + [M497] + [M585]" → Convert to {Math({[M591]} + {[M015]} + {[M497]} + {[M585]}|Money)}
-   - If you see "[Q178E2 ÷ Q177]" or "[Q178 ÷ Q177]" → Convert to {Math({[Q178]} / {[Q177]}|Money)}
-   - Remove E suffixes from tags (Q178E2 → {[Q178]}, M591E6 → {[M591]})
-   - Use / for division, + for addition, - for subtraction, * for multiplication
-   - Format: {Math({[TAG1]} / {[TAG2]}|Money)} or {Math({[TAG1]} + {[TAG2]} - {[TAG3]}|Money)}
+5. Convert math expressions properly - CRITICAL SYSTEMATIC CONVERSION:
+   - STEP 1: Identify math expressions in Document Content - look for patterns like:
+     * Variable tags followed by +, -, *, /, or ÷
+     * Multiple variable tags with operators: "[M591] + [M015] + [M497] + [M585] + [C004] - [M013]"
+     * Expressions with division: "[Q178E2 ÷ Q177]" or "[Q178 ÷ Q177]"
+   - STEP 2: Convert ALL math expressions to a SINGLE Math() function - NEVER use multiple Money() calls
+   - STEP 3: Remove E suffixes from tags BEFORE putting in Math():
+     * M591E6 → {[M591]}, M015E6 → {[M015]}, M497E6 → {[M497]}, M585E6 → {[M585]}, C004E6 → {[C004]}, M013E6 → {[M013]}
+     * Q178E2 → {[Q178]}
+   - STEP 4: Convert operators:
+     * ÷ → /
+     * Keep +, -, * as-is
+   - STEP 5: Wrap entire expression in ONE Math() function with |Money format
+   - CORRECT EXAMPLES:
+     * "[M591] + [M015] + [M497] + [M585] + [C004] - [M013]" → {Math({[M591]} + {[M015]} + {[M497]} + {[M585]} + {[C004]} - {[M013]}|Money)}
+     * "[Q178E2 ÷ Q177]" → {Math({[Q178]} / {[Q177]}|Money)}
+     * "$([M591E6]) + ([M015E6]) + ([M497E6]) + ([M585E6]) + ([C004E6]) - ([M013E6])" → {Math({[M591]} + {[M015]} + {[M497]} + {[M585]} + {[C004]} - {[M013]}|Money)}
+   - WRONG EXAMPLES (DO NOT DO THIS):
+     * {Money({[M591]})} + {Money({[M015]})} + {Money({[M497]})} ← WRONG: Multiple Money() calls
+     * {Money({[M591]} + {[M015]})} ← WRONG: Money() doesn't do math, use Math()
+   - CRITICAL: If you see a calculation with multiple variables and operators, it MUST be ONE Math() function
+   - CRITICAL: Remove ALL parenthesis descriptions like "(Delinquent Balance)", "(NSF Balance)" BEFORE converting to Math()
+   - CRITICAL: The Math() function handles the entire calculation - do NOT break it into multiple Money() calls
 
 6. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
 
@@ -491,16 +555,19 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <!-- DO NOT combine or modify labels - use EXACTLY what appears in Document Content -->
 <!-- Example: If Document Content shows "Loan Number: [M594]" and "RE: [M567]", use those EXACT labels -->
 <table width="100%"><tbody><tr>
-  <td width="20%" valign="top">Loan Number:</td>  <!-- Extract EXACT label from Document Content - DO NOT modify -->
+  <td width="20%" valign="top"><b>Loan Number:</b></td>  <!-- Extract EXACT label from Document Content - DO NOT modify, make label bold -->
   <td>{[M594]}</td>
 </tr><tr>
-  <td width="20%" valign="top">RE:</td>  <!-- Extract EXACT label from Document Content - DO NOT modify -->
+  <td width="20%" valign="top"><b>RE:</b></td>  <!-- Extract EXACT label from Document Content - DO NOT modify, make label bold -->
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
 <br>
 [Conditional FHA/RHS sections if present - format as {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}<div>FHA Case Number: {[M037]}</div>{End If}]
 <br>
 <div>Dear {[Salutation]},</div>
+<br>
+<!-- CRITICAL: Subject lines typically come AFTER salutation - check Document Content order but standard is: Salutation → Subject → Content -->
+[Subject line if present - format as <div><b>Subject: ...</b></div>]
 <br>
 [Content paragraphs here - match spacing from source document]
 

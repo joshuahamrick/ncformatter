@@ -412,6 +412,22 @@ Document Content:
 
 Generate the HTML template following these EXACT rules:
 
+STEP 0 - CRITICAL: PRESERVE EXACT PARAGRAPH ORDER AND SEQUENCE:
+   - CRITICAL: Extract paragraphs in the EXACT order they appear in Document Content
+   - CRITICAL: Do NOT reorder paragraphs - maintain the sequence from the source document
+   - CRITICAL: Include ALL paragraphs, including:
+     * Enclosures sections (e.g., "Enclosures:" followed by bullet points)
+     * Bullet point lists at the end of documents
+     * Closing paragraphs before signatures
+     * All content from start to finish
+   - CRITICAL: When you see "Enclosures:" or similar sections, include them AFTER the signature block
+   - CRITICAL: When you see bullet points after "Enclosures:" or similar headers, format them as a table (like other bullet points)
+   - CRITICAL: Scan the ENTIRE Document Content from beginning to end - do NOT stop early
+   - CRITICAL: Count paragraphs in Document Content and verify you've included them all in the correct order
+   - CRITICAL: If Document Content shows paragraph A, then paragraph B, then paragraph C, your HTML MUST show them in that exact order: A → B → C
+   - WRONG: Reordering paragraphs or skipping paragraphs at the end
+   - CORRECT: Including all paragraphs in the exact sequence they appear in Document Content
+
 STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
 
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
@@ -591,8 +607,17 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <br>
 [Content paragraphs here - match spacing from source document]
 
-CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
+CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT APPEARS - DO NOT STOP EARLY OR REORDER:
 - Include EVERY paragraph shown in the Document Content above - COUNT THEM and make sure you include ALL
+- CRITICAL: Preserve the EXACT order of paragraphs as they appear in Document Content - do NOT reorder them
+- CRITICAL: If Document Content shows paragraph A, then B, then C, your HTML MUST show A → B → C in that exact order
+- CRITICAL: Include ALL content at the END of documents, including:
+  * Enclosures sections (e.g., "Enclosures:" followed by bullet points)
+  * Bullet point lists after "Enclosures:" or similar headers - format these as tables
+  * Closing paragraphs before signatures
+  * All final content sections
+- CRITICAL: When you see "Enclosures:" or similar headers, include them AFTER the signature block
+- CRITICAL: When you see bullet points after "Enclosures:", format them as a table (like other bullet points)
 - For documents with many state conditionals (like SI002), you MUST include ALL state-specific sections
 - Include styled titles (with style attributes like text-align: center, font-size)
 - Include ALL sections, tables, and content

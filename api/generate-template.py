@@ -526,24 +526,29 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
    - Extract the EXACT header structure from the Document Content
 
 2. LOAN NUMBER AND RE: TABLE - CRITICAL SYSTEMATIC DETECTION:
-   - STEP 1: Scan Document Content for paragraphs containing "Loan Number" or "M594" or "RE:" or "M567" or "M583" or "M568"
-   - STEP 2: If you find these references, check if they appear together (indicating a Loan Number/RE table)
-   - STEP 3: Look for patterns like:
-     * "Loan Number: [M594]" or "Loan Number – No Dash" or similar
-     * "RE:" or "Re:" followed by property address variables
-     * Property address variables: [M567], [M583], [M568]
-   - STEP 4: If these elements exist, create a table with:
+   - STEP 1: Scan Document Content for EXPLICIT labels like "Loan Number:" or "RE:" or "Re:" appearing as standalone text (not just variable tags)
+   - STEP 2: Look for patterns where these labels appear as SEPARATE paragraphs or table rows:
+     * "Loan Number:" followed by [M594] on the same line or next line
+     * "RE:" or "Re:" followed by property address variables on the same line or next line
+     * These should appear as DISTINCT labeled sections, not just variables mentioned in content paragraphs
+   - STEP 3: CRITICAL DISTINCTION - Do NOT create a table just because property address variables (M567, M583, M568) appear in content:
+     * WRONG: If you see "property located at {[M567]}, {[M583]}, {[M568]}" in a paragraph → This is NOT a Loan Number/RE table
+     * CORRECT: If you see a separate paragraph/line like "Loan Number: [M594]" or "RE: [M567]" → This IS a Loan Number/RE table
+   - STEP 4: Only create the table if you find EXPLICIT labels ("Loan Number:", "RE:", "Re:") appearing as separate labeled sections
+   - STEP 5: If labels exist, create table with:
      * First row: Loan Number label (extract EXACT label from Document Content) → {[M594]}
      * Second row: RE: label (extract EXACT label) → {Compress({[M567]}|{[M583]}|{[M568]})}
-   - STEP 5: Format labels as bold: <td width="20%" valign="top"><b>Loan Number:</b></td>
-   - CRITICAL: ALWAYS include this table after the mailing address and BEFORE the salutation if loan/property info exists
+   - STEP 6: Format labels as bold: <td width="20%" valign="top"><b>Loan Number:</b></td>
+   - CRITICAL: ONLY include this table if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections
+   - CRITICAL: DO NOT create this table just because property address variables appear in regular content paragraphs
+   - CRITICAL: If property address is mentioned inline in content (e.g., "property located at {[M567]}"), that is NOT a Loan Number/RE table - skip it
    - CRITICAL: Extract the EXACT label text from Document Content:
      * If Document Content shows "Loan Number: [M594]" → Use EXACTLY "Loan Number:" as the label
      * If Document Content shows "RE: [M567]" → Use EXACTLY "RE:" as the label
      * If Document Content shows "Re: Loan Number: [M594]" → Use EXACTLY "Re: Loan Number:" as the label
      * DO NOT combine or modify labels - extract them EXACTLY as they appear
    - CRITICAL: Format as: <table width="100%"><tbody><tr><td width="20%" valign="top"><b>EXACT_LABEL:</b></td><td>{[TAG]}</td></tr><tr><td width="20%" valign="top"><b>RE:</b></td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
-   - ONLY skip this table if the Document Content clearly shows NO loan number or property address information
+   - ONLY skip this table if Document Content does NOT show explicit "Loan Number:" or "RE:" labels as separate sections
 
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
 <div>{Insert(H003 TagHeader)}</div>  <!-- DEFAULT: Use {Insert(H003 TagHeader)} unless NMLS is mentioned. Only use {[tagHeader]} if Document Content explicitly shows tagHeader without H003 -->
@@ -551,23 +556,25 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
-<!-- CRITICAL: Most letters MUST include Loan Number and RE: table - extract EXACT labels from Document Content -->
-<!-- DO NOT combine or modify labels - use EXACTLY what appears in Document Content -->
-<!-- Example: If Document Content shows "Loan Number: [M594]" and "RE: [M567]", use those EXACT labels -->
+<!-- CRITICAL: Loan Number and RE: table - ONLY include if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections -->
+<!-- DO NOT create this table just because property address variables (M567, M583, M568) appear in content paragraphs -->
+<!-- ONLY create if you see explicit labels like "Loan Number: [M594]" or "RE: [M567]" as separate sections -->
+[Loan Number/RE table ONLY if explicit labels exist - format as:
 <table width="100%"><tbody><tr>
-  <td width="20%" valign="top"><b>Loan Number:</b></td>  <!-- Extract EXACT label from Document Content - DO NOT modify, make label bold -->
+  <td width="20%" valign="top"><b>EXACT_LABEL_FROM_DOC:</b></td>  <!-- Extract EXACT label from Document Content - DO NOT modify, make label bold -->
   <td>{[M594]}</td>
 </tr><tr>
   <td width="20%" valign="top"><b>RE:</b></td>  <!-- Extract EXACT label from Document Content - DO NOT modify, make label bold -->
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
 <br>
+]
 [Conditional FHA/RHS sections if present - format as {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}<div>FHA Case Number: {[M037]}</div>{End If}]
 <br>
-<div>Dear {[Salutation]},</div>
+<!-- CRITICAL: Check Document Content order - subject line may come BEFORE or AFTER salutation -->
+[Subject line if present - check Document Content order, format as <div><b>Subject: ...</b></div>]
 <br>
-<!-- CRITICAL: Subject lines typically come AFTER salutation - check Document Content order but standard is: Salutation → Subject → Content -->
-[Subject line if present - format as <div><b>Subject: ...</b></div>]
+<div>Dear {[Salutation]},</div>
 <br>
 [Content paragraphs here - match spacing from source document]
 

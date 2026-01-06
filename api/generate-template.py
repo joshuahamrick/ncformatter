@@ -219,7 +219,31 @@ def format_ir_for_prompt(ir):
 			# Check if text is mostly uppercase - if so, include more to preserve complete notices
 			is_mostly_uppercase = len([c for c in text if c.isupper()]) > len(text) * 0.5
 			char_limit = 600 if is_mostly_uppercase else 450  # More chars for ALL-CAPS, more for regular too
-			formatted.append(f"Paragraph {idx + 1}: {text[:char_limit]}")
+			
+			# Extract formatting information (bold, underline, font size, alignment)
+			has_bold = any(r.get('bold', False) for r in runs)
+			has_underline = any(r.get('underline', False) for r in runs)
+			font_size = None
+			for r in runs:
+				if r.get('fontSizePt'):
+					font_size = r.get('fontSizePt')
+					break
+			alignment = block.get('align', 'left')
+			
+			# Build formatting hints
+			formatting_hints = []
+			if has_bold:
+				formatting_hints.append("BOLD")
+			if has_underline:
+				formatting_hints.append("UNDERLINE")
+			if font_size and font_size != 11.0:  # 11pt is default, only note if different
+				formatting_hints.append(f"FONT_SIZE_{int(font_size)}pt")
+			if alignment and alignment != 'left':
+				formatting_hints.append(f"ALIGN_{alignment.upper()}")
+			
+			# Include formatting information in the output
+			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
+			formatted.append(f"Paragraph {idx + 1}: {text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -349,19 +373,27 @@ Document Content:
 
 Generate the HTML template following these EXACT rules:
 
-STEP 1 - CONTENT EXTRACTION:
+STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
+
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
-2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]})
+
+2. Use exact variable format {[TAG]} and remove last 2 chars from tags ending in E6/E8/etc. (e.g., L001E8 → {[L001]}, M029E6 → {[M029]}, M591E6 → {[M591]}, M015E6 → {[M015]})
+
 3. Use {[plsMatrix.*]} for ALL company variables (CompanyLongName, CompanyShortName, CSPhoneNumber, HoursOfOperation, LossPreventionPhoneNumberTollFree, etc.) - NEVER use variables without plsMatrix prefix for company data
    - CORRECT: {[plsMatrix.LossPreventionPhoneNumberTollFree]}, {[plsMatrix.CSPhoneNumber]}, {[plsMatrix.CompanyLongName]}
    - WRONG: {[LossPreventionPhoneNumberTollFree]}, {[CSPhoneNumber]}, {[CompanyLongName]} ← Missing plsMatrix prefix
+
 4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
+
 5. Convert math expressions properly:
+   - If you see calculations like "[M591] + [M015] + [M497] + [M585]" → Convert to {Math({[M591]} + {[M015]} + {[M497]} + {[M585]}|Money)}
    - If you see "[Q178E2 ÷ Q177]" or "[Q178 ÷ Q177]" → Convert to {Math({[Q178]} / {[Q177]}|Money)}
-   - Remove E suffixes from tags (Q178E2 → {[Q178]})
+   - Remove E suffixes from tags (Q178E2 → {[Q178]}, M591E6 → {[M591]})
    - Use / for division, + for addition, - for subtraction, * for multiplication
    - Format: {Math({[TAG1]} / {[TAG2]}|Money)} or {Math({[TAG1]} + {[TAG2]} - {[TAG3]}|Money)}
+
 6. Convert conditional logic properly: "If [M065] ≥ 'July 29, 1999' then print:" becomes {If('{[M065]}' &gt;= 'July 29, 1999')}...content...{End If}
+
 7. CRITICAL CONDITIONAL SYNTAX - Follow this EXACT format:
    CORRECT: {If('{[M006]}' = 'FHA' AND {[M037]} &gt; 0)}
    WRONG: {If({[M006]} = 'FHA' AND {[M037]} > 0)}  ← Missing quotes around variable, wrong comparison operator
@@ -369,18 +401,52 @@ STEP 1 - CONTENT EXTRACTION:
    - Variables in numeric comparisons don't need quotes: {[TAG]}
    - Always use &gt; not > for greater than
    - Always use &lt; not < for less than
-7. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
-8. CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in numeric format (yyyyMMdd) to be evaluated correctly, otherwise they will be compared as strings or interpreted as math. The Date() function's second parameter is for format (uses C# DateTime format strings). 
+
+8. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
+
+9. CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in numeric format (yyyyMMdd) to be evaluated correctly, otherwise they will be compared as strings or interpreted as math. The Date() function's second parameter is for format (uses C# DateTime format strings). 
    - Example: {If((Date({[M065]}|yyyyMMdd) &gt;= 19990729))} - NO QUOTES around the date value, NO DASHES (to avoid subtraction)
    - Date() format examples: {Date({[M035]}|MMMM yyyy)} produces "September 2034", {Date({[TAG]}|MM/dd/yyyy)} produces "05/29/2015"
    - For comparisons, always use numeric format: yyyyMMdd WITHOUT quotes or dashes (e.g., 19990729, not '1999-07-29' or 1999-07-29)
-8. PRESERVE STYLING from source document - CRITICAL: if text is centered, bold, underlined, or has specific font sizes, you MUST include those style attributes:
+
+10. SYSTEMATIC FORMATTING ANALYSIS - Perform these steps in order:
+    a) Scan ALL paragraphs for [FORMATTING: BOLD] notes
+    b) For each paragraph with BOLD, identify what should be bold (see BOLD TEXT ANALYSIS section)
+    c) Scan for bullet points (•, -, *, numbered lists)
+    d) Format each set of bullet points as a table
+    e) Check for Loan Number/RE table requirements (see LOAN NUMBER AND RE: TABLE section)
+    f) Verify ALL content is included (count paragraphs)
+8. PRESERVE STYLING from source document - CRITICAL SYSTEMATIC ANALYSIS:
+   - STEP 1: Scan EVERY paragraph in Document Content for [FORMATTING: ...] notes
+   - STEP 2: If a paragraph has [FORMATTING: BOLD], wrap the appropriate text in <b> tags
+   - STEP 3: If a paragraph has [FORMATTING: UNDERLINE], wrap in <u> tags
+   - STEP 4: If a paragraph has [FORMATTING: FONT_SIZE_Xpt], add style="font-size: Xpt"
+   - STEP 5: If a paragraph has [FORMATTING: ALIGN_CENTER], add style="text-align: center"
+   - CRITICAL: Check EVERY paragraph for formatting notes - do NOT skip any
+   - CRITICAL: If a paragraph shows [FORMATTING: BOLD], identify which words/phrases should be bold:
+     * If the entire paragraph should be bold: <div><b>entire text</b></div>
+     * If only part should be bold: <div>regular text <b>bold portion</b> more regular text</div>
+     * Common bold patterns: section headers, program names (like "EMAP"), important phrases ("within 60 days"), contact info
+   - CRITICAL: Look for patterns where specific words/phrases are bold:
+     * Program names: "Emergency Mortgage Assistance Program (EMAP)" → <b>Emergency Mortgage Assistance Program (EMAP)</b>
+     * Time-sensitive phrases: "within 60 days" → <b>within 60 days</b>
+     * Section headers: "You may be eligible for EMAP assistance if:" → <b>You may be eligible for EMAP assistance if:</b>
+     * Contact info: Phone numbers, organization names → <b>Connecticut Housing Finance Authority (CHFA)</b>
+   - CRITICAL: When you see [FORMATTING: BOLD] on a paragraph, analyze the content to determine what should be bold:
+     * If it's a short phrase or header → entire paragraph bold
+     * If it's a longer paragraph → identify the key phrase(s) that should be bold
+   - Examples:
+     * "Emergency Mortgage Assistance Program (EMAP)" → <b>Emergency Mortgage Assistance Program (EMAP)</b>
+     * "You may be eligible for EMAP assistance if:" → <b>You may be eligible for EMAP assistance if:</b>
+     * "within 60 days" → <b>within 60 days</b>
+     * "Connecticut Housing Finance Authority (CHFA)" → <b>Connecticut Housing Finance Authority (CHFA)</b>
+     * Phone numbers: "{[plsMatrix.CSPhoneNumber]}" → <b>{[plsMatrix.CSPhoneNumber]}</b>
    - Centered text: style="text-align: center"
    - Font size: style="font-size: 14pt" (or whatever size is in the document)
    - Bold: <b>...</b>
    - Underlined: <u>...</u>
    - Combined: <div style="text-align: center; font-size: 14pt"><b>...</b></div>
-   - Look at the Document Content for styling hints - if text appears centered or larger, preserve that
+   - Look at the Document Content for [FORMATTING: ...] notes - these tell you EXACTLY what formatting to apply
 9. For tables, extract the ACTUAL table structure and content from the document - don't generate placeholder tables with "Column 1, Column 2" etc. - look at the LM401 example to see the correct 3-column table format
 10. CRITICAL: If you see table content in the Document Content (look for "Table X" entries), you MUST include that table in your output - NEVER skip tables
 
@@ -395,17 +461,24 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
    - IMPORTANT: The default header format is {Insert(H003 TagHeader)} - use this unless NMLS is mentioned or the document explicitly shows tagHeader
    - Extract the EXACT header structure from the Document Content
 
-2. LOAN NUMBER AND RE: TABLE - CRITICAL: Most letters MUST include a table with Loan Number and RE: (Property Address):
-   - ALWAYS include this table after the mailing address and before the salutation
-   - Extract the EXACT structure from Document Content - DO NOT combine or modify labels:
+2. LOAN NUMBER AND RE: TABLE - CRITICAL SYSTEMATIC DETECTION:
+   - STEP 1: Scan Document Content for paragraphs containing "Loan Number" or "M594" or "RE:" or "M567" or "M583" or "M568"
+   - STEP 2: If you find these references, check if they appear together (indicating a Loan Number/RE table)
+   - STEP 3: Look for patterns like:
+     * "Loan Number: [M594]" or "Loan Number – No Dash" or similar
+     * "RE:" or "Re:" followed by property address variables
+     * Property address variables: [M567], [M583], [M568]
+   - STEP 4: If these elements exist, create a table with:
+     * First row: Loan Number label (extract EXACT label from Document Content) → {[M594]}
+     * Second row: RE: label (extract EXACT label) → {Compress({[M567]}|{[M583]}|{[M568]})}
+   - STEP 5: Format labels as bold: <td width="20%" valign="top"><b>Loan Number:</b></td>
+   - CRITICAL: ALWAYS include this table after the mailing address and BEFORE the salutation if loan/property info exists
+   - CRITICAL: Extract the EXACT label text from Document Content:
      * If Document Content shows "Loan Number: [M594]" → Use EXACTLY "Loan Number:" as the label
      * If Document Content shows "RE: [M567]" → Use EXACTLY "RE:" as the label
      * If Document Content shows "Re: Loan Number: [M594]" → Use EXACTLY "Re: Loan Number:" as the label
-     * DO NOT combine "Loan Number:" with "RE:" to create "Re: Loan Number:" if that's not what's in the document
-     * DO NOT modify labels - extract them EXACTLY as they appear in the Document Content
-   - CRITICAL: Look at the Document Content for the EXACT label text - if it says "Loan Number:" use that, if it says "RE:" use that, if it says "Re: Loan Number:" use that
-   - DO NOT create labels that don't exist in the Document Content
-   - Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">EXACT_LABEL_FROM_DOCUMENT:</td><td>{[TAG]}</td></tr>...</tbody></table>
+     * DO NOT combine or modify labels - extract them EXACTLY as they appear
+   - CRITICAL: Format as: <table width="100%"><tbody><tr><td width="20%" valign="top"><b>EXACT_LABEL:</b></td><td>{[TAG]}</td></tr><tr><td width="20%" valign="top"><b>RE:</b></td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
    - ONLY skip this table if the Document Content clearly shows NO loan number or property address information
 
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
@@ -497,9 +570,30 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT - DO NOT STOP EARLY:
 - CRITICAL: If Document Content shows ALL-CAPS text with multiple sentences (e.g., "FIRST SENTENCE. SECOND SENTENCE. THIRD SENTENCE."), include ALL sentences - these are often important legal notices that must be complete
 - CRITICAL: When you see ALL-CAPS text in Document Content, it's likely an important legal notice - preserve it COMPLETELY, including all sentences and clauses
 
-CRITICAL BULLET POINTS AND BOLD TEXT:
-- If you see bullet points (•, -, *, or numbered lists) in the Document Content, format them as a TABLE with bullet character in first column:
-  Example: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Bullet point text here</td></tr></tbody></table>
+CRITICAL SYSTEMATIC ANALYSIS FOR BULLET POINTS AND BOLD TEXT:
+
+BOLD TEXT ANALYSIS (MUST PERFORM FOR EVERY PARAGRAPH):
+- STEP 1: Read through Document Content paragraph by paragraph
+- STEP 2: For each paragraph, check if it has [FORMATTING: BOLD] note
+- STEP 3: If [FORMATTING: BOLD] is present, identify what should be bold:
+  * Scan the paragraph text for key phrases that are commonly bold:
+    - Program names: "EMAP", "Emergency Mortgage Assistance Program", "CHFA", "Connecticut Housing Finance Authority"
+    - Time-sensitive phrases: "within 60 days", "within X days"
+    - Section headers ending with ":": "You may be eligible for EMAP assistance if:", "Subject:"
+    - Important contact info: Phone numbers, organization names
+    - Important legal phrases: "THIS DOCUMENT IS AN ATTEMPT TO COLLECT A DEBT"
+  * If entire paragraph is a header/short phrase → wrap entire paragraph: <div><b>entire text</b></div>
+  * If only part is bold → wrap specific phrase: <div>regular text <b>bold phrase</b> more text</div>
+- STEP 4: Apply bold formatting consistently throughout the document
+- STEP 5: Double-check that ALL [FORMATTING: BOLD] notes have been addressed
+
+BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
+- STEP 1: Scan Document Content for actual bullet characters (•, -, *, or numbered lists like 1., 2., 3.)
+- STEP 2: When you find bullet points, identify where they start and end
+- STEP 3: Format ALL consecutive bullet points as a single table:
+  Example: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Next bullet point</td></tr></tbody></table>
+- STEP 4: Continue scanning after formatting one set - look for MORE bullet point sets
+- STEP 5: Format EACH set of bullet points as a separate table
 - CRITICAL: When converting bullet points to tables, you MUST include the COMPLETE text from each bullet point - NEVER truncate or omit any part of the content
 - CRITICAL: If a bullet point has multiple sentences or clauses, include ALL of them in the table cell - do not stop after the first sentence
 - CRITICAL: Preserve ALL content from bullet points - if the Document Content shows a long bullet point with multiple sentences, include ALL sentences in the <td> tag

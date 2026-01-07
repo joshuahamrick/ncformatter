@@ -560,7 +560,7 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
    - CRITICAL HEADER LOGIC (in priority order):
      a) If Document Content mentions NMLS or NMLSID → Use: <div>{Header(NMLSID)}</div>
      b) If Document Content shows H003 with a conditional (e.g., "IF {[H003]} = '*' or 'NULL'; then suppress print of line; else produce:") → Use: <div>{Insert(H003 TagHeader)}</div>
-     c) If Document Content shows just {[tagHeader]} or tagHeader without H003 conditional → Use: <div>{tagHeader}</div>
+     c) If Document Content shows just {[tagHeader]} or tagHeader without H003 conditional → Use: <div>{[tagHeader]}</div>
      d) DEFAULT: Use <div>{Insert(H003 TagHeader)}</div> for most documents
    - IMPORTANT: Check Document Content for header structure - if it shows tagHeader directly without H003 conditional, use {tagHeader}
    - IMPORTANT: If H003 has a conditional (suppress if empty), use {Insert(H003 TagHeader)}

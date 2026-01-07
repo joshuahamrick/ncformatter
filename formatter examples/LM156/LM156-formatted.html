@@ -1,0 +1,100 @@
+<div>{tagHeader}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Thank you for contacting {[plsMatrix.CompanyLongName]}. We want to keep you informed and respond quickly to your needs. Based on a careful review of the information you provided to us, you have been approved for a Forbearance Plan in accordance with the terms and conditions set forth below. This Forbearance Plan is a temporary suspension of the mortgage payments and is intended to allow you the time and flexibility to manage the challenges affecting your ability to pay the mortgage. It is important that you read all the information in this letter so that you understand the actions you must take to complete this forbearance plan and any additional steps you must take to resolve the delinquency.</div>
+<br>
+<div><b><u>Forbearance Plan Terms:</u></b></div>
+<br>
+<div>As part of the Forbearance Plan beginning with the payments due on {[Q179]}, we will temporarily suspend the monthly mortgage payment amount of {Money({[M029]})} for {[Q177]} months. During this time, you do not need to make any mortgage payments ("Suspended Payments"). The amount of the Suspended Payments will be added to the total amount past due. At the end of the Forbearance Plan period, you have two options to bring the loan current. You can apply to account for those that have yet to do so for loss mitigation which could change the terms of the loan, or you can reinstate the loan by paying the total due amount past due. The Forbearance Plan only applies to the loan payment and, as such, you must continue to pay the non-escrowed real estate taxes and insurance.</div>
+<br>
+<div>The terms of the loan remain unchanged. As a result of not making any payments during the term of the Forbearance Plan, you will become delinquent on the mortgage and your credit score may be impacted.</div>
+<br>
+<div>If you have questions about the mortgage payment suspension terms, please call us at {[plsMatrix.LossPreventionPhoneNumberTollFree]}. Our offices are open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div><b><u>Next Steps:</u></b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>If your financial situation changes during the term of the Forbearance Plan, please contact us immediately to reassess your situation and discuss potential alternatives.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>At least 30 days prior to the end of the Forbearance Plan, we will send you a Borrower Solicitation Package requesting updated documentation of your financial circumstances. We will also provide information on alternatives that may be available to you at the end of the Forbearance Plan term, such as a reinstatement, repayment plan or other alternative to foreclosure, such as a loan modification.</td>
+</tr></tbody></table></div>
+<br>
+<div><b><u>Additional Forbearance Plan Information and Legal Notices:</u></b></div>
+<br>
+<div>We will not refer the loan to foreclosure, or proceed with foreclosure during the Forbearance Plan period, provided you are complying with its terms:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Any pending foreclosure action or proceeding that has been suspended may resume if you fail to comply with the terms of the Forbearance Plan.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>This Forbearance Plan offer is contingent on your having provided accurate and complete information. We reserve the right to revoke this offer or terminate the plan following your acceptance if we learn of information that would make you ineligible for forbearance.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You agree that, in the event you make any partial payments during the Forbearance Plan period, we will hold those payments in an account until sufficient funds are in the account to pay the oldest delinquent monthly payment. You also agree that we will not owe you interest on the amounts held in the account. If any money is left in this account at the end of the Forbearance Plan and you qualify for a loan modification, those funds will be credited to the loan in accordance with the terms of the note.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Our acceptance and posting of any payment you make during the Forbearance Plan period will not be deemed a waiver of the acceleration of the loan and related activities, including the right to resume or continue foreclosure if you fail to comply with the terms of the plan, and shall not constitute a cure of the mortgage default unless such payments are sufficient to completely cure the default.</td>
+</tr></tbody></table></div>
+<br>
+<div>The current loan documents remain in effect; however, you are not required to make any payments during the term of the Forbearance Plan:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You agree that all terms and provisions of the current mortgage note, and mortgage security instrument remain in full force and effect and you will comply with those terms; and that nothing in the Forbearance Plan shall be understood or construed to be a satisfaction or release in whole or in part of the obligations contained in the loan documents.</td>
+</tr></tbody></table></div>
+<br>
+{If('{[Q365]}' NOT IN ('', '0', NULL) AND {[M590]} &lt; 3)}
+<div><b>If the Mortgage has been modified under the Home Affordable Modification ProgramSM (HAMP), please note that:</b></div>
+<div>If the mortgage becomes 90 days delinquent, you may be ineligible to receive any HAMP "Pay for Performance" incentives, including any accrued but unearned incentives.</div>
+<br>
+{End If}
+<div><b><u>Credit Reporting:</u></b></div>
+<br>
+{If('{[M009]}' &lt;&gt; ',')}
+<div>Please note that we will continue to report the delinquency status of the loan to credit reporting agencies as well as your entry into a Forbearance Plan in accordance with the requirements of the Fair Credit Reporting Act and the Consumer Data Industry Association requirements. <b>CREDIT SCORING COMPANIES MAY CONSIDER THE ENTRY INTO A FORBEARANCE PLAN AS AN INCREASED CREDIT RISK. AS A RESULT, ENTERING INTO A FORBEARANCE PLAN MAY ADVERSELY AFFECT YOUR CREDIT SCORE, PARTICULARLY IF YOU ARE CURRENT ON THE MORTGAGE OR OTHERWISE HAVE A GOOD CREDIT SCORE.</b></div>
+{Else If('{[M009]}' = ',')}
+<div>Please note that we will not be reporting the delinquency status or the entry into a forbearance plan to credit reporting agencies during the term of the forbearance plan.</div>
+<div><b>CREDIT REPORTING AGENCIES MAY CONSIDER WHETHER THERE IS AN INCREASED CREDIT RISK DUE TO THE LACK OF REPORTING. WE ARE UNCERTAIN AS TO THE IMPACT ON YOUR CREDIT SCORE, PARTICULARLY IF YOU ARE CURRENT ON THE MORTGAGE OR OTHERWISE HAVE A GOOD CREDIT SCORE.</b></div>
+{End If}
+<br>
+{If('{[M657]}' = '1')}
+<div><b><u>Loan Modification Trial Period Plan:</u></b></div>
+<br>
+<div>You were evaluated for mortgage payment assistance based on the eligibility requirements of {If('{[M944]}' = 'H')}Freddie Mac{Else If('{[M944]}' = 'F')}Fannie Mae{End If}, the owner of your mortgage loan. {If('{[M944]}' = 'H')}Freddie Mac's{Else If('{[M944]}' = 'F')}Fannie Mae's{End If} requirements for determining borrower eligibility for mortgage payment assistance include determining whether the borrower is experiencing a temporary or permanent financial hardship.</div>
+<br>
+<div>Based on our review of your financial circumstances, we have determined that currently you do not have a hardship that has caused a long-term or permanent increase in expenses or decrease in income that would require a loan modification. Because you have a temporary hardship and the capacity to bring the mortgage loan current following this Forbearance Plan, you are ineligible other Loan Modification plans.</div>
+<br>
+<div><b><u>Right to Appeal:</u></b></div>
+<br>
+<div>You have the right to appeal our determination not to offer you the loan modification Trial Period Plan(s) listed above. If you would like to appeal, you must contact us in writing at the address provided below, no later than {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}, and state that you are requesting an appeal of our decision. You must include in the appeal your name, property address, and mortgage loan number. You may also specify the reasons for your appeal and provide any supporting documentation. Your right to appeal expires {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}. Any appeal requests or documentation received after {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)} may not be considered.</div>
+<br>
+<div>If you elect to appeal, we will provide you a written notice of our appeal decision within 30 calendar days of receiving your appeal. Our appeal decision is final, and not subject to further appeal.</div>
+<br>
+<div>If you elect to appeal, you do not have to accept this Forbearance Plan until resolution of the appeal. If we determine on appeal that you are eligible for a loan modification Trial Period Plan, we will send you an offer for that Trial Period Plan. In that case, you may choose to accept the current Forbearance Plan offer or you may notify us of your intent to accept the new Trial Period Plan offer by contacting us at {[plsMatrix.LossPreventionPhoneNumberTollFree]} or in writing at {[plsMatrix.CompanyLongName]} {[plsMatrix.CompanyReturnAddr1]} {[plsMatrix.CompanyReturnAddr2]} no later than 14 calendar days from the date of the appeal decision.</div>
+<br>
+<div>Any unpaid interest, and other unpaid amounts, such as escrows for taxes and insurance, will continue to accrue on the mortgage loan during the appeal.</div>
+<br>
+{End If}
+<div>If you have any questions or concerns, please contact Loss Mitigation Department at {[plsMatrix.LossPreventionPhoneNumberTollFree]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>{If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else If('{[O294]}' NOT IN ('', '0', NULL))}{[O294]}{Else}{[SPOCContact]}{End If}</div>
+<div>Relationship Manager</div>
+<div>Loss Mitigation Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

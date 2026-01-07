@@ -497,6 +497,10 @@ STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
    - Variables in numeric comparisons don't need quotes: {[TAG]}
    - Always use &gt; not > for greater than
    - Always use &lt; not < for less than
+   - Always use &lt;&gt; not != or <> for not equal
+   - CRITICAL: Use {Else If('{[TAG]}' = 'value')} for multiple conditions, NOT nested {Else}{If(...)}{End If}
+   - CORRECT: {If('{[M009]}' &lt;&gt; ',')}...{Else If('{[M009]}' = ',')}...{End If}
+   - WRONG: {If('{[M009]}' != ',')}...{Else}{If('{[M009]}' = ',')}...{End If}{End If} ← Nested conditionals are wrong
 
 8. When you see text about "For loans closed on or after" or "For loans closed before", wrap it in {If()} conditionals based on [M065]
 
@@ -531,6 +535,9 @@ STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
    - CRITICAL: When you see [FORMATTING: BOLD] on a paragraph, analyze the content to determine what should be bold:
      * If it's a short phrase or header → entire paragraph bold
      * If it's a longer paragraph → identify the key phrase(s) that should be bold
+     * Conditional instruction lines: "If the Mortgage has been modified under...please note that:" → <div><b>If the Mortgage has been modified...</b></div>
+   - CRITICAL: Conditional sections (inside {If()} blocks) can also have formatting - check for [FORMATTING: BOLD] notes even inside conditionals
+   - CRITICAL: When formatting conditional sections, preserve ALL formatting from the source - if a line is bold in the source, it should be bold in the output even if it's inside a conditional
    - Examples:
      * "Emergency Mortgage Assistance Program (EMAP)" → <b>Emergency Mortgage Assistance Program (EMAP)</b>
      * "You may be eligible for EMAP assistance if:" → <b>You may be eligible for EMAP assistance if:</b>
@@ -552,9 +559,11 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 1. HEADER DETECTION - Look at the Document Content to determine the correct header type:
    - CRITICAL HEADER LOGIC (in priority order):
      a) If Document Content mentions NMLS or NMLSID → Use: <div>{Header(NMLSID)}</div>
-     b) DEFAULT: Use <div>{Insert(H003 TagHeader)}</div> for most documents
-     c) Only use <div>{[tagHeader]}</div> if Document Content explicitly shows tagHeader without H003
-   - IMPORTANT: The default header format is {Insert(H003 TagHeader)} - use this unless NMLS is mentioned or the document explicitly shows tagHeader
+     b) If Document Content shows H003 with a conditional (e.g., "IF {[H003]} = '*' or 'NULL'; then suppress print of line; else produce:") → Use: <div>{Insert(H003 TagHeader)}</div>
+     c) If Document Content shows just {[tagHeader]} or tagHeader without H003 conditional → Use: <div>{tagHeader}</div>
+     d) DEFAULT: Use <div>{Insert(H003 TagHeader)}</div> for most documents
+   - IMPORTANT: Check Document Content for header structure - if it shows tagHeader directly without H003 conditional, use {tagHeader}
+   - IMPORTANT: If H003 has a conditional (suppress if empty), use {Insert(H003 TagHeader)}
    - Extract the EXACT header structure from the Document Content
 
 2. LOAN NUMBER AND RE: TABLE - CRITICAL SYSTEMATIC DETECTION:
@@ -619,8 +628,10 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
   * Bullet point lists after "Enclosures:" or similar headers - format these as tables
   * Closing paragraphs before signatures
   * All final content sections
+  * Paragraphs that appear AFTER conditional blocks (e.g., "If you have any questions" after {End If})
 - CRITICAL: When you see "Enclosures:" or similar headers, include them AFTER the signature block
 - CRITICAL: When you see bullet points after "Enclosures:", format them as a table (like other bullet points)
+- CRITICAL: Paragraphs that appear after conditional {End If} blocks should be OUTSIDE the conditional - check Document Content order carefully
 - For documents with many state conditionals (like SI002), you MUST include ALL state-specific sections
 - Include styled titles (with style attributes like text-align: center, font-size)
 - Include ALL sections, tables, and content

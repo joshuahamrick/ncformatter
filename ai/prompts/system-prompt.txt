@@ -55,9 +55,12 @@ Generate HTML templates that:
 ### Conditional Logic
 - Convert instruction text to proper syntax: "If [M065] ≥ 'July 29, 1999' then print:" → {If('{[M065]}' &gt;= 'July 29, 1999')}
 - Use: {If('{[TAG]}' &gt; 0)} or {If('{[TAG]}' NOT IN ('', '0', '.00', NULL))}
-- Use: {Else If('{[TAG]}' = 'value')}
+- Use: {Else If('{[TAG]}' = 'value')} for multiple conditions - DO NOT nest {Else}{If(...)}{End If}
 - Use: {End If}
-- Always use &lt;&gt; for not equal, &gt; for greater than, &gt;= for greater than or equal
+- Always use &lt;&gt; for not equal (NOT != or <>), &gt; for greater than (NOT >), &lt; for less than (NOT <), &gt;= for greater than or equal (NOT >=), &lt;= for less than or equal (NOT <=)
+- CRITICAL: Use {Else If(...)} syntax for multiple conditions, NOT nested {Else}{If(...)}{End If}
+- CORRECT: {If('{[M009]}' &lt;&gt; ',')}...{Else If('{[M009]}' = ',')}...{End If}
+- WRONG: {If('{[M009]}' != ',')}...{Else}{If('{[M009]}' = ',')}...{End If}{End If} ← Nested conditionals are wrong
 - CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in numeric format (yyyyMMdd) to be evaluated correctly, otherwise they will be compared as strings or interpreted as math. The Date() function's second parameter is for format. Example: {If((Date({[M065]}|yyyyMMdd) &gt;= 19990729))} - NO QUOTES around the date value, NO DASHES (to avoid subtraction)
 
 ### Tables

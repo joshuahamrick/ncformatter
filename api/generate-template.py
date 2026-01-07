@@ -152,17 +152,17 @@ def format_ir_for_prompt(ir):
 	]
 	
 	# Patterns that indicate instruction text (not actual content)
+	# CRITICAL: Be more conservative - only skip if it's CLEARLY just an instruction line, not actual content
 	instruction_patterns = [
-		r'^If\s+\[',  # "If [TAG]"
-		r'^If\s+\[.*\]\s+and\s+\[',  # "If [H567] and [H568] present"
-		r'^If\s+\[.*\]\s+present',  # "If [H567] present"
-		r'^If\s+\[.*\]\s*=\s*\d+',  # "If [M956] = 1"
-		r'^If\s+\[.*\]\s*≥',  # "If [M065] ≥"
-		r'^If\s+\[.*\]\s*<',  # "If [M065] <"
-		r'\(or if\s+\[',  # "(or if [H581]"
-		r'\(see\s+["\']',  # "(see "Additional Borrowers..."
-		r'^\[.*\]\s+[A-Z]',  # "[M561] Additional Mailing Address"
+		r'^If\s+\[.*\]\s+present\s*$',  # "If [H567] present" (standalone line)
+		r'^\(or if\s+\[.*\]\s+present\)\s*$',  # "(or if [H581] present)" (standalone)
+		r'^\[.*\]\s+[A-Z][a-z]+\s+[A-Z][a-z]+\s+Line\s+\d+',  # "[M561] Additional Mailing Address Line 1" (variable definitions)
 	]
+	# REMOVED patterns that were too aggressive:
+	# - r'^If\s+\[' - too broad, catches actual conditional content
+	# - r'^If\s+\[.*\]\s*=\s*\d+' - could be actual content mentioning conditions
+	# - r'\(or if\s+\[' - could be in actual content
+	# - r'\(see\s+["\']' - could be actual content references
 	
 	for idx, block in enumerate(blocks):
 		if block.get('type') == 'paragraph':
@@ -173,12 +173,15 @@ def format_ir_for_prompt(ir):
 			if not text or len(text) < 10:
 				continue
 			
-			# Skip if it matches instruction patterns
+			# Skip if it matches instruction patterns - but be VERY conservative
+			# Only skip if it's clearly just a metadata instruction line, not actual content
 			is_instruction = False
 			for pattern in instruction_patterns:
 				if re.match(pattern, text, re.IGNORECASE):
-					is_instruction = True
-					break
+					# Double-check: if it contains actual sentence content (periods, commas, etc.), it's probably content
+					if not re.search(r'[.!?]\s+[A-Z]', text):  # No sentence structure
+						is_instruction = True
+						break
 			
 			if is_instruction:
 				continue
@@ -350,7 +353,7 @@ def format_ir_for_prompt(ir):
 			result = result[:max_ir_chars]
 			result += f"\n\n[NOTE: Document truncated at {max_ir_chars} chars due to token limits. Document has {total_blocks} total content blocks. You MUST still include ALL conditional sections, ALL state-specific content patterns, and ALL paragraph structures from the ENTIRE document. Use the patterns shown above to generate the complete template.]"
 		else:
-			result += f"\n\n[CRITICAL NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)} blocks: first {beginning_count}, middle samples, last {end_count}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure. Do NOT stop early - continue until you reach the closing signature section.]"
+			result += f"\n\n[CRITICAL NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)} blocks: first {beginning_count}, middle samples, last {end_count}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure. Do NOT stop early - continue until you reach the closing signature section. If you see conditional instructions like 'IF [TAG] THEN INSERT' or 'IF [TAG] = value THEN INSERT', you MUST include those conditional sections in your output even if the full content wasn't sampled. Look for patterns in the sampled content to infer the complete structure.]"
 		return result
 	
 	return '\n'.join(formatted)

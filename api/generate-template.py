@@ -73,14 +73,12 @@ def load_few_shot_examples():
 		os.path.join(os.getcwd(), 'formatter examples')
 	]
 	
-	# Load fewer examples to reduce token usage - keep most important ones
+	# Load minimal examples to reduce token usage - only most critical ones
 	curated = [
-		'ES114/ES114-formatted.html',  # Simple PMI termination
 		'MI008/MI008-formatted.html',  # PMI Auto Term with bullet points and different header layout
 		'CA003/CA003-formatted.html',  # ACH with conditionals
-		'GB001/GB001-formatted.html',  # Transfer letter
 		'LM401/LM401-formatted.html'  # Complex table + conditionals
-		# Removed: CA005, CS101, SI002 to reduce token usage
+		# Removed: ES114, GB001, CA005, CS101, SI002 to aggressively reduce token usage
 	]
 	
 	examples = []
@@ -105,7 +103,7 @@ def load_few_shot_examples():
 					
 					# Limit example size to reduce token usage
 					# Large examples like SI002 should be truncated but still show structure
-					max_example_chars = 3500  # ~1,170 tokens per example (reduced to handle larger docs)
+					max_example_chars = 2500  # ~833 tokens per example (aggressively reduced)
 					if len(html) > max_example_chars:
 						# For very large examples, take first part and note about truncation
 						html = html[:max_example_chars] + "\n\n[... Example truncated - document continues with similar structure ...]"
@@ -255,7 +253,7 @@ def format_ir_for_prompt(ir):
 			# For ALL-CAPS text (likely important legal notices), include more characters
 			# Check if text is mostly uppercase - if so, include more to preserve complete notices
 			is_mostly_uppercase = len([c for c in cleaned_text if c.isupper()]) > len(cleaned_text) * 0.5
-			char_limit = 500 if is_mostly_uppercase else 350  # More chars for ALL-CAPS, regular kept at 350
+			char_limit = 350 if is_mostly_uppercase else 250  # Reduced to handle very large documents
 			
 			# Extract formatting information (bold, underline, font size, alignment)
 			has_bold = any(r.get('bold', False) for r in runs)
@@ -308,17 +306,17 @@ def format_ir_for_prompt(ir):
 	# We need to leave room for system prompt (~2000 tokens), few-shot examples (~3000 tokens), 
 	# user message structure (~1000 tokens), and response (~4000 tokens)
 	# Total budget: ~30,000 tokens, but rate limit is 30,000 TPM, so we need to be conservative
-	# Use ~18,000 tokens max for input (system + user + few-shot), leaving ~12,000 for response
-	# IR content should be ~6,500 tokens max (~19,500 chars)
-	max_ir_chars = 19500  # ~6,500 tokens for IR content (reduced to handle larger docs)
-	max_blocks_to_include = 130  # Reduced to stay under token limits
+	# Use ~17,000 tokens max for input (system + user + few-shot), leaving ~13,000 for response
+	# IR content should be ~4,300 tokens max (~13,000 chars)
+	max_ir_chars = 13000  # ~4,300 tokens for IR content (aggressively reduced for large docs)
+	max_blocks_to_include = 90  # Aggressively reduced to stay under token limits
 	
 	if total_blocks > max_blocks_to_include:
 		# Smart sampling: take beginning, sample middle, take end
 		# This gives better coverage of document structure
-		beginning_count = 40  # First 40 blocks (header, intro, early content)
-		end_count = 40  # Last 40 blocks (closing, signature, final content)
-		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle (50)
+		beginning_count = 30  # First 30 blocks (header, intro, early content)
+		end_count = 30  # Last 30 blocks (closing, signature, final content)
+		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle (30)
 		
 		sampled = []
 		

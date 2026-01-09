@@ -1,0 +1,70 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>The short sale of the above property has been approved subject to the conditions listed on the Sales Contract Review attached. All conditions must be satisfied prior to closing.</div>
+<br>
+{If('{[M944]}' IN ('F', 'H'))}
+<div><b>Grantee herein is prohibited from conveying captioned property for any sales price for a period of 30 days from the date of the deed. After the 30 day period, Grantee is further prohibited from conveying the property for sales price greater than ${Money({[U095]})} (120% of Short Sale Price), until 90 days from the date of this deed. These restrictions shall run with the land are not personal to the Grantee</b></div>
+<br>
+{End If}
+<div>If closing occurs in accordance with the terms of this letter, upon receipt of sales proceeds; the mortgage lien on the property will be released even though the proceeds are less than the balance owed.</div>
+<br>
+<div>Please note there may also be income tax and credit reporting impacts resulting from the Short Sales. Short Sales are reported to credit bureaus and the IRS as "Paid in full for less than full balance" or "Settlement accepted"</div>
+<br>
+<div>Our decision was based in part on information obtained in a report from the consumer reporting agencies listed below. You have a right under the Fair Credit Reporting Act to know the information contained in your credit file at the consumer reporting agency. The reporting agencies played no part in our decision and are unable to supply specific reasons why we have denied credit to you. You also have the right to a free copy of your credit report from the reporting agencies, if you request it no later than 60 days after you receive this notice. In addition, if you find that any information contained in the report you receive is inaccurate or incomplete, you have a right to dispute the matter with the reporting agency.</div>
+<br>
+<div style="text-align: center">{Compress(Equifax|PO Box 740241|Atlanta, GA 30374-0241|(800) 685-1111)}</div>
+<br>
+<div><b>NOTICE:</b> The Federal Equal Opportunity Act prohibits creditors from discriminating against credit applicants on the basis of race, color, religion, national origin, sex, marital status, age (provided the applicant has the capacity to enter into a binding contract); because all or part of the applicant's income derives from any public assistance program; or because the applicant has in good faith exercised any right under the Consumer Credit Protection Act. The federal agency that administers compliance with this law concerning this creditor is:</div>
+<br>
+<div style="text-align: center">{Compress(Bureau of Consumer Financial Protection|1700 G Street NW|Washington, D.C. 20006)}</div>
+<br>
+<div style="text-align: center">{Compress(Office of the Comptroller of the Currency|Customer Assistance Group|1301 McKinney Street, Suite 3450|Houston, TX 77010-9050)}</div>
+<br>
+<div>We appreciate your response to this notice and look forward to speaking with you soon.</div>
+<br>
+<div>If you believe the information used to make this determination is inaccurate, please contact us immediately at {[plsMatrix.CSPhoneNumber]}.</div>
+<br>
+<div>We have assigned a single point of contact representative ("Relationship Manager") to assist you with your Application and answer any questions you may have. Your Relationship Manager or other representative from our offices may periodically contact you while we are reviewing your application. It is important that you communicate with us and return our calls as soon as possible.</div>
+<br>
+<div><b><u>Your Relationship Manager is {If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else If('{[O294]}' NOT IN ('', '0', NULL))}{[O294]}{Else}{[SPOCContact]}{End If} and can be reached at {If('{[O276]}' NOT IN ('', '0', NULL))}{[O276]}{Else If('{[O296]}' NOT IN ('', '0', NULL))}{[O296]}{Else}{[SPOCContactPhone]}{End If}.</u></b></div>
+<br>
+<div>To assist you with exploring your options, the Federal Government provides contact information for housing counselors, which you can access by contacting:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Consumer Financial Protection Bureau at <u>http://www.consumerfinance.gov/mortgagehelp/</u></td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Department of Housing and Urban Development at <u>http://www.hud.gov/offices/hsg/sfh/hcc/fc/</u></td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>HUD Housing Counselor at (800) 569-4287</td>
+</tr></tbody></table></div>
+<br>
+<div>Pursuant to the Equal Credit Opportunity Act ("ECOA")/Regulation B and the Truth in Lending Act ("TILA")/ Regulation Z we are required to deliver the following notice regarding your Loss Mitigation Application:</div>
+<br>
+<div style="margin-left: 20px">We may order an appraisal to determine the property's value and charge you for this appraisal. We will promptly give you a copy of any appraisal, even if the loan does not close. You can pay for an additional appraisal/valuation for your own use at your own cost.</div>
+<br>
+<div>Note that even if your Loss Mitigation Application is not completed, you will be provided a copy of any appraisal/valuation. Furthermore, an appraisal and/or valuation may not be obtained/required for your Loss Mitigation Application.</div>
+<br>
+<div>You may want to consider contacting servicers of any other mortgage loans secured by your property to discuss available loss mitigation options.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div><b><u>{If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else If('{[O294]}' NOT IN ('', '0', NULL))}{[O294]}{Else}{[SPOCContact]}{End If}</u></b></div>
+<div>Relationship Manager</div>
+<div>Loss Mitigation Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

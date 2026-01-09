@@ -103,9 +103,9 @@ def load_few_shot_examples():
 				with open(full_path, 'r', encoding='utf-8') as f:
 					html = f.read().strip()
 					
-					# Limit example size to reduce token usage
-					# Large examples like SI002 should be truncated but still show structure
-					max_example_chars = 5000  # ~1,700 tokens per example (reduced further)
+				# Limit example size to reduce token usage
+				# Large examples like SI002 should be truncated but still show structure
+				max_example_chars = 3500  # ~1,170 tokens per example (reduced to handle larger docs)
 					if len(html) > max_example_chars:
 						# For very large examples, take first part and note about truncation
 						html = html[:max_example_chars] + "\n\n[... Example truncated - document continues with similar structure ...]"
@@ -253,9 +253,9 @@ def format_ir_for_prompt(ir):
 			cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
 			
 			# For ALL-CAPS text (likely important legal notices), include more characters
-			# Check if text is mostly uppercase - if so, include more to preserve complete notices
-			is_mostly_uppercase = len([c for c in cleaned_text if c.isupper()]) > len(cleaned_text) * 0.5
-			char_limit = 600 if is_mostly_uppercase else 450  # More chars for ALL-CAPS, more for regular too
+		# Check if text is mostly uppercase - if so, include more to preserve complete notices
+		is_mostly_uppercase = len([c for c in cleaned_text if c.isupper()]) > len(cleaned_text) * 0.5
+		char_limit = 500 if is_mostly_uppercase else 350  # More chars for ALL-CAPS, regular kept at 350
 			
 			# Extract formatting information (bold, underline, font size, alignment)
 			has_bold = any(r.get('bold', False) for r in runs)
@@ -308,17 +308,17 @@ def format_ir_for_prompt(ir):
 	# We need to leave room for system prompt (~2000 tokens), few-shot examples (~3000 tokens), 
 	# user message structure (~1000 tokens), and response (~4000 tokens)
 	# Total budget: ~30,000 tokens, but rate limit is 30,000 TPM, so we need to be conservative
-	# Use ~20,000 tokens max for input (system + user + few-shot), leaving ~10,000 for response
-	# IR content should be ~9,000 tokens max (~27,000 chars)
-	max_ir_chars = 24000  # ~8,000 tokens for IR content (reduced further)
-	max_blocks_to_include = 170  # Further reduced to compensate for increased paragraph limits
+	# Use ~18,000 tokens max for input (system + user + few-shot), leaving ~12,000 for response
+	# IR content should be ~6,500 tokens max (~19,500 chars)
+	max_ir_chars = 19500  # ~6,500 tokens for IR content (reduced to handle larger docs)
+	max_blocks_to_include = 130  # Reduced to stay under token limits
 	
 	if total_blocks > max_blocks_to_include:
 		# Smart sampling: take beginning, sample middle, take end
 		# This gives better coverage of document structure
-		beginning_count = 50  # First 50 blocks (header, intro, early content)
-		end_count = 50  # Last 50 blocks (closing, signature, final content)
-		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle
+		beginning_count = 40  # First 40 blocks (header, intro, early content)
+		end_count = 40  # Last 40 blocks (closing, signature, final content)
+		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle (50)
 		
 		sampled = []
 		
@@ -990,14 +990,14 @@ class handler(BaseHTTPRequestHandler):
 				# Reserve tokens for output: 30,000 - estimated_input_tokens
 				# But cap at reasonable limits - be more conservative
 				available_output_tokens = 30000 - estimated_input_tokens
-				# Allow slightly more tokens (21,000) since we're often just slightly over
-				# This leaves ~9,000 tokens for output, which should be sufficient
-				if estimated_input_tokens > 21000:
-					# Too large - reject before API call
-					return self._send(400, {
-						'success': False,
-						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~21,000). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
-					})
+			# Conservative limit at 18,500 tokens to ensure we stay well under 30K TPM
+			# This leaves ~11,500 tokens for output, which should be sufficient
+			if estimated_input_tokens > 18500:
+				# Too large - reject before API call
+				return self._send(400, {
+					'success': False,
+					'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~18,500). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
+				})
 				
 				# Set max_tokens based on available budget, but cap at reasonable limits
 				max_tokens = min(6000, max(3000, available_output_tokens - 2000))  # Leave 2000 token buffer for safety

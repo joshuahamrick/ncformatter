@@ -5,10 +5,10 @@ import traceback
 import re
 
 try:
-	import openai
-	OPENAI_AVAILABLE = True
+	import anthropic
+	ANTHROPIC_AVAILABLE = True
 except ImportError:
-	OPENAI_AVAILABLE = False
+	ANTHROPIC_AVAILABLE = False
 
 # Import normalization (we'll create a Python version)
 def normalize_html(html):
@@ -101,9 +101,8 @@ def load_few_shot_examples():
 				with open(full_path, 'r', encoding='utf-8') as f:
 					html = f.read().strip()
 					
-					# Limit example size to reduce token usage
-					# Large examples like SI002 should be truncated but still show structure
-					max_example_chars = 2500  # ~833 tokens per example (aggressively reduced)
+					# Claude's 200K context gives us much more room for examples
+					max_example_chars = 10000  # ~3300 tokens per example - show full structure
 					if len(html) > max_example_chars:
 						# For very large examples, take first part and note about truncation
 						html = html[:max_example_chars] + "\n\n[... Example truncated - document continues with similar structure ...]"
@@ -253,7 +252,7 @@ def format_ir_for_prompt(ir):
 			# For ALL-CAPS text (likely important legal notices), include more characters
 			# Check if text is mostly uppercase - if so, include more to preserve complete notices
 			is_mostly_uppercase = len([c for c in cleaned_text if c.isupper()]) > len(cleaned_text) * 0.5
-			char_limit = 350 if is_mostly_uppercase else 250  # Reduced to handle very large documents
+			char_limit = 1000 if is_mostly_uppercase else 500  # Claude's 200K context allows full content
 			
 			# Extract formatting information (bold, underline, font size, alignment)
 			has_bold = any(r.get('bold', False) for r in runs)
@@ -298,66 +297,52 @@ def format_ir_for_prompt(ir):
 				for i, row_text in enumerate(table_text):
 					formatted.append(f"  Row {i+1}: {row_text}")
 	
-	# Balance between including content and staying within token limits
-	# For very large documents, use smart sampling instead of just taking first N blocks
+	# Claude has 200K context window - we can be much more generous with content
+	# Include ALL blocks for most documents, only sample for extremely large ones
 	total_blocks = len(formatted)
 	
-	# Estimate tokens: roughly 3 chars per token for text
-	# We need to leave room for system prompt (~2000 tokens), few-shot examples (~3000 tokens), 
-	# user message structure (~1000 tokens), and response (~4000 tokens)
-	# Total budget: ~30,000 tokens, but rate limit is 30,000 TPM, so we need to be conservative
-	# Use ~17,000 tokens max for input (system + user + few-shot), leaving ~13,000 for response
-	# IR content should be ~4,300 tokens max (~13,000 chars)
-	max_ir_chars = 13000  # ~4,300 tokens for IR content (aggressively reduced for large docs)
-	max_blocks_to_include = 90  # Aggressively reduced to stay under token limits
+	# With Claude's 200K context, we have ~150K tokens for input after reserving output
+	# That's roughly 450,000 characters of content
+	max_ir_chars = 400000  # ~133K tokens - plenty of room in Claude's 200K context
+	max_blocks_to_include = 2000  # Include all blocks for even very large documents
 	
 	if total_blocks > max_blocks_to_include:
+		# Only for extremely large documents (2000+ blocks)
 		# Smart sampling: take beginning, sample middle, take end
-		# This gives better coverage of document structure
-		beginning_count = 30  # First 30 blocks (header, intro, early content)
-		end_count = 30  # Last 30 blocks (closing, signature, final content)
-		middle_count = max_blocks_to_include - beginning_count - end_count  # Remaining for middle (30)
+		beginning_count = 500
+		end_count = 500
+		middle_count = max_blocks_to_include - beginning_count - end_count
 		
 		sampled = []
-		
-		# Add beginning blocks
 		sampled.extend(formatted[:beginning_count])
 		
-		# Sample evenly from the middle
 		if total_blocks > beginning_count + end_count:
 			middle_start = beginning_count
 			middle_end = total_blocks - end_count
 			middle_range = middle_end - middle_start
 			
 			if middle_range > 0 and middle_count > 0:
-				# Calculate step size to sample evenly
 				step = max(1, middle_range // middle_count)
 				for i in range(middle_start, middle_end, step):
 					if len(sampled) < max_blocks_to_include - end_count:
 						sampled.append(formatted[i])
 		
-		# Add end blocks
 		sampled.extend(formatted[-end_count:])
-		
-		# Ensure we don't exceed max_blocks_to_include
 		sampled = sampled[:max_blocks_to_include]
 		
 		result = '\n'.join(sampled)
 		
-		# Check if we're approaching token limit
-		result_length = len(result)
-		if result_length > max_ir_chars:
-			# Truncate to stay within limits
+		if len(result) > max_ir_chars:
 			result = result[:max_ir_chars]
-			result += f"\n\n[NOTE: Document truncated at {max_ir_chars} chars due to token limits. Document has {total_blocks} total content blocks. You MUST still include ALL conditional sections, ALL state-specific content patterns, and ALL paragraph structures from the ENTIRE document. Use the patterns shown above to generate the complete template.]"
+			result += f"\n\n[NOTE: Document truncated at {max_ir_chars} chars. Document has {total_blocks} total content blocks. You MUST still include ALL conditional sections, ALL state-specific content patterns, and ALL paragraph structures from the ENTIRE document.]"
 		else:
-			result += f"\n\n[CRITICAL NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)} blocks: first {beginning_count}, middle samples, last {end_count}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure. Do NOT stop early - continue until you reach the closing signature section. If you see conditional instructions like 'IF [TAG] THEN INSERT' or 'IF [TAG] = value THEN INSERT', you MUST include those conditional sections in your output even if the full content wasn't sampled. Look for patterns in the sampled content to infer the complete structure.]"
+			result += f"\n\n[NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure.]"
 		return result
 	
 	return '\n'.join(formatted)
 
 def build_prompt(ir, few_shot_examples, user_instruction=None):
-	"""Build the complete prompt for OpenAI"""
+	"""Build the complete prompt for Claude API"""
 	system_prompt = load_system_prompt()
 	
 	# Format IR content
@@ -934,23 +919,23 @@ class handler(BaseHTTPRequestHandler):
 			if not ir:
 				return self._send(400, {'success': False, 'error': 'No IR data provided'})
 			
-			if not OPENAI_AVAILABLE:
-				import_error = "OpenAI library not available. Install with: pip install openai. Make sure requirements.txt includes 'openai>=1.0.0'"
+			if not ANTHROPIC_AVAILABLE:
+				import_error = "Anthropic library not available. Install with: pip install anthropic. Make sure requirements.txt includes 'anthropic>=0.40.0'"
 				print(f"ERROR: {import_error}")
 				return self._send(500, {'success': False, 'error': import_error})
 			
-			# Get OpenAI API key from environment
-			api_key = os.environ.get('OPENAI_API_KEY')
+			# Get Anthropic API key from environment
+			api_key = os.environ.get('ANTHROPIC_API_KEY')
 			if not api_key:
-				key_error = 'OPENAI_API_KEY environment variable not set. Please set it in Vercel project settings → Environment Variables → Add OPENAI_API_KEY'
+				key_error = 'ANTHROPIC_API_KEY environment variable not set. Please set it in Vercel project settings → Environment Variables → Add ANTHROPIC_API_KEY'
 				print(f"ERROR: {key_error}")
 				print(f"Available env vars: {list(os.environ.keys())[:10]}...")  # Debug: show first 10 env vars
 				return self._send(500, {'success': False, 'error': key_error})
 			
-			print(f"OpenAI API key found: {api_key[:10]}... (length: {len(api_key)})")
+			print(f"Anthropic API key found: {api_key[:10]}... (length: {len(api_key)})")
 			
-			# Initialize OpenAI client
-			client = openai.OpenAI(api_key=api_key)
+			# Initialize Anthropic client
+			client = anthropic.Anthropic(api_key=api_key)
 			
 			# Load few-shot examples
 			try:
@@ -972,51 +957,50 @@ class handler(BaseHTTPRequestHandler):
 			# Combine system prompt with few-shot examples
 			full_system_prompt = system_prompt + "\n\n" + few_shot_text
 			
-			# Call OpenAI
+			# Call Anthropic Claude API
 			try:
-				# Use gpt-4o for better quality - it understands formatting and structure better
-				model_name = "gpt-4o"
-				print(f"Calling OpenAI API with model: {model_name}")
+				model_name = "claude-sonnet-4-20250514"
+				print(f"Calling Anthropic API with model: {model_name}")
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")
 				
-				# Estimate token count and set max_tokens accordingly
-				# Rate limit: 30,000 TPM (tokens per minute)
+				# Estimate token count - Claude has 200K context window
 				total_input_chars = len(full_system_prompt) + len(user_message)
 				estimated_input_tokens = total_input_chars // 3  # Conservative estimate
 				
-				# Reserve tokens for output: 30,000 - estimated_input_tokens
-				# But cap at reasonable limits - be more conservative
-				available_output_tokens = 30000 - estimated_input_tokens
-				# Conservative limit at 18,500 tokens to ensure we stay well under 30K TPM
-				# This leaves ~11,500 tokens for output, which should be sufficient
-				if estimated_input_tokens > 18500:
-					# Too large - reject before API call
+				# Claude's 200K context gives us plenty of room
+				# Reserve generous output budget based on document size
+				if estimated_input_tokens > 180000:
 					return self._send(400, {
 						'success': False,
-						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~18,500). The document has been truncated but still exceeds limits. Please try a smaller document or contact support to increase rate limits.'
+						'error': f'Document is too large (~{estimated_input_tokens} input tokens, limit ~180,000). Please try a smaller document.'
 					})
 				
-				# Set max_tokens based on available budget, but cap at reasonable limits
-				max_tokens = min(6000, max(3000, available_output_tokens - 2000))  # Leave 2000 token buffer for safety
-				
+				# Scale output tokens based on document complexity
 				ir_blocks = len(ir.get('blocks', []))
+				if ir_blocks > 500:
+					max_tokens = 16000  # Very large documents need more output
+				elif ir_blocks > 100:
+					max_tokens = 12000  # Large documents
+				else:
+					max_tokens = 8000   # Standard documents
+				
 				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}")
 				
-				response = client.chat.completions.create(
+				response = client.messages.create(
 					model=model_name,
+					max_tokens=max_tokens,
+					system=full_system_prompt,
 					messages=[
-						{"role": "system", "content": full_system_prompt},
 						{"role": "user", "content": user_message}
 					],
-					temperature=0,  # Deterministic
-					max_tokens=max_tokens
+					temperature=0  # Deterministic
 				)
 				
-				html = response.choices[0].message.content.strip()
-				print(f"OpenAI API call successful, HTML length: {len(html)}")
+				html = response.content[0].text.strip()
+				print(f"Anthropic API call successful, HTML length: {len(html)}")
 			except Exception as api_error:
-				error_msg = f"OpenAI API error: {str(api_error)}"
+				error_msg = f"Anthropic API error: {str(api_error)}"
 				print(f"ERROR: {error_msg}")
 				print(f"API Error type: {type(api_error).__name__}")
 				return self._send(500, {'success': False, 'error': error_msg})
@@ -1054,8 +1038,8 @@ class handler(BaseHTTPRequestHandler):
 				user_error_msg = f"{error_type}: {error_msg}"
 				
 				# Add more context for common errors
-				if 'API' in error_type or 'openai' in error_msg.lower():
-					user_error_msg = f"OpenAI API Error: {error_msg}. Please check that OPENAI_API_KEY is set correctly."
+				if 'API' in error_type or 'anthropic' in error_msg.lower():
+					user_error_msg = f"Anthropic API Error: {error_msg}. Please check that ANTHROPIC_API_KEY is set correctly."
 				elif 'token' in error_msg.lower() or 'limit' in error_msg.lower():
 					user_error_msg = f"Token Limit Error: {error_msg}. The document may be too large to process."
 				elif 'JSON' in error_type:

@@ -272,10 +272,10 @@ class WordFormatter {
             let userMessage = `AI generation failed: ${errorMsg}`;
             if (errorMsg.includes('Network error') || errorMsg.includes('Failed to fetch')) {
                 userMessage += '\n\nThis usually means:\n1. The API endpoint is not deployed correctly on Vercel\n2. Check Vercel function logs in the dashboard\n3. Verify the file exists at /api/generate-template';
-            } else if (errorMsg.includes('OPENAI_API_KEY')) {
-                userMessage += '\n\nPlease set OPENAI_API_KEY in Vercel project settings → Environment Variables';
+            } else if (errorMsg.includes('ANTHROPIC_API_KEY')) {
+                userMessage += '\n\nPlease set ANTHROPIC_API_KEY in Vercel project settings → Environment Variables';
             } else {
-                userMessage += '\n\nPlease check:\n1. OPENAI_API_KEY environment variable is set\n2. OpenAI library is installed (pip install openai)\n3. Check Vercel function logs for details';
+                userMessage += '\n\nPlease check:\n1. ANTHROPIC_API_KEY environment variable is set\n2. Anthropic library is installed (pip install anthropic)\n3. Check Vercel function logs for details';
             }
             
             this.showError(userMessage);

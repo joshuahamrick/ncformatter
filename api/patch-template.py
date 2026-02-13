@@ -4,10 +4,10 @@ import os
 import traceback
 
 try:
-	import openai
-	OPENAI_AVAILABLE = True
+	import anthropic
+	ANTHROPIC_AVAILABLE = True
 except ImportError:
-	OPENAI_AVAILABLE = False
+	ANTHROPIC_AVAILABLE = False
 
 # Import normalization - MINIMAL normalization that PRESERVES formatting
 def normalize_html(html):
@@ -82,16 +82,16 @@ class handler(BaseHTTPRequestHandler):
 			if not isinstance(instruction, str):
 				return self._send(400, {'success': False, 'error': 'instruction must be a string'})
 			
-			if not OPENAI_AVAILABLE:
-				return self._send(500, {'success': False, 'error': 'OpenAI library not available'})
+			if not ANTHROPIC_AVAILABLE:
+				return self._send(500, {'success': False, 'error': 'Anthropic library not available. Install with: pip install anthropic'})
 			
-			# Get OpenAI API key
-			api_key = os.environ.get('OPENAI_API_KEY')
+			# Get Anthropic API key
+			api_key = os.environ.get('ANTHROPIC_API_KEY')
 			if not api_key:
-				return self._send(500, {'success': False, 'error': 'OPENAI_API_KEY environment variable not set'})
+				return self._send(500, {'success': False, 'error': 'ANTHROPIC_API_KEY environment variable not set. Please set it in Vercel project settings → Environment Variables'})
 			
-			# Initialize OpenAI client
-			client = openai.OpenAI(api_key=api_key)
+			# Initialize Anthropic client
+			client = anthropic.Anthropic(api_key=api_key)
 			
 			# Build prompt for patching
 			system_prompt = load_system_prompt()
@@ -210,48 +210,49 @@ NOT like this (all on one line):
 
 Return ONLY the modified HTML with proper newlines and formatting:"""
 			
-			# Call OpenAI - using gpt-4o for better quality (same as generate-template)
+			# Call Anthropic Claude API
 			system_prompt_length = len(system_prompt)
 			user_message_length = len(user_message)
 			total_estimated_tokens = (system_prompt_length + user_message_length) // 3
 			
-			print(f"Calling OpenAI API: model=gpt-4o")
+			model_name = "claude-sonnet-4-20250514"
+			print(f"Calling Anthropic API: model={model_name}")
 			print(f"  System prompt: {system_prompt_length} chars (~{system_prompt_length//3} tokens)")
 			print(f"  User message: {user_message_length} chars (~{user_message_length//3} tokens)")
 			print(f"  Total input: ~{total_estimated_tokens} tokens")
 			print(f"  Max output tokens: {max_tokens}")
 			
-			if total_estimated_tokens > 120000:
+			if total_estimated_tokens > 180000:
 				return self._send(400, {
 					'success': False,
 					'error': f'Request is too large (~{total_estimated_tokens} tokens). The HTML template or instruction is too large to process.'
 				})
 			
 			try:
-				response = client.chat.completions.create(
-					model="gpt-4o",
+				response = client.messages.create(
+					model=model_name,
+					max_tokens=max_tokens,
+					system=system_prompt,
 					messages=[
-						{"role": "system", "content": system_prompt},
 						{"role": "user", "content": user_message}
 					],
-					temperature=0,  # Deterministic
-					max_tokens=max_tokens
+					temperature=0  # Deterministic
 				)
-				print(f"OpenAI API call successful, response length: {len(response.choices[0].message.content)}")
+				print(f"Anthropic API call successful, response length: {len(response.content[0].text)}")
 			except Exception as api_error:
-				error_msg = f"OpenAI API error: {str(api_error)}"
+				error_msg = f"Anthropic API error: {str(api_error)}"
 				print(f"ERROR: {error_msg}")
 				print(f"API Error type: {type(api_error).__name__}")
 				traceback.print_exc()
 				return self._send(500, {'success': False, 'error': error_msg})
 			
-			if not response or not response.choices or len(response.choices) == 0:
-				return self._send(500, {'success': False, 'error': 'Empty response from OpenAI API'})
+			if not response or not response.content or len(response.content) == 0:
+				return self._send(500, {'success': False, 'error': 'Empty response from Anthropic API'})
 			
-			html = response.choices[0].message.content.strip()
+			html = response.content[0].text.strip()
 			
 			if not html:
-				return self._send(500, {'success': False, 'error': 'Empty HTML returned from OpenAI API'})
+				return self._send(500, {'success': False, 'error': 'Empty HTML returned from Anthropic API'})
 			
 			# Remove markdown code blocks if present
 			if html.startswith('```html'):
@@ -284,8 +285,8 @@ Return ONLY the modified HTML with proper newlines and formatting:"""
 				user_error_msg = f"{error_type}: {error_msg}"
 				
 				# Add more context for common errors
-				if 'API' in error_type or 'openai' in error_msg.lower():
-					user_error_msg = f"OpenAI API Error: {error_msg}. Please check that OPENAI_API_KEY is set correctly."
+				if 'API' in error_type or 'anthropic' in error_msg.lower():
+					user_error_msg = f"Anthropic API Error: {error_msg}. Please check that ANTHROPIC_API_KEY is set correctly."
 				elif 'token' in error_msg.lower() or 'limit' in error_msg.lower():
 					user_error_msg = f"Token Limit Error: {error_msg}. The HTML template may be too large to process."
 				elif 'JSON' in error_type:

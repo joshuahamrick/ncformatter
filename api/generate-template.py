@@ -126,15 +126,14 @@ def format_ir_for_prompt(ir):
 	formatted = []
 	
 	# Patterns to skip - these are metadata/instructions, not actual content
+	# IMPORTANT: These should match EXACT metadata phrases, not parts of actual content
 	skip_patterns = [
-		'Company Address Line',
 		'System Date',
 		'New Bill Line',
 		'Mailing Street Address',
 		'Mailing City, State',
 		'Foreign Country Code',
 		'Foreign Postal Code',
-		'Loan Number – No Dash',
 		'New Property Line',
 		'Mortgagor Name',
 		'Second Mortgagor',
@@ -148,6 +147,8 @@ def format_ir_for_prompt(ir):
 		'Co-Borrowers',
 		'BKFS'
 	]
+	# REMOVED: 'Loan Number – No Dash' - was filtering out "Loan Number:" labels
+	# REMOVED: 'Company Address Line' - was filtering out actual company address content
 	
 	# Patterns that indicate instruction text (not actual content)
 	# CRITICAL: Be more conservative - only skip if it's CLEARLY just an instruction line, not actual content
@@ -167,9 +168,12 @@ def format_ir_for_prompt(ir):
 			runs = block.get('runs', [])
 			text = ''.join([r.get('text', '') for r in runs]).strip()
 			
-			# Skip empty or very short text
-			if not text or len(text) < 10:
+			# Skip empty or very short text (but keep important labels like "RE:" or "Loan Number:")
+			if not text or len(text) < 3:  # Only skip if VERY short (less than 3 chars)
 				continue
+			
+			# Allow short text if it looks like a label (ends with colon)
+			is_label = text.strip().endswith(':') or re.match(r'^(RE|Loan Number|Property Address|Subject):', text, re.IGNORECASE)
 			
 			# Skip if it matches instruction patterns - but be VERY conservative
 			# Only skip if it's clearly just a metadata instruction line, not actual content
@@ -185,7 +189,8 @@ def format_ir_for_prompt(ir):
 				continue
 			
 			# Skip if it's just a variable definition (starts with [TAG] and short)
-			if re.match(r'^\[[A-Z0-9]+\]\s+[A-Z]', text) and len(text) < 80:
+			# But don't skip if it's a label (like "Loan Number: [M594]" or "RE: [M567]")
+			if not is_label and re.match(r'^\[[A-Z0-9]+\]\s+[A-Z]', text) and len(text) < 80:
 				continue
 			
 			# Skip variable definitions like "[M563] [M564] [M565] [M566] (Mailing City), (State), (5-Digit Zip), (4-Digit Zip)"
@@ -195,10 +200,12 @@ def format_ir_for_prompt(ir):
 				continue
 			
 			# Skip if it contains skip patterns and is short (likely just metadata)
-			if any(pattern in text for pattern in skip_patterns):
-				if len(text) < 100:  # Short = likely just metadata
+			# But don't skip labels or ALL-CAPS text (legal notices)
+			if not is_label and any(pattern in text for pattern in skip_patterns):
+				is_mostly_caps = len([c for c in text if c.isupper()]) > len(text) * 0.5
+				if len(text) < 100 and not is_mostly_caps:  # Short = likely just metadata (unless ALL-CAPS)
 					continue
-				# If longer, might be actual content with metadata mention - include it
+				# If longer or ALL-CAPS, might be actual content - include it
 			
 			# Skip conditional salutation text
 			if re.search(r'\(or if\s+\[.*\]\s+(and/or|present)\)', text, re.IGNORECASE):

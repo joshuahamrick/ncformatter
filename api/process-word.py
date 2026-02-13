@@ -190,26 +190,39 @@ def extract_paragraph_formatting(paragraph):
     full_text = ''
     for run in paragraph.runs:
         # CRITICAL: Check font color to filter out markup instructions
-        # Markup is typically in yellow/green/red highlighting or colored text
-        # We only want black text (or None/auto color)
+        # BUT: Keep template variables even if they're colored
+        # Template variables are: {[TAG]}, [[TAG]], {{TAG}}
         skip_run = False
         
-        try:
-            # Check if run has colored text (markup)
-            if run.font.color and run.font.color.rgb:
-                # RGB color is present - check if it's black or near-black
-                rgb = run.font.color.rgb
-                # Black is (0, 0, 0) - allow slight variations
-                r, g, b = rgb[0], rgb[1], rgb[2]
-                if not (r < 50 and g < 50 and b < 50):  # Not black/dark
-                    skip_run = True  # This is colored markup text
-            
-            # Check if run has highlighting (yellow, green, red backgrounds)
-            if hasattr(run.font, 'highlight_color') and run.font.highlight_color:
-                skip_run = True  # Highlighted text is markup
-        except:
-            # If we can't check color, include the run (safer to include than exclude)
-            pass
+        # First check if this run contains template variables
+        has_template_var = False
+        run_text = run.text
+        if run_text:
+            # Check for template variable patterns
+            import re
+            if re.search(r'(\{\[[\w\.]+\]\}|\[\[[\w\.]+\]\]|\{\{[\w\.]+\}\})', run_text):
+                has_template_var = True
+        
+        # Only filter by color if NOT a template variable
+        if not has_template_var:
+            try:
+                # Check if run has colored text (markup)
+                if run.font.color and run.font.color.rgb:
+                    # RGB color is present - check if it's black or near-black
+                    rgb = run.font.color.rgb
+                    # Black is (0, 0, 0) - allow slight variations
+                    r, g, b = rgb[0], rgb[1], rgb[2]
+                    if not (r < 50 and g < 50 and b < 50):  # Not black/dark
+                        skip_run = True  # This is colored markup text
+                
+                # Check if run has highlighting (yellow, green, red backgrounds)
+                # BUT: Some templates use highlighting on variables - check first
+                if hasattr(run.font, 'highlight_color') and run.font.highlight_color:
+                    # Only skip if it's pure instruction text (no template vars)
+                    skip_run = True
+            except:
+                # If we can't check color, include the run (safer to include than exclude)
+                pass
         
         if skip_run:
             # This run is markup - skip it

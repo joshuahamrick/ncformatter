@@ -373,19 +373,38 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 5. Wrap conditional content in {If()}...{End If} blocks
 6. Match spacing from the source document
 
-CRITICAL RULES:
-- Extract ONLY the actual document text content
-- IGNORE variable definitions like "[H002] Company Address Line 1" - those are metadata
-- IGNORE conditional logic text like "(or if [H581] and/or [H582] present)" - do NOT include this
-- IGNORE instructions like "If [M065] ≥ 'July 29, 1999' then print:" - convert to proper {If()} syntax
-- CRITICAL: REMOVE ALL parenthesis descriptions that are metadata - these are NOT actual content:
-  * Remove: "(Property Line 1/Street Address)", "(Due Date)", "(Delinquent Balance)", "(Accrued Late Charge Balance)", "(NSF Balance)", "(Mortgagor Recoverable Corporate Advance Balance)", "(Other Fees)", "(Suspense Balance)"
-  * Keep: "(the Property)" - this is actual content, not metadata
-  * Pattern: If parentheses contain words like "Balance", "Date", "Address", "Number", "Line", "Code" after a variable tag, it's likely metadata - REMOVE IT
-- NEVER include conditional salutation logic - ALWAYS use <div>Dear {[Salutation]},</div>
-- ONLY include Loan Number/RE table if Document Content shows EXPLICIT labels ("Loan Number:", "RE:") as separate sections - DO NOT create table just because property address variables appear in content
-- ALWAYS format with newlines - each tag on its own line
-- CRITICAL: Check Document Content order - subject lines may appear BEFORE or AFTER salutation depending on document - extract them in the order they appear
+CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
+
+1. SYSTEMATIC EXTRACTION - Read the ENTIRE Document Content from start to finish:
+   - Extract EVERY paragraph in the exact order it appears
+   - Do NOT stop until you've processed all content
+   - Count paragraphs and verify you've included all of them
+
+2. IGNORE METADATA - Filter out variable definitions and instructions:
+   - Skip: "[H002] Company Address Line 1" - variable definitions
+   - Skip: "(or if [H581] present)" - conditional instructions  
+   - Skip: "If [M065] ≥ 'July 29, 1999' then print:" - instructions (convert to {If()} instead)
+   - Remove parenthesis descriptions like "(Property Line 1)", "(Due Date)", "(Balance)" after variables
+   - Keep: "(the Property)" - actual content, not metadata
+
+3. STRUCTURE DETECTION - Scan for these patterns BEFORE salutation:
+   - If you see "Loan Number:" label AND [M594] variable → Create Loan Number/RE table
+   - If you see "RE:" label AND property variables → Include in table
+   - Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">Loan Number:</td><td>{[M594]}</td></tr><tr><td width="20%" valign="top">RE:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
+   - Place AFTER mailing address, BEFORE salutation
+
+4. FORMATTING RULES:
+   - Bullet points (•) → <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>text</td></tr>...</tbody></table></div>
+   - Underlined text → <u>text</u> (phone numbers, URLs)
+   - Bold text → <b>text</b>
+   - Each HTML element on its own line
+
+5. COMPLETE EXTRACTION - Include ALL content after main body:
+   - Include "Sincerely," line
+   - Include ALL company information (name, address, phone)
+   - Include ALL legal notices and disclaimers at the end
+   - Include ALL-CAPS text (these are important legal notices)
+   - Do NOT stop early - process until no more content remains
 
 Document Content:
 """ + ir_content + """
@@ -397,25 +416,50 @@ Document Content:
 	
 	user_message += """CRITICAL: You MUST format the HTML with proper newlines. Each HTML element MUST be on its own line.
 
+**BEFORE YOU START - MANDATORY PRE-SCAN:**
+Read the ENTIRE Document Content once before generating ANY HTML. Answer these questions:
+1. Is there a "Loan Number:" label? → YES = create table row with {[M594]}
+2. Is there a "RE:" label? → YES = create table row with {Compress({[M567]}|{[M583]}|{[M568]})}
+3. Where does "Sincerely," appear? → Note the paragraph number
+4. What comes AFTER "Sincerely,"? → List all remaining content
+5. How many total paragraphs are there? → You MUST extract this many
+
 Generate the HTML template following these EXACT rules:
 
-STEP 0 - CRITICAL: PRESERVE EXACT PARAGRAPH ORDER AND SEQUENCE:
-   - CRITICAL: Extract paragraphs in the EXACT order they appear in Document Content
-   - CRITICAL: Do NOT reorder paragraphs - maintain the sequence from the source document
-   - CRITICAL: Include ALL paragraphs, including:
-     * Enclosures sections (e.g., "Enclosures:" followed by bullet points)
-     * Bullet point lists at the end of documents
-     * Closing paragraphs before signatures
-     * All content from start to finish
-   - CRITICAL: When you see "Enclosures:" or similar sections, include them AFTER the signature block
-   - CRITICAL: When you see bullet points after "Enclosures:" or similar headers, format them as a table (like other bullet points)
-   - CRITICAL: Scan the ENTIRE Document Content from beginning to end - do NOT stop early
-   - CRITICAL: Count paragraphs in Document Content and verify you've included them all in the correct order
-   - CRITICAL: If Document Content shows paragraph A, then paragraph B, then paragraph C, your HTML MUST show them in that exact order: A → B → C
-   - WRONG: Reordering paragraphs or skipping paragraphs at the end
-   - CORRECT: Including all paragraphs in the exact sequence they appear in Document Content
+STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
+   - Read through ALL paragraphs in Document Content from beginning to end
+   - Make a mental map: Where is "Loan Number:"? Where is "RE:"? Where is "Sincerely,"?
+   - Identify ALL sections: header area, body paragraphs, signature area, legal notices
+   - Count total paragraphs so you know when you're done
 
-STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
+STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
+   - Look for "Loan Number:" text → If found, create table row with {[M594]}
+   - Look for "RE:" or "Property Address:" text → If found, create table row with {Compress({[M567]}|{[M583]}|{[M568]})}
+   - If BOTH "Loan Number:" and "RE:" exist, combine in one table (see examples)
+   - This table goes AFTER mailing address, BEFORE "Dear {[Salutation]},"
+
+STEP 2 - EXTRACT BODY CONTENT:
+   - Extract EVERY paragraph after salutation
+   - Preserve order exactly as shown in Document Content
+   - Format bullet points as tables (with div wrapper)
+   - Apply formatting (bold, underline) based on [FORMATTING: ...] notes
+   - Continue until you reach "Sincerely,"
+
+STEP 3 - EXTRACT CLOSING SECTION (AFTER "SINCERELY,"):
+   - Include "Sincerely," line
+   - Extract ALL remaining paragraphs/variables:
+     * Company name: {[plsMatrix.CompanyLongName]}
+     * Company addresses: {[plsMatrix.CompanyReturnAddr1]}, {[plsMatrix.CompanyReturnAddr2]}
+     * Phone numbers: {[plsMatrix.SPOCContactPhone]} or {[plsMatrix.CSPhoneNumber]}
+     * Department names if present
+   - Include ALL legal notices (often ALL-CAPS text)
+   - Include ALL final paragraphs - nothing should be skipped
+
+STEP 4 - VERIFY COMPLETENESS:
+   - Count paragraphs you extracted vs. Document Content
+   - If Document Content has 20 paragraphs, your output should have all 20
+   - Check that you included content from the END of the document
+   - Confirm no sections were skipped
 
 1. Extract ONLY actual document content - ignore variable definitions, conditional text, and instructions
    - CRITICAL: Remove ALL parenthesis descriptions that are metadata (variable descriptions):
@@ -618,26 +662,39 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <br>
 [Content paragraphs here - match spacing from source document]
 
-CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT APPEARS - DO NOT STOP EARLY OR REORDER:
-- Include EVERY paragraph shown in the Document Content above - COUNT THEM and make sure you include ALL
-- CRITICAL: Preserve the EXACT order of paragraphs as they appear in Document Content - do NOT reorder them
-- CRITICAL: If Document Content shows paragraph A, then B, then C, your HTML MUST show A → B → C in that exact order
-- CRITICAL: Include ALL content at the END of documents, including:
-  * Enclosures sections (e.g., "Enclosures:" followed by bullet points)
-  * Bullet point lists after "Enclosures:" or similar headers - format these as tables
-  * Closing paragraphs before signatures
-  * All final content sections
-  * Paragraphs that appear AFTER conditional blocks (e.g., "If you have any questions" after {End If})
-- CRITICAL: When you see "Enclosures:" or similar headers, include them AFTER the signature block
-- CRITICAL: When you see bullet points after "Enclosures:", format them as a table (like other bullet points)
-- CRITICAL: Paragraphs that appear after conditional {End If} blocks should be OUTSIDE the conditional - check Document Content order carefully
-- For documents with many state conditionals (like SI002), you MUST include ALL state-specific sections
-- Include styled titles (with style attributes like text-align: center, font-size)
-- Include ALL sections, tables, and content
-- Don't stop after just the title or first few paragraphs - continue with ALL paragraphs until the closing
-- If the Document Content shows "IF M960 (State Abbreviation) = STATE", you MUST include conditionals for ALL states mentioned
-- If you see multiple transfer scenarios (death, divorce, trust, etc.), include ALL of them
-- The document may have 100+ or even 800+ paragraphs - you MUST include ALL of them, not just the first 20-30
+CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT APPEARS:
+
+**UNIVERSAL COMPLETENESS RULES:**
+1. Extract EVERY paragraph shown in Document Content - count them to verify
+2. Include content in THREE sections: Header → Body → Closing
+3. Header section (before salutation):
+   - {Insert(H003 TagHeader)} or {Header(NMLSID)}
+   - {[L001]} date
+   - {[mailingAddress]}
+   - Loan Number/RE table (if "Loan Number:" and "RE:" labels exist)
+4. Body section (after salutation, before "Sincerely,"):
+   - ALL content paragraphs
+   - ALL bullet point sections (formatted as tables)
+   - ALL conditionals
+5. Closing section (after "Sincerely,"):
+   - "Sincerely," line
+   - Company name and/or department
+   - Company address lines (if present)
+   - Phone numbers (if present)  
+   - ALL legal notices/disclaimers (often in ALL-CAPS)
+   - Wisconsin notice conditionals (if present)
+
+**CRITICAL DETECTION RULES:**
+- If Document Content shows text AFTER "Sincerely," → Include ALL of it
+- If you see ALL-CAPS paragraphs → These are legal notices, include them
+- If you see {[plsMatrix.CompanyReturnAddr1]} → Include company address block
+- If you see "FEDERAL LAW REQUIRES" or "DEBT COLLECTOR" → Include entire legal notice
+- Do NOT assume document ends at "Sincerely," - always check for more content
+
+**STOPPING CRITERIA:**
+- ONLY stop when you've processed ALL paragraphs in Document Content
+- Check the END of Document Content - are there more paragraphs after "Sincerely,"?
+- If yes, extract ALL of them
 - PRESERVE ALL STYLING from the source document:
   - If text is centered, use style="text-align: center"
   - If text has a specific font size, include font-size in the style attribute

@@ -140,7 +140,7 @@ def process_word_document(file_bytes, file_name):
         # DEBUG: Add marker BEFORE calling cleanup rules
         formatted_html = '<!-- BEFORE CLEANUP -->' + formatted_html
         try:
-        formatted_html = apply_universal_formatting_rules(formatted_html)
+            formatted_html = apply_universal_formatting_rules(formatted_html)
         except Exception as e:
             # If cleanup rules fail, add error but keep HTML
             formatted_html = f'<!-- CLEANUP RULES FAILED: {str(e)} -->' + formatted_html
@@ -189,6 +189,32 @@ def extract_paragraph_formatting(paragraph):
     # Process each run in the paragraph
     full_text = ''
     for run in paragraph.runs:
+        # CRITICAL: Check font color to filter out markup instructions
+        # Markup is typically in yellow/green/red highlighting or colored text
+        # We only want black text (or None/auto color)
+        skip_run = False
+        
+        try:
+            # Check if run has colored text (markup)
+            if run.font.color and run.font.color.rgb:
+                # RGB color is present - check if it's black or near-black
+                rgb = run.font.color.rgb
+                # Black is (0, 0, 0) - allow slight variations
+                r, g, b = rgb[0], rgb[1], rgb[2]
+                if not (r < 50 and g < 50 and b < 50):  # Not black/dark
+                    skip_run = True  # This is colored markup text
+            
+            # Check if run has highlighting (yellow, green, red backgrounds)
+            if hasattr(run.font, 'highlight_color') and run.font.highlight_color:
+                skip_run = True  # Highlighted text is markup
+        except:
+            # If we can't check color, include the run (safer to include than exclude)
+            pass
+        
+        if skip_run:
+            # This run is markup - skip it
+            continue
+        
         run_data = {
             'text': run.text,
             'bold': run.bold,

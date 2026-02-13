@@ -478,12 +478,14 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
 
 STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
    - Look for "Loan Number:" text → If found, create table row
-   - Look for "RE:" text → If found, create table row
+   - Look for "RE:" or "Property Address:" text → If found, create table row
    - TABLE FORMAT DETECTION - Two possible patterns:
      
-     **Pattern A (2 rows, 2 columns)**: Most common
+     **Pattern A (2 rows, 2 columns)**: Most common - DEFAULT
      Row 1: Loan Number: | {[M594]}
      Row 2: RE: | {Compress({[M567]}|{[M583]}|{[M568]})}
+     
+     CRITICAL: ALWAYS use "RE:" as the label for row 2, even if Document Content says "Property Address:"
      
      Format as:
      <table width="100%"><tbody><tr>
@@ -494,11 +496,11 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **Pattern B (2 rows, 3 columns)**: If "RE:" appears on FIRST row with "Loan Number:"
+     **Pattern B (2 rows, 3 columns)**: ONLY if "RE:" appears on FIRST row with "Loan Number:" on the SAME line
      Row 1: RE: | Loan Number: | {[M594]}
      Row 2: (empty) | Property Address: | {Compress(...)}
      
-     Only use Pattern B if Document Content explicitly shows "RE:" and "Loan Number:" on the SAME line.
+     Use Pattern B only if Document Content explicitly shows both "RE:" AND "Loan Number:" on a single line.
      Otherwise use Pattern A (default).
    
    - This table goes AFTER mailing address, BEFORE "Dear {[Salutation]},"

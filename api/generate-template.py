@@ -77,6 +77,7 @@ def load_few_shot_examples():
 	curated = [
 		'MI008/MI008-formatted.html',  # PMI Auto Term with bullet points and different header layout
 		'CA003/CA003-formatted.html',  # ACH with conditionals
+		'CA030/CA030-formatted.html',  # Initial contact with RE/Loan Number table and bullet points
 		'LM401/LM401-formatted.html'  # Complex table + conditionals
 		# Removed: ES114, GB001, CA005, CS101, SI002 to aggressively reduce token usage
 	]
@@ -506,6 +507,11 @@ STEP 1 - SYSTEMATIC CONTENT EXTRACTION AND ANALYSIS:
    - STEP 4: If a paragraph has [FORMATTING: FONT_SIZE_Xpt], add style="font-size: Xpt"
    - STEP 5: If a paragraph has [FORMATTING: ALIGN_CENTER], add style="text-align: center"
    - CRITICAL: Check EVERY paragraph for formatting notes - do NOT skip any
+   - CRITICAL: Underline phone numbers, URLs, and email addresses if they appear underlined in the source:
+     * Phone numbers like "1-800-569-4287" or "1-888-995-HOPE (4673)" → <u>1-800-569-4287</u>
+     * URLs like "http://www.hud.gov/offices/hsg/sfh/hcc/hcs.cfm" → <u>http://www.hud.gov/...</u>
+     * Email addresses → <u>email@example.com</u>
+   - CRITICAL: If a paragraph shows [FORMATTING: UNDERLINE], identify which text should be underlined (usually phone numbers, URLs, or specific phrases)
    - CRITICAL: If a paragraph shows [FORMATTING: BOLD], identify which words/phrases should be bold:
      * If the entire paragraph should be bold: <div><b>entire text</b></div>
      * If only part should be bold: <div>regular text <b>bold portion</b> more regular text</div>
@@ -562,7 +568,8 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
    - STEP 5: If labels exist, create table with:
      * First row: Loan Number label (extract EXACT label from Document Content) → {[M594]}
      * Second row: RE: label (extract EXACT label) → {Compress({[M567]}|{[M583]}|{[M568]})}
-   - STEP 6: Format labels as bold: <td width="20%" valign="top"><b>Loan Number:</b></td>
+   - STEP 6: Format labels WITHOUT bold tags: <td width="20%" valign="top">Loan Number:</td>
+   - CRITICAL: Labels should NOT be bold in the RE/Loan Number table - only the text should appear
    - CRITICAL: ONLY include this table if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections
    - CRITICAL: DO NOT create this table just because property address variables appear in regular content paragraphs
    - CRITICAL: If property address is mentioned inline in content (e.g., "property located at {[M567]}"), that is NOT a Loan Number/RE table - skip it
@@ -571,8 +578,17 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
      * If Document Content shows "RE: [M567]" → Use EXACTLY "RE:" as the label
      * If Document Content shows "Re: Loan Number: [M594]" → Use EXACTLY "Re: Loan Number:" as the label
      * DO NOT combine or modify labels - extract them EXACTLY as they appear
-   - CRITICAL: Format as: <table width="100%"><tbody><tr><td width="20%" valign="top"><b>EXACT_LABEL:</b></td><td>{[TAG]}</td></tr><tr><td width="20%" valign="top"><b>RE:</b></td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
+   - CRITICAL: Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">EXACT_LABEL:</td><td>{[TAG]}</td></tr><tr><td width="20%" valign="top">RE:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
    - ONLY skip this table if Document Content does NOT show explicit "Loan Number:" or "RE:" labels as separate sections
+   - CRITICAL: The format is simpler than other tables - NO <b> tags on labels, plain text labels only
+   - EXAMPLE: If Document Content shows "RE: Loan Number: [M594]" as ONE label on first row, then "Property Address: ..." on second row, format as:
+     <table width="100%"><tbody><tr>
+       <td width="20%" valign="top">Loan Number:</td>
+       <td>{[M594]}</td>
+     </tr><tr>
+       <td width="20%" valign="top">RE:</td>
+       <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+     </tr></tbody></table>
 
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
 <div>{Insert(H003 TagHeader)}</div>  <!-- DEFAULT: Use {Insert(H003 TagHeader)} unless NMLS is mentioned. Only use {[tagHeader]} if Document Content explicitly shows tagHeader without H003 -->
@@ -585,10 +601,10 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <!-- ONLY create if you see explicit labels like "Loan Number: [M594]" or "RE: [M567]" as separate sections -->
 [Loan Number/RE table ONLY if explicit labels exist - format as:
 <table width="100%"><tbody><tr>
-  <td width="20%" valign="top"><b>EXACT_LABEL_FROM_DOC:</b></td>  <!-- Extract EXACT label from Document Content - DO NOT modify, make label bold -->
+  <td width="20%" valign="top">EXACT_LABEL_FROM_DOC:</td>  <!-- Extract EXACT label from Document Content - DO NOT make bold -->
   <td>{[M594]}</td>
 </tr><tr>
-  <td width="20%" valign="top"><b>RE:</b></td>  <!-- Extract EXACT label from Document Content - DO NOT modify, make label bold -->
+  <td width="20%" valign="top">RE:</td>  <!-- Extract EXACT label from Document Content - DO NOT make bold -->
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
 <br>
@@ -649,6 +665,17 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
 - CRITICAL: If you see conditional logic patterns like "If [TAG] = VALUE" or "If [TAG] NOT IN (...)" multiple times in the Document Content, format EACH occurrence as a separate {If()}...{End If} block
 - CRITICAL: Do NOT stop after formatting the first conditional - continue reading and include ALL conditionals throughout the ENTIRE document
 - Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
+- CRITICAL: After "Sincerely," check Document Content for company information block:
+  * Look for company name variables: {[plsMatrix.CompanyLongName]}
+  * Look for company address variables: {[plsMatrix.CompanyReturnAddr1]}, {[plsMatrix.CompanyReturnAddr2]}
+  * Look for phone number variables: {[plsMatrix.SPOCContactPhone]}, {[plsMatrix.CSPhoneNumber]}
+  * If these appear after "Sincerely," in Document Content, include them in a company info block:
+    <br>
+    <div>{[plsMatrix.CompanyLongName]}</div>
+    <div>{[plsMatrix.CompanyReturnAddr1]}</div>
+    <div>{[plsMatrix.CompanyReturnAddr2]}</div>
+    <div>{[plsMatrix.SPOCContactPhone]}</div>
+- CRITICAL: Some documents have a legal notice (debt collection notice) after the signature - include ALL paragraphs after "Sincerely,"
 - Include any conditional sections at the end (like Wisconsin notice)
 - Include contact information section: <div>Please review the circumstances listed above...</div> with company address lines if present in Document Content
 - If a paragraph starts with text that should be bold (like "This notice is to advise you...", "Please note", "IMPORTANT"), wrap that portion in <b> tags: <div><b>Bold portion...</b> rest of paragraph</div>
@@ -699,10 +726,14 @@ BOLD TEXT ANALYSIS (MUST PERFORM FOR EVERY PARAGRAPH):
 BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
 - STEP 1: Scan Document Content for actual bullet characters (•, -, *, or numbered lists like 1., 2., 3.)
 - STEP 2: When you find bullet points, identify where they start and end
-- STEP 3: Format ALL consecutive bullet points as a single table:
-  Example: <table width="100%"><tbody><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top" style="text-align: center">•</td><td>Next bullet point</td></tr></tbody></table>
+- STEP 3: Format ALL consecutive bullet points as a single table INSIDE a div wrapper:
+  Example: <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top">•</td><td>Next bullet point</td></tr></tbody></table></div>
+  CRITICAL: Notice the <div> wrapper around the table - this is required!
+  CRITICAL: Use style="border-collapse: collapse" on the table
+  CRITICAL: Bullet character goes in FIRST <td>, content in SECOND <td>
+  CRITICAL: NO style="text-align: center" on the bullet <td> - just plain <td width="3%" valign="top">
 - STEP 4: Continue scanning after formatting one set - look for MORE bullet point sets
-- STEP 5: Format EACH set of bullet points as a separate table
+- STEP 5: Format EACH set of bullet points as a separate table (with div wrapper)
 - CRITICAL: When converting bullet points to tables, you MUST include the COMPLETE text from each bullet point - NEVER truncate or omit any part of the content
 - CRITICAL: If a bullet point has multiple sentences or clauses, include ALL of them in the table cell - do not stop after the first sentence
 - CRITICAL: Preserve ALL content from bullet points - if the Document Content shows a long bullet point with multiple sentences, include ALL sentences in the <td> tag
@@ -718,20 +749,20 @@ BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
   Then format as:
   <div><b>Next Steps:</b></div>
   <br>
-  <table width="100%"><tbody>
+  <div><table width="100%" style="border-collapse: collapse"><tbody>
   <tr>
-    <td width="3%" valign="top" style="text-align: center">•</td>
+    <td width="3%" valign="top">•</td>
     <td>Paragraph 1 about step 1</td>
   </tr>
   <tr>
-    <td width="3%" valign="top" style="text-align: center">•</td>
+    <td width="3%" valign="top">•</td>
     <td>Paragraph 2 about step 2</td>
   </tr>
   <tr>
-    <td width="3%" valign="top" style="text-align: center">•</td>
+    <td width="3%" valign="top">•</td>
     <td>Paragraph 3 about step 3</td>
   </tr>
-  </tbody></table>
+  </tbody></table></div>
   
   If Document Content shows (NO bullet characters):
   "Next Steps:
@@ -855,11 +886,14 @@ Example of CORRECT formatting (showing different header layouts):
 <div>For loans closed on or after 7/29/1999, the earlier of (1) the date that the mortgage balance is first scheduled to reach 78% of the original value of the property, or (2) the first day of the month after the date that is the midpoint of the original amortization period is reached.</div>
 {End If}
 <br>
-[Example of bullet point formatted as table:]
-<table width="100%"><tbody><tr>
-  <td width="3%" valign="top" style="text-align: center">•</td>
+[Example of bullet points formatted as table with div wrapper:]
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top">•</td>
   <td>Your mortgage loan must be current at the time of cancellation.</td>
-</tr></tbody></table>
+</tr><tr>
+  <td width="3%" valign="top">•</td>
+  <td>Another bullet point item here.</td>
+</tr></tbody></table></div>
 <br>
 <div>Sincerely,</div>
 <br><br><br>

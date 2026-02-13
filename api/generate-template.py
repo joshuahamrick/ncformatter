@@ -172,18 +172,30 @@ def format_ir_for_prompt(ir):
 			if not text or len(text) < 3:  # Only skip if VERY short (less than 3 chars)
 				continue
 			
-			# Allow short text if it looks like a label (ends with colon)
-			is_label = text.strip().endswith(':') or re.match(r'^(RE|Loan Number|Property Address|Subject):', text, re.IGNORECASE)
+			# Allow short text if it looks like a label or contains template markers
+			is_label = (text.strip().endswith(':') or 
+			           re.match(r'^(RE|Loan Number|Property Address|Subject):', text, re.IGNORECASE) or
+			           '{{' in text or '[[' in text)  # Template variable markers
+			
+			# Check if this is a template structure line (has variable markers like [[M594]])
+			has_template_vars = bool(re.search(r'\[\[?[A-Z]\w*\]\]?', text))
+			
+			# CRITICAL: Don't skip lines that contain template variables - these are actual content
+			if has_template_vars:
+				# This is template content, not just metadata
+				pass  # Continue processing
 			
 			# Skip if it matches instruction patterns - but be VERY conservative
 			# Only skip if it's clearly just a metadata instruction line, not actual content
+			# CRITICAL: Never skip if line contains template variables like [[M594]] or {{CompanyLongName}}
 			is_instruction = False
-			for pattern in instruction_patterns:
-				if re.match(pattern, text, re.IGNORECASE):
-					# Double-check: if it contains actual sentence content (periods, commas, etc.), it's probably content
-					if not re.search(r'[.!?]\s+[A-Z]', text):  # No sentence structure
-						is_instruction = True
-						break
+			if not has_template_vars:  # Only check instruction patterns if no template vars
+				for pattern in instruction_patterns:
+					if re.match(pattern, text, re.IGNORECASE):
+						# Double-check: if it contains actual sentence content (periods, commas, etc.), it's probably content
+						if not re.search(r'[.!?]\s+[A-Z]', text):  # No sentence structure
+							is_instruction = True
+							break
 			
 			if is_instruction:
 				continue
@@ -226,6 +238,31 @@ def format_ir_for_prompt(ir):
 			# These are variable descriptions like "(Property Line 1/Street Address)", "(Due Date)", "(Delinquent Balance)", etc.
 			# Pattern: (Description text) that appears after variable tags or in variable definitions
 			cleaned_text = text
+			
+			# CRITICAL: Extract template variables from markup
+			# The source document may have variables in formats like:
+			# - {[M594]} (our standard format)
+			# - [[M594]] or {{M594}} (markup format)
+			# - {[CompanyLongName]} or [[CompanyLongName]] (company variables)
+			# Convert all to our standard {[TAG]} format
+			
+			# Remove markup instructions that wrap actual content
+			# Examples from CA030:
+			# - "(IF [[H003]] = '*' or 'NULL'; then suppress print of line; else produce:)"
+			# - "(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules...)"
+			# Keep the content after these instructions
+			
+			# Remove conditional instruction prefixes like "IF [[TAG]] = value; then suppress..."
+			cleaned_text = re.sub(r'^\(IF\s+\[\[?\w+\]\]?\s*[^;]+;\s*then\s+[^:]+:\s*\)', '', cleaned_text, flags=re.IGNORECASE).strip()
+			
+			# Remove "(see ...)" references
+			cleaned_text = re.sub(r'\(see\s+["\'][^"\']+["\']\s+on\s+[^)]+\)', '', cleaned_text, flags=re.IGNORECASE).strip()
+			
+			# CRITICAL: Convert markup variable formats to standard format
+			# Convert [[TAG]] to {[TAG]}
+			cleaned_text = re.sub(r'\[\[([A-Z]\w+)\]\]', r'{[\1]}', cleaned_text)
+			# Convert {{TAG}} to {[TAG]}
+			cleaned_text = re.sub(r'\{\{([A-Z]\w+)\}\}', r'{[\1]}', cleaned_text)
 			
 			# Remove parenthesis descriptions that are metadata (not actual content)
 			# These typically appear after variable tags like {[M567]} (Property Line 1/Street Address)

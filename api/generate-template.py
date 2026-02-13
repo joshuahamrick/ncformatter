@@ -320,6 +320,11 @@ def format_ir_for_prompt(ir):
 			if alignment and alignment != 'left':
 				formatting_hints.append(f"ALIGN_{alignment.upper()}")
 			
+			# Add indentation info for table format detection
+			leading_spaces = block.get('leadingSpaces')
+			if leading_spaces and leading_spaces > 0:
+				formatting_hints.append(f"INDENT_{leading_spaces}spaces")
+			
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
 			formatted.append(f"Paragraph {idx + 1}: {cleaned_text[:char_limit]}{formatting_note}")
@@ -479,14 +484,18 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
 STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
    - Look for "Loan Number:" text → If found, create table row
    - Look for "RE:" or "Property Address:" text → If found, create table row
-   - TABLE FORMAT DETECTION - Two possible patterns:
+   
+   - TABLE FORMAT DETECTION - Based on spacing/alignment:
      
-     **Pattern A (2 rows, 2 columns)**: Most common - DEFAULT
-     Row 1: Loan Number: | {[M594]}
-     Row 2: RE: | {Compress({[M567]}|{[M583]}|{[M568]})}
+     **DETECTION RULE**: Check [FORMATTING: INDENT_X] notes on label lines
+     - Example 1: "RE:" [no indent] + "Loan Number:" [no indent] → Pattern A (2-column)
+     - Example 2: "RE:" [no indent] + "Loan Number:" [INDENT_10spaces] → Pattern B (3-column, RE: hangs left)
      
-     CRITICAL: ALWAYS use "RE:" as the label for row 2, even if Document Content says "Property Address:"
-     
+     **Pattern A (2-column)**: When labels have SAME indentation (both 0 or both same value)
+     ```
+     Loan Number:    {[M594]}
+     RE:             {Compress...}
+     ```
      Format as:
      <table width="100%"><tbody><tr>
        <td width="20%" valign="top">Loan Number:</td>
@@ -496,12 +505,23 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **Pattern B (2 rows, 3 columns)**: ONLY if "RE:" appears on FIRST row with "Loan Number:" on the SAME line
-     Row 1: RE: | Loan Number: | {[M594]}
-     Row 2: (empty) | Property Address: | {Compress(...)}
+     **Pattern B (3-column)**: When "RE:" has LESS indentation than other labels (hanging left)
+     ```
+     RE:    Loan Number:       {[M594]}
+            Property Address:  {Compress...}
+     ```
+     Format as:
+     <table width="100%"><tbody><tr>
+       <td width="3%" valign="top">RE:</td>
+       <td width="20%" valign="top">Loan Number:</td>
+       <td>{[M594]}</td>
+     </tr><tr>
+       <td width="3%" valign="top"></td>
+       <td width="20%" valign="top">Property Address:</td>
+       <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+     </tr></tbody></table>
      
-     Use Pattern B only if Document Content explicitly shows both "RE:" AND "Loan Number:" on a single line.
-     Otherwise use Pattern A (default).
+     **DEFAULT**: If no INDENT notes present or indentation is same, use Pattern A (2-column)
    
    - This table goes AFTER mailing address, BEFORE "Dear {[Salutation]},"
 

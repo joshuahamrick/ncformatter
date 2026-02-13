@@ -84,6 +84,33 @@ def process_word_document(file_bytes, file_name):
         # Load the document
         doc = Document(io.BytesIO(file_bytes))
         
+        # CRITICAL: Accept all tracked changes to get the final content
+        # Documents with track changes have content in <w:ins> tags that python-docx doesn't read
+        # We need to process the XML directly to accept changes
+        from docx.oxml import parse_xml
+        from docx.oxml.ns import qn
+        
+        # Accept all tracked changes by removing w:del elements and unwrapping w:ins elements
+        for element in doc.element.body.iter():
+            # Remove all deletions (w:del)
+            if element.tag == qn('w:del'):
+                element.getparent().remove(element)
+            # Unwrap insertions (w:ins) - keep the content, remove the wrapper
+            elif element.tag == qn('w:ins'):
+                parent = element.getparent()
+                index = list(parent).index(element)
+                for child in element:
+                    parent.insert(index, child)
+                    index += 1
+                parent.remove(element)
+        
+        # Now reload the document with accepted changes
+        # We need to save and reload to get python-docx to re-parse
+        temp_bytes = io.BytesIO()
+        doc.save(temp_bytes)
+        temp_bytes.seek(0)
+        doc = Document(temp_bytes)
+        
         # Extract document structure with full formatting
         paragraphs = []
         tables = []

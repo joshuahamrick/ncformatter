@@ -24,8 +24,34 @@ def _align_to_str(alignment):
 
 def _extract_runs(paragraph):
 	runs = []
+	import re
+	
 	for run in paragraph.runs:
 		text = run.text or ''
+		
+		# Check if this run contains template variables
+		has_template_var = False
+		if text and re.search(r'(\{\[[\w\.]+\]\}|\[\[[\w\.]+\]\]|\{\{[\w\.]+\}\})', text):
+			has_template_var = True
+		
+		# Skip colored markup unless it's a template variable
+		skip_run = False
+		if not has_template_var:
+			try:
+				if run.font.color and run.font.color.rgb:
+					rgb = run.font.color.rgb
+					r, g, b = rgb[0], rgb[1], rgb[2]
+					if not (r < 50 and g < 50 and b < 50):
+						skip_run = True
+				
+				if hasattr(run.font, 'highlight_color') and run.font.highlight_color:
+					skip_run = True
+			except:
+				pass
+		
+		if skip_run:
+			continue
+		
 		runs.append({
 			'text': text,
 			'bold': bool(run.bold),
@@ -137,6 +163,28 @@ def _extract_table_ir(table):
 
 
 def _build_ir_document(doc):
+	# CRITICAL: Accept all tracked changes first
+	# Documents with track changes have content in <w:ins> tags that python-docx doesn't read
+	from docx.oxml.ns import qn
+	
+	# Remove all deletions and unwrap insertions
+	for element in list(doc.element.body.iter()):
+		if element.tag == qn('w:del'):
+			element.getparent().remove(element)
+		elif element.tag == qn('w:ins'):
+			parent = element.getparent()
+			index = list(parent).index(element)
+			for child in list(element):
+				parent.insert(index, child)
+				index += 1
+			parent.remove(element)
+	
+	# Save and reload to ensure python-docx re-parses
+	temp_bytes = io.BytesIO()
+	doc.save(temp_bytes)
+	temp_bytes.seek(0)
+	doc = Document(temp_bytes)
+	
 	blocks = []
 	# Extract headers first (for NMLID detection)
 	# Headers are in doc.sections[].header (and first_page_header, even_page_header, etc.)

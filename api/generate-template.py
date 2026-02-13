@@ -297,7 +297,7 @@ def format_ir_for_prompt(ir):
 			# For ALL-CAPS text (likely important legal notices), include more characters
 			# Check if text is mostly uppercase - if so, include more to preserve complete notices
 			is_mostly_uppercase = len([c for c in cleaned_text if c.isupper()]) > len(cleaned_text) * 0.5
-			char_limit = 1000 if is_mostly_uppercase else 500  # Claude's 200K context allows full content
+			char_limit = 5000 if is_mostly_uppercase else 2000  # Increased: Claude has 200K context, we can include complete paragraphs
 			
 			# Extract formatting information (bold, underline, font size, alignment)
 			has_bold = any(r.get('bold', False) for r in runs)
@@ -477,9 +477,30 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
    - Count total paragraphs so you know when you're done
 
 STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
-   - Look for "Loan Number:" text → If found, create table row with {[M594]}
-   - Look for "RE:" or "Property Address:" text → If found, create table row with {Compress({[M567]}|{[M583]}|{[M568]})}
-   - If BOTH "Loan Number:" and "RE:" exist, combine in one table (see examples)
+   - Look for "Loan Number:" text → If found, create table row
+   - Look for "RE:" text → If found, create table row
+   - TABLE FORMAT DETECTION - Two possible patterns:
+     
+     **Pattern A (2 rows, 2 columns)**: Most common
+     Row 1: Loan Number: | {[M594]}
+     Row 2: RE: | {Compress({[M567]}|{[M583]}|{[M568]})}
+     
+     Format as:
+     <table width="100%"><tbody><tr>
+       <td width="20%" valign="top">Loan Number:</td>
+       <td>{[M594]}</td>
+     </tr><tr>
+       <td width="20%" valign="top">RE:</td>
+       <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+     </tr></tbody></table>
+     
+     **Pattern B (2 rows, 3 columns)**: If "RE:" appears on FIRST row with "Loan Number:"
+     Row 1: RE: | Loan Number: | {[M594]}
+     Row 2: (empty) | Property Address: | {Compress(...)}
+     
+     Only use Pattern B if Document Content explicitly shows "RE:" and "Loan Number:" on the SAME line.
+     Otherwise use Pattern A (default).
+   
    - This table goes AFTER mailing address, BEFORE "Dear {[Salutation]},"
 
 STEP 2 - EXTRACT BODY CONTENT:
@@ -1001,17 +1022,19 @@ Example of CORRECT formatting (showing different header layouts):
 <div>PMI/MIP Department</div>
 <div>{[plsMatrix.CompanyLongName]}</div>
 <br>
-[Example 2 - Only use this pattern if Document Content shows "RE: Loan Number:" as a SINGLE label:]
-If Document Content shows: "RE: Loan Number: [M594]" (as ONE label, not separate "Loan Number:" and "RE:")
-Then use: <table width="100%"><tbody><tr>
-  <td width="20%" valign="top">RE: Loan Number:</td>  <!-- Only if this EXACT text appears in Document Content -->
+[Example 2 - ONLY use 3-column format if Document Content shows "RE:" on the same line as "Loan Number:":]
+Pattern: If you see "RE: Loan Number: [M594]" on ONE line, use 3-column table:
+<table width="100%"><tbody><tr>
+  <td width="3%" valign="top">RE:</td>
+  <td width="20%" valign="top">Loan Number:</td>
   <td>{[M594]}</td>
 </tr><tr>
-  <td width="20%" valign="top">Property Address:</td>  <!-- Extract EXACT label from Document Content -->
+  <td width="3%" valign="top"></td>
+  <td width="20%" valign="top">Property Address:</td>
   <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 </tr></tbody></table>
 
-CRITICAL: If Document Content shows "Loan Number:" and "RE:" as SEPARATE labels, use them separately - DO NOT combine them.
+Default Pattern: If "Loan Number:" and "RE:" are on SEPARATE lines, use 2-column table (Pattern A from STEP 1).
 <br>
 <div style="text-align: center; font-size: 14pt"><b>IMPORTANT NOTICE:</b></div>
 <div style="text-align: center; font-size: 14pt"><b>MORTGAGE PAYMENT INCREASE BEGINS...</b></div>

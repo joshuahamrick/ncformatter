@@ -325,6 +325,11 @@ def format_ir_for_prompt(ir):
 			if leading_spaces and leading_spaces > 0:
 				formatting_hints.append(f"INDENT_{leading_spaces}spaces")
 			
+			# Add list item indicator (CRITICAL for bullet point detection)
+			if block.get('isListItem'):
+				list_level = block.get('listLevel', 0)
+				formatting_hints.append(f"LIST_ITEM_LEVEL_{list_level}")
+			
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
 			formatted.append(f"Paragraph {idx + 1}: {cleaned_text[:char_limit]}{formatting_note}")
@@ -443,7 +448,8 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Place AFTER mailing address, BEFORE salutation
 
 4. FORMATTING RULES:
-   - Bullet points (•) → <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>text</td></tr>...</tbody></table></div>
+   - Bullet points → Look for [FORMATTING: LIST_ITEM_LEVEL_X] in Document Content
+   - Format LIST_ITEM paragraphs as: <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>text</td></tr>...</tbody></table></div>
    - Underlined text → <u>text</u> (phone numbers, URLs)
    - Bold text → <b>text</b>
    - Each HTML element on its own line
@@ -485,18 +491,18 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
    - Look for "Loan Number:" text → If found, create table row
    - Look for "RE:" or "Property Address:" text → If found, create table row
    
-   - TABLE FORMAT DETECTION - Based on spacing/alignment:
+   - TABLE FORMAT DETECTION - Based on how labels appear:
      
-     **DETECTION RULE**: Check [FORMATTING: INDENT_X] notes on label lines
-     - Example 1: "RE:" [no indent] + "Loan Number:" [no indent] → Pattern A (2-column)
-     - Example 2: "RE:" [no indent] + "Loan Number:" [INDENT_10spaces] → Pattern B (3-column, RE: hangs left)
+     **DETECTION RULE**: Check if "RE:" and "Loan Number:" appear on the SAME line or SEPARATE lines
      
-     **Pattern A (2-column)**: When labels have SAME indentation (both 0 or both same value)
+     **Pattern A (2-column)**: When "RE:" and "Loan Number:" are on SEPARATE lines
      ```
+     Document Content shows:
      Loan Number:    {[M594]}
      RE:             {Compress...}
+     (or vice versa)
      ```
-     Format as:
+     Format as 2-column table:
      <table width="100%"><tbody><tr>
        <td width="20%" valign="top">Loan Number:</td>
        <td>{[M594]}</td>
@@ -505,12 +511,13 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **Pattern B (3-column)**: When "RE:" has LESS indentation than other labels (hanging left)
+     **Pattern B (3-column)**: When "RE:" and "Loan Number:" appear on the SAME LINE
      ```
-     RE:    Loan Number:       {[M594]}
-            Property Address:  {Compress...}
+     Document Content shows:
+     RE: Loan Number:       {[M594]}
+     Property Address:      {Compress...}
      ```
-     Format as:
+     Split them and format as 3-column table:
      <table width="100%"><tbody><tr>
        <td width="3%" valign="top">RE:</td>
        <td width="20%" valign="top">Loan Number:</td>
@@ -521,14 +528,16 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **DEFAULT**: If no INDENT notes present or indentation is same, use Pattern A (2-column)
+     **Note**: When splitting "RE: Loan Number:" into 3 columns, the second row should use "Property Address:" or "RE:" based on what appears in Document Content.
+     
+     **DEFAULT**: If structure is unclear, use Pattern A (2-column with separate "Loan Number:" and "RE:" rows)
    
    - This table goes AFTER mailing address, BEFORE "Dear {[Salutation]},"
 
 STEP 2 - EXTRACT BODY CONTENT:
    - Extract EVERY paragraph after salutation
    - Preserve order exactly as shown in Document Content
-   - Format bullet points as tables (with div wrapper)
+   - Format paragraphs with [FORMATTING: LIST_ITEM_LEVEL_X] as bullet point tables (with div wrapper)
    - Apply formatting (bold, underline) based on [FORMATTING: ...] notes
    - Continue until you reach "Sincerely,"
 
@@ -868,23 +877,20 @@ BOLD TEXT ANALYSIS (MUST PERFORM FOR EVERY PARAGRAPH):
 - STEP 5: Double-check that ALL [FORMATTING: BOLD] notes have been addressed
 
 BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
-- STEP 1: Scan Document Content for actual bullet characters (•, -, *, or numbered lists like 1., 2., 3.)
-- STEP 2: When you find bullet points, identify where they start and end
-- STEP 3: Format ALL consecutive bullet points as a single table INSIDE a div wrapper:
+- STEP 1: Scan Document Content for [FORMATTING: LIST_ITEM_LEVEL_X] notes - these indicate actual Word list items
+- STEP 2: When you find LIST_ITEM paragraphs, identify where they start and end (consecutive LIST_ITEM paragraphs form one list)
+- STEP 3: Format ALL consecutive list items as a single table INSIDE a div wrapper:
   Example: <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top">•</td><td>Next bullet point</td></tr></tbody></table></div>
   CRITICAL: Notice the <div> wrapper around the table - this is required!
   CRITICAL: Use style="border-collapse: collapse" on the table
   CRITICAL: Bullet character goes in FIRST <td>, content in SECOND <td>
   CRITICAL: NO style="text-align: center" on the bullet <td> - just plain <td width="3%" valign="top">
-- STEP 4: Continue scanning after formatting one set - look for MORE bullet point sets
-- STEP 5: Format EACH set of bullet points as a separate table (with div wrapper)
-- CRITICAL: When converting bullet points to tables, you MUST include the COMPLETE text from each bullet point - NEVER truncate or omit any part of the content
-- CRITICAL: If a bullet point has multiple sentences or clauses, include ALL of them in the table cell - do not stop after the first sentence
-- CRITICAL: Preserve ALL content from bullet points - if the Document Content shows a long bullet point with multiple sentences, include ALL sentences in the <td> tag
-- CRITICAL: After section headers like "Next Steps:", "Forbearance Plan Terms:", "Important:", etc., check if the following paragraphs are ACTUALLY bullet points (with •, -, *, or numbered lists) - only then format them as tables
-- CRITICAL: If you see consecutive paragraphs that are ACTUALLY bullet points (with •, -, *, or numbered lists), format them as a bullet point table
-- CRITICAL: Do NOT format regular consecutive paragraphs as bullet points - only format when you see actual bullet characters (•, -, *) or numbered lists (1., 2., 3.) in the Document Content
-- CRITICAL EXAMPLE: Only format as bullet point table if Document Content ACTUALLY shows bullet characters:
+  CRITICAL: Use • (bullet character) for list items, not just regular dashes
+- STEP 4: Continue scanning after formatting one set - look for MORE LIST_ITEM sets
+- STEP 5: Format EACH set of LIST_ITEM paragraphs as a separate table (with div wrapper)
+- CRITICAL: When converting LIST_ITEM paragraphs to tables, you MUST include the COMPLETE text from each item - NEVER truncate
+- CRITICAL: ONLY format paragraphs with [FORMATTING: LIST_ITEM_LEVEL_X] as bullet point tables
+- CRITICAL: Do NOT format regular paragraphs (without LIST_ITEM) as bullet points
   If Document Content shows:
   "Next Steps:
   • Paragraph 1 about step 1

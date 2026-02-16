@@ -491,21 +491,17 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
    - Look for "Loan Number:" text → If found, create table row
    - Look for "RE:" or "Property Address:" text → If found, create table row
    
-   - TABLE FORMAT DETECTION - Based on how labels appear:
+   - TABLE FORMAT DETECTION - Based on indentation/alignment:
      
-     **CRITICAL RULE**: When you see "RE: Loan Number:" combined on one line:
-     - SPLIT them into separate rows
-     - Use "Loan Number:" for row 1 (with loan number variable)
-     - Use "RE:" for row 2 (with property address variable/Compress)
+     **DETECTION RULE**: Check [FORMATTING: INDENT_X] notes to determine if "RE:" hangs left
      
-     **Pattern A (2-column, 2 rows)**: STANDARD FORMAT - Use for most documents
+     **Pattern A (2-column)**: When labels are ALIGNED (same indentation)
      ```
-     Document Content shows EITHER:
-     - "RE: Loan Number: {[M594]}" on one line + "Property Address: {[M567]}" on next line
-     OR
-     - "Loan Number: {[M594]}" on one line + "RE: {[M567]}" on separate line
+     Document Content shows both at same indent level:
+     Loan Number:    {[M594]}     [no INDENT note]
+     RE:             {Compress...} [no INDENT note]
      ```
-     ALWAYS format as 2-column table with separate rows:
+     Format as 2-column table:
      <table width="100%"><tbody><tr>
        <td width="20%" valign="top">Loan Number:</td>
        <td>{[M594]}</td>
@@ -514,13 +510,15 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **CRITICAL**: Even if Document Content shows "RE: Loan Number:" combined, SPLIT them and output as Pattern A above.
+     **Pattern B (3-column)**: When "RE:" hangs left (different indentation)
+     ```
+     Document Content shows:
+     RE: Loan Number:       {[M594]}     [no INDENT note]
+            Property Address:  {Compress...} [INDENT_7spaces]
      
-     **Pattern B (3-column)**: RARE - Only when "RE:" needs to hang left as a prefix
+     The paragraph with "RE:" has NO indent, but "Property Address:" HAS indent
      ```
-     Document Content explicitly shows RE: as a separate prefix column
-     ```
-     Format as 3-column table:
+     Format as 3-column table (split "RE:" from "Loan Number:"):
      <table width="100%"><tbody><tr>
        <td width="3%" valign="top">RE:</td>
        <td width="20%" valign="top">Loan Number:</td>
@@ -531,7 +529,13 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **DEFAULT**: Use Pattern A (2-column) - it's the standard format
+     **CRITICAL DETECTION**: 
+     - Check if paragraph containing "RE:" or starting with "RE:" has [FORMATTING: INDENT_X]
+     - Check if next paragraph with "Property Address:" has [FORMATTING: INDENT_X]
+     - If "RE:" line has NO indent AND "Property Address:" line HAS indent → Pattern B (3-column)
+     - If both have same indentation → Pattern A (2-column)
+     
+     **DEFAULT**: If no INDENT notes or unclear, use Pattern A (2-column)
    
    - This table goes AFTER mailing address, BEFORE "Dear {[Salutation]},"
 

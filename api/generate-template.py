@@ -493,16 +493,19 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
    
    - TABLE FORMAT DETECTION - Based on how labels appear:
      
-     **DETECTION RULE**: Check if "RE:" and "Loan Number:" appear on the SAME line or SEPARATE lines
+     **CRITICAL RULE**: When you see "RE: Loan Number:" combined on one line:
+     - SPLIT them into separate rows
+     - Use "Loan Number:" for row 1 (with loan number variable)
+     - Use "RE:" for row 2 (with property address variable/Compress)
      
-     **Pattern A (2-column)**: When "RE:" and "Loan Number:" are on SEPARATE lines
+     **Pattern A (2-column, 2 rows)**: STANDARD FORMAT - Use for most documents
      ```
-     Document Content shows:
-     Loan Number:    {[M594]}
-     RE:             {Compress...}
-     (or vice versa)
+     Document Content shows EITHER:
+     - "RE: Loan Number: {[M594]}" on one line + "Property Address: {[M567]}" on next line
+     OR
+     - "Loan Number: {[M594]}" on one line + "RE: {[M567]}" on separate line
      ```
-     Format as 2-column table:
+     ALWAYS format as 2-column table with separate rows:
      <table width="100%"><tbody><tr>
        <td width="20%" valign="top">Loan Number:</td>
        <td>{[M594]}</td>
@@ -511,13 +514,13 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **Pattern B (3-column)**: When "RE:" and "Loan Number:" appear on the SAME LINE
+     **CRITICAL**: Even if Document Content shows "RE: Loan Number:" combined, SPLIT them and output as Pattern A above.
+     
+     **Pattern B (3-column)**: RARE - Only when "RE:" needs to hang left as a prefix
      ```
-     Document Content shows:
-     RE: Loan Number:       {[M594]}
-     Property Address:      {Compress...}
+     Document Content explicitly shows RE: as a separate prefix column
      ```
-     Split them and format as 3-column table:
+     Format as 3-column table:
      <table width="100%"><tbody><tr>
        <td width="3%" valign="top">RE:</td>
        <td width="20%" valign="top">Loan Number:</td>
@@ -528,9 +531,7 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
      
-     **Note**: When splitting "RE: Loan Number:" into 3 columns, the second row should use "Property Address:" or "RE:" based on what appears in Document Content.
-     
-     **DEFAULT**: If structure is unclear, use Pattern A (2-column with separate "Loan Number:" and "RE:" rows)
+     **DEFAULT**: Use Pattern A (2-column) - it's the standard format
    
    - This table goes AFTER mailing address, BEFORE "Dear {[Salutation]},"
 

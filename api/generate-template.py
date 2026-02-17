@@ -650,6 +650,12 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Good: `<br><br><div>Sincerely,</div><div>Department</div><div>{[plsMatrix.CompanyLongName]}</div>`
    - Rule: 2 <br> tags BEFORE "Sincerely,", NO <br> tags after or between department/company
 
+❌ **WRONG**: Not detecting aligned label-value groups as tables
+   - Bad: Multiple consecutive `<div>Label: value</div>` with same indentation
+   - Good: When 3+ consecutive paragraphs share SAME indent AND have ":" → Table format
+   - Example: "Your new loan number:", "New toll-free line:", "New website..." should be ONE table
+   - Rule: Check [FORMATTING: INDENT_X] to detect spatial alignment, then group into table
+
 Generate the HTML template following these EXACT rules:
 
 STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
@@ -661,6 +667,70 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
 STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
    - Look for "Loan Number:" text → If found, create table row
    - Look for "RE:" or "Property Address:" text → If found, create table row
+   
+   - **LABEL-VALUE TABLE DETECTION** - Detect groups of aligned label-value pairs:
+     When you see multiple consecutive paragraphs that:
+     1. ALL have the SAME [FORMATTING: INDENT_X] value (spatially aligned)
+     2. Follow "Label:" or "Label: value" pattern
+     3. Form a logical group (e.g., "Your new loan number:", "New toll-free line:", "New website for account access:")
+     
+     **Format these as a table:**
+     ```
+     <table width="100%"><tbody><tr>
+       <td width="20%" valign="top">Your new loan number:</td>
+       <td>{[M594]} Loan Number – No Dash</td>
+     </tr><tr>
+       <td width="20%" valign="top">New toll-free line:</td>
+       <td><u>{[plsMatrix.CSPhoneNumber]}</u></td>
+     </tr><tr>
+       <td width="20%" valign="top">New website for account access:</td>
+       <td><u>{[WebSite]}</u>
+       <div><b>Important note: user IDs must be re-created at the new site</b></div></td>
+     </tr><tr>
+       <td width="20%" valign="top">New Payment Address:</td>
+       <td>{[plsMatrix.CompanyLongName]}
+       <div>{[plsMatrix.LockBoxAddr1]}</div>
+       <div>{[plsMatrix.LockBoxAddr2]}</div></td>
+     </tr><tr>
+       <td width="20%" valign="top">New email address:</td>
+       <td><u>{[plsMatrix.CSEmail]}</u></td>
+     </tr></tbody></table>
+     ```
+     
+     **DETECTION RULES:**
+     - Check [FORMATTING: INDENT_X] for each paragraph
+     - If 3+ consecutive paragraphs have SAME indent AND contain ":" or end with ":" → Table format
+     - If a paragraph immediately follows with DIFFERENT indent or no ":", it's NOT part of the table
+     - Lines that follow immediately after the label (with MORE indent) go in the SAME table cell as nested <div>
+     - Use valign="top" for all cells to align content at top
+     - Keep the label's trailing colon ":" in the table cell
+     
+     **Handling multi-line values in table cells:**
+     ```
+     Example: "New Payment Address:" followed by company name and 2 address lines
+     <tr>
+       <td width="20%" valign="top">New Payment Address:</td>
+       <td>{[plsMatrix.CompanyLongName]}
+       <div>{[plsMatrix.LockBoxAddr1]}</div>
+       <div>{[plsMatrix.LockBoxAddr2]}</div></td>
+     </tr>
+     ```
+     
+     **Handling inline bolded notes within a value:**
+     ```
+     Example: "New website for account access:" followed by URL and bolded note
+     <tr>
+       <td width="20%" valign="top">New website for account access:</td>
+       <td><u>{[WebSite]}</u>
+       <div><b>Important note: user IDs must be re-created at the new site</b></div></td>
+     </tr>
+     ```
+     
+     **When NOT to use table:**
+     - Single "Label: value" paragraphs → Use regular <div>
+     - Labels with different indentation → Use regular <div> with style="margin-left"
+     - Non-label content (no colon) → Use regular <div>
+     - If labels are part of a numbered list → Use list table structure instead
    
    - TABLE FORMAT DETECTION - Based on indentation/alignment:
      

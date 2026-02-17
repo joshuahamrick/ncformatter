@@ -444,14 +444,16 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
 0. FORMULAS AND CALCULATIONS - NEVER leave these as empty placeholders:
    
    **FORMULA PATTERNS TO RECOGNIZE:**
-   - `[(M010E6 + T054E6/X)*100]%` → Convert to `{[Calc(({[M010]}+{[T054]})/{[M019]}*100|0)]}%`
+   - `[(M010E6 + T054E6/X)*100]%` → Convert to `{Math(({[M010]}+{[T054]})/{[M019]}*100|0)]}%`
    - `[M486E8 + 2 years]` → Convert to `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
    - `<VariableName>` → Convert to `{[plsMatrix.VariableName]}`
+   - `X` in formulas → Usually means "lesser of M467 and M962" (original property value)
    
    **CALCULATION SYNTAX:**
-   - {[Calc(formula|decimals)]} for math: `{[Calc(({[M010]}+{[T054]})/{[M019]}*100|0)]}`
+   - {Math(formula|format)} for math: `{Math(({[M010]}+{[T054]})/{[M019]}*100|0))}` or `{Math({[C001]}+{[M585]}-{[M013]}|Money)}`
    - {[DateAdd({[TAG]}|amount|format|unit)]} for dates: `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
-   - Common variables: M010 (principal), T054 (fees), M019 (property value), M486 (first payment date)
+   - Common variables: M010 (principal), T054 (fees), M467 (purchase price), M962 (appraised value), M486 (first payment date)
+   - For "X" (lesser of purchase/appraisal): Use nested {If()} to handle blanks and compare values
    
    **PLACEHOLDER VARIABLES:**
    - If you see `<EscrowEmail>`, `<CSPhoneNumber>`, `<CompanyLongName>`, `<HoursOfOperation>` in angle brackets
@@ -562,7 +564,8 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 
 ❌ **WRONG**: Leaving formulas as empty placeholders
    - Bad: `Currently, your Loan to Value is at %.`
-   - Good: `Currently, your Loan to Value is at {[Calc(({[M010]}+{[T054]})/{[M019]}*100|0)]}%.`
+   - Good: `Currently, your Loan to Value is at {Math(({[M010]}+{[T054]})/{[M019]}*100|0)]}%.`
+   - Note: Use {Math()} for calculations, not {Calc()}
 
 ❌ **WRONG**: Leaving dates as empty brackets
    - Bad: `Following your [] payment`
@@ -579,6 +582,11 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 ❌ **WRONG**: Not underlining email/phone in plsMatrix variables
    - Bad: `{[plsMatrix.CSPhoneNumber]}`
    - Good: `<u>{[plsMatrix.CSPhoneNumber]}</u>`
+
+❌ **WRONG**: Incorrect signature spacing (too many <br> tags after Sincerely)
+   - Bad: `<br><div>Sincerely,</div><br><br><br><div>Department</div>`
+   - Good: `<br><br><div>Sincerely,</div><div>Department</div><div>{[plsMatrix.CompanyLongName]}</div>`
+   - Rule: 2 <br> tags BEFORE "Sincerely,", NO <br> tags after or between department/company
 
 Generate the HTML template following these EXACT rules:
 
@@ -923,7 +931,10 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
 - CRITICAL: After formatting one conditional block ({If()}...{End If}), continue scanning the Document Content for MORE conditionals - include ALL of them
 - CRITICAL: If you see conditional logic patterns like "If [TAG] = VALUE" or "If [TAG] NOT IN (...)" multiple times in the Document Content, format EACH occurrence as a separate {If()}...{End If} block
 - CRITICAL: Do NOT stop after formatting the first conditional - continue reading and include ALL conditionals throughout the ENTIRE document
-- Include closing signature section with proper spacing: <div>Sincerely,</div><br><br><br><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div><br><br>{If('{[M007]}' = '48')}<div><b><u>Wisconsin Property Owners</u></b> – Notice: See Reverse Side (or attached) for Important Information</div>{End If}
+- Include closing signature section with proper spacing:
+  * Standard spacing: 2 <br> tags BEFORE "Sincerely," not after
+  * Example: <div>Last paragraph.</div><br><br><div>Sincerely,</div><div>Department Name</div><div>{[plsMatrix.CompanyLongName]}</div>
+  * Do NOT add extra <br> tags after "Sincerely," or between department/company name
 - CRITICAL: After "Sincerely," check Document Content for company information block:
   * Look for company name variables: {[plsMatrix.CompanyLongName]}
   * Look for company address variables: {[plsMatrix.CompanyReturnAddr1]}, {[plsMatrix.CompanyReturnAddr2]}
@@ -1161,8 +1172,8 @@ Example of CORRECT formatting (showing different header layouts):
   <td>Another bullet point item here.</td>
 </tr></tbody></table></div>
 <br>
+<br>
 <div>Sincerely,</div>
-<br><br><br>
 <div>PMI/MIP Department</div>
 <div>{[plsMatrix.CompanyLongName]}</div>
 <br>

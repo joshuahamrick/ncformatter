@@ -17,7 +17,7 @@
 <br>
 <div>We received your request for information on how to remove Private Mortgage Insurance ("PMI"). Your mortgage loan requires Private Mortgage Insurance ("PMI"). PMI protects lender and others against financial loss when borrowers default. Charges for the insurance are added to your loan payments.</div>
 <br>
-<div>Currently, your Loan to Value is at {[Calc(({[M010]}+{[T054]})/{[M019]}*100|0)]}%. Your Loan to Value must be 80% or less to be eligible for PMI removal via paying down your loan and your loan is less than two years old. The LTV is determined by taking the current principal balance of a loan and dividing by the lesser value of the purchase price and the original appraised value. In the case of a refinance the appraised value will be used and in the event there was no appraisal completed, the value given by the lender at closing will be used.</div>
+<div>Currently, your Loan to Value is at {Math(({[M010]}+{[T054]})/{If({[M467]} = 0 OR '{[M467]}' = '')}{[M962]}{Else If({[M962]} = 0 OR '{[M962]}' = '')}{[M467]}{Else If({[M467]} <= {[M962]})}{[M467]}{Else}{[M962]}{End If}*100|0)]}%. Your Loan to Value must be 80% or less to be eligible for PMI removal via paying down your loan and your loan is less than two years old. The LTV is determined by taking the current principal balance of a loan and dividing by the lesser value of the purchase price and the original appraised value. In the case of a refinance the appraised value will be used and in the event there was no appraisal completed, the value given by the lender at closing will be used.</div>
 <br>
 <div>Please see the following PMI Removal Requirements as they pertain to your loan:</div>
 <br>
@@ -50,7 +50,7 @@
 <br>
 <div>If you have any questions or concerns, please contact our Escrow Department at <u>{[plsMatrix.CSPhoneNumber]}</u>. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
 <br>
+<br>
 <div>Sincerely,</div>
-<br><br><br>
 <div>Escrow Department</div>
 <div>{[plsMatrix.CompanyLongName]}</div>

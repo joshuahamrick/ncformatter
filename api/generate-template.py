@@ -1399,9 +1399,11 @@ CRITICAL NOTES:
 - {End If} placement: {End If} goes DIRECTLY after the last conditional content, NO <br> before it. Any spacing <br> goes AFTER {End If}:
   CORRECT: `<div>Last conditional content.</div>\n{End If}\n<br>\n<div>Next paragraph</div>`
   WRONG:   `<div>Last conditional content.</div>\n<br>\n{End If}\n<div>Next paragraph</div>`
-- Paragraph ending with colon followed by centered/indented content: ALWAYS add a <br> between the paragraph and the centered lines:
-  CORRECT: `<div>...to reflect:</div>\n<br>\n<div style="text-align: center">content</div>`
-  WRONG:   `<div>...to reflect:</div>\n<div style="text-align: center">content</div>`
+- Spacing between paragraphs is driven by ACTUAL blank lines in the source document, not by punctuation:
+  - If there is a visible blank line/space in the source between two paragraphs → add <br>
+  - If paragraphs are directly adjacent with no blank line → no <br> between them
+  - Do NOT infer spacing from punctuation (e.g., a paragraph ending in ":" does not automatically get a <br> after it)
+  - The [FORMATTING: spacingBeforePt / spacingAfterPt] hints can help detect this
 - CRITICAL: After section headers (especially those ending with ":"), always check for bullet points that follow - format them as tables
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):

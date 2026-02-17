@@ -29,35 +29,17 @@ def _extract_runs(paragraph):
 	for run in paragraph.runs:
 		text = run.text or ''
 		
-		# Check if this run contains template variables
-		has_template_var = False
-		if text and re.search(r'(\{\[[\w\.]+\]\}|\[\[[\w\.]+\]\]|\{\{[\w\.]+\}\})', text):
-			has_template_var = True
-		
-		# Skip colored markup unless it's a template variable
-		skip_run = False
-		if not has_template_var:
-			try:
-				if run.font.color and run.font.color.rgb:
-					rgb = run.font.color.rgb
-					r, g, b = rgb[0], rgb[1], rgb[2]
-					if not (r < 50 and g < 50 and b < 50):
-						skip_run = True
-				
-				if hasattr(run.font, 'highlight_color') and run.font.highlight_color:
-					skip_run = True
-			except:
-				pass
-		
-		if skip_run:
-			continue
+		# Include ALL runs regardless of color or highlighting.
+		# Tracked changes are already handled by _build_ir_document which accepts
+		# all changes before extraction. Color/highlight filtering was too aggressive
+		# and caused real document content (conditional instructions, underlined text,
+		# colored labels) to be lost. The AI prompt handles ignoring markup annotations.
 		
 		runs.append({
 			'text': text,
 			'bold': bool(run.bold),
 			'italic': bool(run.italic),
 			'underline': bool(run.underline),
-			# font.size may be None
 			'fontSizePt': float(run.font.size.pt) if getattr(run.font, 'size', None) and run.font.size is not None else None,
 			'fontFamily': run.font.name if getattr(run.font, 'name', None) else None
 		})

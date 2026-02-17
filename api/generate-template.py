@@ -247,16 +247,19 @@ def format_ir_for_prompt(ir):
 			# - {[CompanyLongName]} or [[CompanyLongName]] (company variables)
 			# Convert all to our standard {[TAG]} format
 			
-			# Remove markup instructions that wrap actual content
-			# Examples from CA030:
-			# - "(IF [[H003]] = '*' or 'NULL'; then suppress print of line; else produce:)"
-			# - "(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules...)"
-			# Keep the content after these instructions
+			# Preserve conditional instructions - Claude needs to see these to convert to {If()} logic
+			# Examples:
+			# - "(IF [[H003]] = '*' or 'NULL'; then suppress print of line; else produce:)" → Claude converts to {If()}
+			# - "(IF M007 IBM State Code = '19' then insert the below):" → Claude converts to {If()}
+			# These are real business logic, NOT markup to remove.
+			# Mark them clearly so Claude knows to convert them:
+			cleaned_text = re.sub(
+				r'\(IF\s+(\[\[?\w+\]\]?)\s*([^;]+);\s*then\s+suppress\s+print[^:]*:\s*\)',
+				r'[CONDITIONAL: IF \1 \2 then suppress, else show following content]',
+				cleaned_text, flags=re.IGNORECASE
+			).strip()
 			
-			# Remove conditional instruction prefixes like "IF [[TAG]] = value; then suppress..."
-			cleaned_text = re.sub(r'^\(IF\s+\[\[?\w+\]\]?\s*[^;]+;\s*then\s+[^:]+:\s*\)', '', cleaned_text, flags=re.IGNORECASE).strip()
-			
-			# Remove "(see ...)" references
+			# Remove "(see ...)" references - these are documentation cross-references, not content
 			cleaned_text = re.sub(r'\(see\s+["\'][^"\']+["\']\s+on\s+[^)]+\)', '', cleaned_text, flags=re.IGNORECASE).strip()
 			
 			# CRITICAL: Convert markup variable formats to standard format
@@ -309,6 +312,11 @@ def format_ir_for_prompt(ir):
 			non_bold_runs = [r for r in runs if not r.get('bold', False) and r.get('text', '').strip()]
 			is_partial_bold = len(bold_runs) > 0 and len(non_bold_runs) > 0
 			
+			# Check if PARTIAL underline (some runs underlined, some not)
+			underline_runs = [r for r in runs if r.get('underline', False) and r.get('text', '').strip()]
+			non_underline_runs = [r for r in runs if not r.get('underline', False) and r.get('text', '').strip()]
+			is_partial_underline = len(underline_runs) > 0 and len(non_underline_runs) > 0
+			
 			font_size = None
 			for r in runs:
 				if r.get('fontSizePt'):
@@ -326,7 +334,12 @@ def format_ir_for_prompt(ir):
 				else:
 					formatting_hints.append("BOLD")
 			if has_underline:
-				formatting_hints.append("UNDERLINE")
+				if is_partial_underline:
+					# Show which parts are underlined
+					underline_texts = [r.get('text', '').strip()[:50] for r in underline_runs[:3]]
+					formatting_hints.append(f"PARTIAL_UNDERLINE({'; '.join(underline_texts)})")
+				else:
+					formatting_hints.append("UNDERLINE")
 			if font_size and font_size != 11.0:  # 11pt is default, only note if different
 				formatting_hints.append(f"FONT_SIZE_{int(font_size)}pt")
 			if alignment and alignment != 'left':
@@ -515,12 +528,20 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Do NOT stop until you've processed all content
    - Count paragraphs and verify you've included all of them
 
-2. IGNORE METADATA - Filter out variable definitions and instructions:
-   - Skip: "[H002] Company Address Line 1" - variable definitions
-   - Skip: "(or if [H581] present)" - conditional instructions  
-   - Skip: "If [M065] ≥ 'July 29, 1999' then print:" - instructions (convert to {If()} instead)
+2. HANDLE METADATA AND CONDITIONAL INSTRUCTIONS:
+   - Skip: "[H002] Company Address Line 1" - variable definitions (these are tag descriptions, not content)
+   - Skip: "(or if [H581] present)" - inline markup notes in parentheses
+   - CONVERT (do NOT skip): "IF M007 IBM State Code = '19' then insert the below:" → Convert to {If()} conditional
+     * These are real conditional instructions that control what content appears
+     * Format: {If('{[TAG]}' = 'value')} ... content ... {End If}
+     * The content that follows the instruction IS the conditional content
+   - CONVERT: "If [M065] >= 'July 29, 1999' then print:" → {If()} conditional wrapping the following content
    - Remove parenthesis descriptions like "(Property Line 1)", "(Due Date)", "(Balance)" after variables
    - Keep: "(the Property)" - actual content, not metadata
+   
+   **IMPORTANT**: Conditional instructions may appear in colored or highlighted text in the source 
+   document. These are NOT markup to ignore - they are real business logic that must be converted 
+   to {If()} conditionals. ALL text from the document is included regardless of color.
 
 3. STRUCTURE DETECTION - Scan for these patterns BEFORE salutation:
    - If you see "Loan Number:" label AND [M594] variable → Create Loan Number/RE table
@@ -925,7 +946,10 @@ STEP 4 - VERIFY COMPLETENESS:
      * Phone numbers like "1-800-569-4287" or "1-888-995-HOPE (4673)" → <u>1-800-569-4287</u>
      * URLs like "http://www.hud.gov/offices/hsg/sfh/hcc/hcs.cfm" → <u>http://www.hud.gov/...</u>
      * Email addresses → <u>email@example.com</u>
-   - CRITICAL: If a paragraph shows [FORMATTING: UNDERLINE], identify which text should be underlined (usually phone numbers, URLs, or specific phrases)
+   - CRITICAL: If a paragraph shows [FORMATTING: UNDERLINE], the ENTIRE paragraph text is underlined
+   - CRITICAL: If a paragraph shows [FORMATTING: PARTIAL_UNDERLINE(text)], ONLY the specified text is underlined
+     * Example: PARTIAL_UNDERLINE(number) → wrap ONLY "number" in <u> tags: "assigned a new loan <u>number</u>"
+     * This is the EXACT text that should be underlined - do not expand or contract the underline range
    - CRITICAL: If a paragraph shows [FORMATTING: BOLD], identify which words/phrases should be bold:
      * If the entire paragraph should be bold: <div><b>entire text</b></div>
      * If only part should be bold: <div>regular text <b>bold portion</b> more regular text</div>
@@ -1162,6 +1186,10 @@ BOLD TEXT ANALYSIS (MUST PERFORM FOR EVERY PARAGRAPH):
   
 - STEP 4: Apply bold formatting consistently throughout the document
 - STEP 5: Double-check that ALL [FORMATTING: BOLD] and [FORMATTING: PARTIAL_BOLD] notes have been addressed
+- STEP 6: NEVER add bold that is NOT indicated by [FORMATTING: BOLD] or [FORMATTING: PARTIAL_BOLD]
+  * If a paragraph has NO bold formatting note, do NOT bold it - even if it looks like a label or header
+  * Label text in tables (like "Your new loan number:") should NOT be bolded unless the source explicitly says so
+  * Only bold what the [FORMATTING] notes tell you to bold
 
 BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
 - STEP 1: Scan Document Content for [FORMATTING: LIST_ITEM_LEVEL_X] notes - these indicate actual Word list items

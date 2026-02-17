@@ -536,23 +536,52 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
      * If you see "1.", "2.", "3." → USE NUMBERED FORMAT
      * If you see "•", "-", "*" → USE BULLET FORMAT
    
-   **NUMBERED LIST FORMAT (width="5%"):**
+   **TABLE vs DIV for list items - THIS IS ABOUT SPATIAL ALIGNMENT:**
+   
+   The choice between TABLE and DIV format depends on how the text wraps in the source document:
+   
+   **Use TABLE format** when the list item text is INDENTED PAST the number/bullet, meaning
+   wrapped lines align with the start of the text, NOT the number. The number acts as its 
+   own column and multi-line text stays in its own column:
+   ```
+   1.  This is the first item and when the text wraps it
+       continues aligned here, past the number.
+   2.  Second item text stays in its own column too.
+   ```
+   → Table structure:
    <table width="100%"><tbody><tr>
      <td width="5%" valign="top">1.</td>
-     <td>First item text</td>
+     <td>This is the first item and when the text wraps it continues aligned here, past the number.</td>
    </tr><tr>
      <td width="5%" valign="top">2.</td>
-     <td>Second item text</td>
+     <td>Second item text stays in its own column too.</td>
    </tr></tbody></table>
    
-   **BULLET LIST FORMAT (width="3%", border-collapse):**
+   **Use DIV format** when the list item text WRAPS BACK to the same margin as the number,
+   meaning the number and text share the same column and wrapped text goes all the way left:
+   ```
+   1. This is the first item and when the text wraps it
+   continues here, aligned with the number not indented past it.
+   2. Second item also wraps back to the left margin.
+   ```
+   → Div structure (with margin-left):
+   <div style="margin-left: 25px">1. This is the first item and when the text wraps it continues here, aligned with the number not indented past it.</div>
+   <div style="margin-left: 25px">2. Second item also wraps back to the left margin.</div>
+   
+   **DETECTION CLUES:**
+   - If [FORMATTING: INDENT_X] is present AND text after the number has ADDITIONAL indent → TABLE
+   - If [FORMATTING: LIST_ITEM_LEVEL_X] shows indentation matching the number position → TABLE
+   - If text wraps inline with the number (same indent level) → DIV
+   - When in doubt, check the source document's spatial layout
+   
+   **BULLET LIST FORMAT (width="3%", border-collapse) - when using TABLE:**
    <table width="100%" style="border-collapse: collapse"><tbody><tr>
      <td width="3%" valign="top">•</td>
      <td>First item text</td>
    </tr></tbody></table>
    
    **CRITICAL**: NEVER change numbered lists (1., 2.) to bullets (•) or vice versa!
-   **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%"!
+   **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%" when using TABLE format!
    
    **BOLD FORMATTING - CRITICAL RULES:**
    
@@ -730,7 +759,6 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
      - Single "Label: value" paragraphs → Use regular <div>
      - Labels with different indentation → Use regular <div> with style="margin-left"
      - Non-label content (no colon) → Use regular <div>
-     - If labels are part of a numbered list → Use list table structure instead
    
    - TABLE FORMAT DETECTION - Based on indentation/alignment:
      
@@ -1138,11 +1166,19 @@ BOLD TEXT ANALYSIS (MUST PERFORM FOR EVERY PARAGRAPH):
 BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
 - STEP 1: Scan Document Content for [FORMATTING: LIST_ITEM_LEVEL_X] notes - these indicate actual Word list items
 - STEP 2: When you find LIST_ITEM paragraphs, identify where they start and end (consecutive LIST_ITEM paragraphs form one list)
-- STEP 3: Format ALL consecutive list items as a single table INSIDE a div wrapper:
-  Example: <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top">•</td><td>Next bullet point</td></tr></tbody></table></div>
+- STEP 3: Determine TABLE vs DIV format based on spatial alignment:
+  * If the list text is indented PAST the bullet/number (text wraps in its own column) → TABLE format
+  * If the list text wraps back to the SAME margin as the bullet/number → DIV format
+  
+  TABLE format (text indented past bullet):
+  <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top">•</td><td>Next bullet point</td></tr></tbody></table></div>
   CRITICAL: Notice the <div> wrapper around the table - this is required!
   CRITICAL: Use style="border-collapse: collapse" on the table
   CRITICAL: Bullet character goes in FIRST <td>, content in SECOND <td>
+  
+  DIV format (text wraps inline with bullet):
+  <div style="margin-left: 25px">• Bullet point text here</div>
+  <div style="margin-left: 25px">• Next bullet point</div>
   CRITICAL: NO style="text-align: center" on the bullet <td> - just plain <td width="3%" valign="top">
   CRITICAL: Use • (bullet character) for list items, not just regular dashes
 - STEP 4: Continue scanning after formatting one set - look for MORE LIST_ITEM sets

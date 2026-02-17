@@ -444,31 +444,64 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
 0. FORMULAS AND CALCULATIONS - NEVER leave these as empty placeholders:
    
    **FORMULA PATTERNS TO RECOGNIZE:**
-   - `[(M010E6 + T054E6/X)*100]%` → See X variable logic below
-   - `[M486E8 + 2 years]` → Convert to `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
+   - `[(TAG1 + TAG2/X)*100]%` → Convert to conditional with Math
+   - `[TAGE8 + N years]` → Convert to `{DateAdd({[TAG]}|+N|format|Year)}`
    - `<VariableName>` → Convert to `{[plsMatrix.VariableName]}`
-   - `X` in formulas → "Lesser of M467 (purchase price) and M962 (appraised value)"
+   - `X` in formulas → Usually means "lesser of two values" (e.g., M467 and M962)
    
-   **CALCULATION SYNTAX:**
-   - {Math(formula|format)} - IMPORTANT: closes with `)` not `)]`
-   - Examples: `{Math(({[M010]}+{[T054]})/{[M019]}*100|0)}` or `{Math({[C001]}+{[M585]}-{[M013]}|Money)}`
-   - {[DateAdd({[TAG]}|amount|format|unit)]} for dates: `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
-   - Common variables: M010 (principal), T054 (fees), M467 (purchase price), M962 (appraised value)
+   **CALCULATION SYNTAX - CRITICAL RULES:**
    
-   **X VARIABLE (Lesser of M467/M962) - USE THIS PATTERN:**
-   When you see X in a formula like [(M010+T054/X)*100], use nested conditionals to handle blank values:
+   **Math Function:**
+   - Syntax: `{Math(formula|format)}`
+   - Formats: `|Money` for currency, `|Date` for dates
+   - For percentages: NO format parameter, just use `{Math(formula)}%`
+   - Example: `{Math(({[C001]}+{[M585]}-{[M013]}|Money)}` for currency
+   - Example: `{Math((({[M010]}+{[T054]})/{[M467]})*100)}%` for percentage
+   - NEVER use `|0` or other numeric formats
+   
+   **DateAdd Function:**
+   - Syntax: `{DateAdd({[TAG]}|amount|format|unit)}`
+   - NEVER wrap in {[...]} brackets
+   - Examples: `{DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}`, `{DateAdd({[M486]}|+2|MMM yyyy|Year)}`
+   
+   **Numeric Comparisons:**
+   - Use `{Number({[TAG]})}` to convert comma-formatted strings to numbers
+   - Example: `{If({Number({[M467]})} < {Number({[M962]})})}`
+   - Prevents string comparison issues with values like "100,000"
+   
+   **Blank/Zero Checks:**
+   - Use: `'{[TAG]}' IN ('', '0', NULL)`
+   - Example: `{If('{[M467]}' IN ('', '0', NULL))}{[M962]}{Else}...{End If}`
+   
+   **CRITICAL: NEVER nest {If()} inside {Math()}!**
+   - WRONG: `{Math(formula/{If(condition)}{[TAG1]}{Else}{[TAG2]}{End If}*100)}`
+   - RIGHT: `{If(condition)}{Math(formula/{[TAG1]}*100)}{Else}{Math(formula/{[TAG2]}*100)}{End If}`
+   - Each conditional branch must have its own complete {Math()} call
+   
+   **CONDITIONAL PRIORITY RULES:**
+   When handling multiple conditions, order by specificity:
+   1. Check for invalid/blank values FIRST (blank, zero, null)
+   2. Then perform numeric comparisons
+   3. Finally, handle the default case
+   
+   **EXAMPLE: Lesser-of Pattern (commonly used for property values)**
+   When document says "X = lesser of TAG1 and TAG2" or "divide by lesser of purchase price/appraisal":
    ```
-   {Math(({[M010]}+{[T054]})/
-     {If('{[M467]}' NOT IN ('', '0', NULL) AND '{[M962]}' NOT IN ('', '0', NULL))}
-       {If({[M467]} <= {[M962]})}{[M467]}{Else}{[M962]}{End If}
-     {Else If('{[M467]}' NOT IN ('', '0', NULL))}
-       {[M467]}
-     {Else}
-       {[M962]}
-     {End If}
-   *100|0)}
+   {If('{[TAG1]}' IN ('', '0', NULL))}
+     {Math(formula/{[TAG2]}*100)}
+   {Else If('{[TAG2]}' IN ('', '0', NULL))}
+     {Math(formula/{[TAG1]}*100)}
+   {Else If({Number({[TAG1]})} < {Number({[TAG2]})})}
+     {Math(formula/{[TAG1]}*100)}
+   {Else If({Number({[TAG2]})} < {Number({[TAG1]})})}
+     {Math(formula/{[TAG2]}*100)}
+   {Else}
+     {Math(formula/{[TAG2]}*100)}
+   {End If}%
    ```
-   Logic: If both exist → compare and use lesser. If only M467 → use M467. Else → use M962.
+   - Check blanks/zeros first to prevent comparison errors
+   - Use {Number()} for all numeric comparisons
+   - Each branch has complete {Math()} call, not nested inside conditionals
    
    **PLACEHOLDER VARIABLES:**
    - If you see `<EscrowEmail>`, `<CSPhoneNumber>`, `<CompanyLongName>`, `<HoursOfOperation>` in angle brackets
@@ -579,12 +612,26 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 
 ❌ **WRONG**: Leaving formulas as empty placeholders
    - Bad: `Currently, your Loan to Value is at %.`
-   - Good: `Currently, your Loan to Value is at {Math(({[M010]}+{[T054]})/{If...}*100|0)}%.`
-   - Note: Use {Math(formula|format)} with `)` closing, NOT `{Calc()}` and NOT `)]` closing
+   - Good: `Currently, your Loan to Value is at {Math((({[M010]}+{[T054]})/{[M467]})*100)}%.`
+   - Note: Use {Math()} for calculations, NO format parameter for percentages
+
+❌ **WRONG**: Nesting {If()} inside {Math()}
+   - Bad: `{Math(formula/{If(cond)}{[TAG1]}{Else}{[TAG2]}{End If}*100)}`
+   - Good: `{If(cond)}{Math(formula/{[TAG1]}*100)}{Else}{Math(formula/{[TAG2]}*100)}{End If}`
+   - Rule: Conditionals OUTSIDE, each branch has complete {Math()} call
+
+❌ **WRONG**: Not using {Number()} for numeric comparisons
+   - Bad: `{If({[M467]} < {[M962]})}`  (string comparison with commas)
+   - Good: `{If({Number({[M467]})} < {Number({[M962]})})}` (numeric comparison)
 
 ❌ **WRONG**: Leaving dates as empty brackets
    - Bad: `Following your [] payment`
-   - Good: `Following your {[DateAdd({[M486]}|2|MMM yyyy|Year)]} payment`
+   - Good: `Following your {DateAdd({[M486]}|+2|MMM yyyy|Year)} payment`
+   - Note: {DateAdd()} is NOT wrapped in {[...]} brackets
+
+❌ **WRONG**: Wrapping DateAdd in extra brackets
+   - Bad: `{[DateAdd({[M486]}|+2|MMM yyyy|Year)]}`
+   - Good: `{DateAdd({[M486]}|+2|MMM yyyy|Year)}`
 
 ❌ **WRONG**: Using bullets when document has numbered lists
    - Bad: `<td width="3%" valign="top">•</td>` (for items labeled 1., 2.)

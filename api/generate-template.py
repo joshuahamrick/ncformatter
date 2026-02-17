@@ -302,6 +302,12 @@ def format_ir_for_prompt(ir):
 			# Extract formatting information (bold, underline, font size, alignment)
 			has_bold = any(r.get('bold', False) for r in runs)
 			has_underline = any(r.get('underline', False) for r in runs)
+			
+			# Check if PARTIAL bold (some runs bold, some not)
+			bold_runs = [r for r in runs if r.get('bold', False) and r.get('text', '').strip()]
+			non_bold_runs = [r for r in runs if not r.get('bold', False) and r.get('text', '').strip()]
+			is_partial_bold = len(bold_runs) > 0 and len(non_bold_runs) > 0
+			
 			font_size = None
 			for r in runs:
 				if r.get('fontSizePt'):
@@ -312,7 +318,12 @@ def format_ir_for_prompt(ir):
 			# Build formatting hints
 			formatting_hints = []
 			if has_bold:
-				formatting_hints.append("BOLD")
+				if is_partial_bold:
+					# Show which parts are bold
+					bold_texts = [r.get('text', '').strip()[:50] for r in bold_runs[:3]]  # First 3 bold parts
+					formatting_hints.append(f"PARTIAL_BOLD({'; '.join(bold_texts)})")
+				else:
+					formatting_hints.append("BOLD")
 			if has_underline:
 				formatting_hints.append("UNDERLINE")
 			if font_size and font_size != 11.0:  # 11pt is default, only note if different
@@ -448,10 +459,27 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Place AFTER mailing address, BEFORE salutation
 
 4. FORMATTING RULES:
-   - Bullet points → Look for [FORMATTING: LIST_ITEM_LEVEL_X] in Document Content
-   - Format LIST_ITEM paragraphs as: <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>text</td></tr>...</tbody></table></div>
-   - Underlined text → <u>text</u> (phone numbers, URLs)
-   - Bold text → <b>text</b>
+   
+   **LIST FORMATTING:**
+   - Look for [FORMATTING: LIST_ITEM_LEVEL_X] in Document Content
+   - Check if list uses NUMBERED markers (1., 2., 3.) or BULLET markers (•, -, *)
+   - For NUMBERED lists: <table width="100%"><tbody><tr><td width="5%" valign="top">1.</td><td>text</td></tr>...
+   - For BULLET lists: <table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>text</td></tr>...
+   - NEVER change numbered lists to bullets or vice versa
+   
+   **BOLD FORMATTING - CRITICAL:**
+   - Check [FORMATTING: BOLD] notes carefully for WHICH TEXT is bold, not just that paragraph has bold
+   - SENTENCE-LEVEL BOLD: If only first sentence is bold, use <b>First sentence.</b> Rest of paragraph.
+   - PARTIAL BOLD: For bold words in middle of paragraph, use: text <b>bold part</b> more text
+   - MIXED BOLD+UNDERLINE: <b>Text with <u>underlined part</u> within bold.</b>
+   - DO NOT make entire paragraph bold if only part should be bold
+   
+   **VARIABLES - plsMatrix PLACEHOLDERS:**
+   - If you see <VariableName> in angle brackets (e.g., <EscrowEmail>, <CSPhoneNumber>), convert to {[plsMatrix.VariableName]}
+   - Common plsMatrix variables: EscrowEmail, CSPhoneNumber, CompanyLongName, HoursOfOperation, SPOCContactPhone
+   
+   **OTHER FORMATTING:**
+   - Underlined text → <u>text</u> (phone numbers, URLs, specific emphasized terms)
    - Each HTML element on its own line
 
 5. COMPLETE EXTRACTION - Include ALL content after main body:
@@ -868,18 +896,28 @@ CRITICAL SYSTEMATIC ANALYSIS FOR BULLET POINTS AND BOLD TEXT:
 
 BOLD TEXT ANALYSIS (MUST PERFORM FOR EVERY PARAGRAPH):
 - STEP 1: Read through Document Content paragraph by paragraph
-- STEP 2: For each paragraph, check if it has [FORMATTING: BOLD] note
-- STEP 3: If [FORMATTING: BOLD] is present, identify what should be bold:
-  * Scan the paragraph text for key phrases that are commonly bold:
-    - Program names: "EMAP", "Emergency Mortgage Assistance Program", "CHFA", "Connecticut Housing Finance Authority"
-    - Time-sensitive phrases: "within 60 days", "within X days"
-    - Section headers ending with ":": "You may be eligible for EMAP assistance if:", "Subject:"
-    - Important contact info: Phone numbers, organization names
-    - Important legal phrases: "THIS DOCUMENT IS AN ATTEMPT TO COLLECT A DEBT"
-  * If entire paragraph is a header/short phrase → wrap entire paragraph: <div><b>entire text</b></div>
-  * If only part is bold → wrap specific phrase: <div>regular text <b>bold phrase</b> more text</div>
+- STEP 2: For each paragraph, check if it has [FORMATTING: BOLD] or [FORMATTING: PARTIAL_BOLD(...)] note
+- STEP 3: Handle different bold types:
+  
+  **[FORMATTING: BOLD]** - Entire paragraph is bold:
+  * Wrap entire text: <div><b>entire paragraph text</b></div>
+  
+  **[FORMATTING: PARTIAL_BOLD(text1; text2)]** - Only specific parts are bold:
+  * The parentheses show WHICH text is bold
+  * Example: "PARTIAL_BOLD(Please note that all appraisals)" means ONLY that first sentence is bold
+  * Format as: <div><b>First sentence only bold.</b> Rest of paragraph not bold.</div>
+  * CRITICAL: Do NOT make entire paragraph bold if it shows PARTIAL_BOLD
+  
+  **Common bold patterns to look for:**
+  - First sentence only: <div><b>First sentence.</b> Rest continues.</div>
+  - Mid-sentence emphasis: <div>Text before <b>bold term</b> text after.</div>
+  - Combined with underline: <div><b>Bold text with <u>underlined part</u> inside.</b></div>
+  - Program names: "Emergency Mortgage Assistance Program (EMAP)" → <b>EMAP</b>
+  - Time-sensitive phrases: "within 60 days" → <b>within 60 days</b>
+  - Section headers: "You may be eligible if:" → <b>You may be eligible if:</b>
+  
 - STEP 4: Apply bold formatting consistently throughout the document
-- STEP 5: Double-check that ALL [FORMATTING: BOLD] notes have been addressed
+- STEP 5: Double-check that ALL [FORMATTING: BOLD] and [FORMATTING: PARTIAL_BOLD] notes have been addressed
 
 BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
 - STEP 1: Scan Document Content for [FORMATTING: LIST_ITEM_LEVEL_X] notes - these indicate actual Word list items

@@ -472,6 +472,14 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - `<VariableName>` → Convert to `{[plsMatrix.VariableName]}`
    - `X` in formulas → Usually means "lesser of two values" (e.g., M467 and M962)
    
+   **CURRENCY/MONEY DISPLAY:**
+   - When you see `$[TAG]` or `$` followed by a variable tag → Use `{Money({[TAG]})}`
+   - `$[M010]` or `$[M010E4]` → `{Money({[M010]})}`
+   - `$[M011]` → `{Money({[M011]})}`
+   - The Money() function formats a number as currency with dollar sign
+   - Do NOT output literal `$` before a tag - always use `{Money({[TAG]})}` instead
+   - For calculated amounts, use `{Math(formula|Money)}` instead
+   
    **CALCULATION SYNTAX - CRITICAL RULES:**
    
    **Math Function:**
@@ -632,11 +640,18 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    displayed as bold in the source template. This is how the client MARKS that a tag is present - 
    it does NOT mean the tag should be bold in the output.
    - [FORMATTING: BOLD_TAGS_ONLY] means bold is ONLY on variable tags → Do NOT bold anything
+   - [FORMATTING: PARTIAL_BOLD] where the bold parts are ONLY tags → Do NOT bold anything
    - If a paragraph's ONLY bold content is a variable tag → Do NOT bold it
    - If a label like "Your new loan number:" is followed by a bold tag → The LABEL may or may not 
      be bold (check the label text itself), but the TAG should NOT be bold
    - Only bold a variable tag if the surrounding sentence/phrase is genuinely bold text
-   - Example: "Your new loan number: {[M594]}" → Neither should be bold if only the tag was marked bold
+   - Example: "Your new loan number: {[M594]}" → Neither bold: `<td>{[M594]}</td>`
+   - Example: "Your Principal Balance is currently: $[M010E4]" → NOT bold even if tag is bold:
+     `<div>Your Principal Balance is currently: {Money({[M010]})}</div>`
+   - Example: "an Exterior BPO must be completed" → The words "Exterior BPO" ARE genuinely bold:
+     `an <b>Exterior BPO</b> must be completed`
+   - Rule of thumb: If the PARTIAL_BOLD text looks like a tag code (M594, M010, U121, etc.), 
+     it's not real bold. If it looks like English words, it IS real bold.
    
    **HYPERLINK/LINK VARIABLES:**
    When the source document contains hyperlinked text (URLs, email addresses, clickable text), 
@@ -742,6 +757,11 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: Missing conditional sections, missing tags, missing paragraphs
    - Good: ALL content from the document is included regardless of text color
    - Rule: Color/highlighting in source is NOT markup to exclude - it's real content
+
+❌ **WRONG**: Using literal `$` before a variable tag for currency
+   - Bad: `<div>Your Principal Balance is currently: ${[M010]}</div>`
+   - Good: `<div>Your Principal Balance is currently: {Money({[M010]})}</div>`
+   - Rule: `$` + tag → `{Money({[TAG]})}` function, NEVER literal dollar sign before a tag
 
 Generate the HTML template following these EXACT rules:
 

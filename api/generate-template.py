@@ -444,16 +444,31 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
 0. FORMULAS AND CALCULATIONS - NEVER leave these as empty placeholders:
    
    **FORMULA PATTERNS TO RECOGNIZE:**
-   - `[(M010E6 + T054E6/X)*100]%` → Convert to `{Math(({[M010]}+{[T054]})/{[M019]}*100|0)]}%`
+   - `[(M010E6 + T054E6/X)*100]%` → See X variable logic below
    - `[M486E8 + 2 years]` → Convert to `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
    - `<VariableName>` → Convert to `{[plsMatrix.VariableName]}`
-   - `X` in formulas → Usually means "lesser of M467 and M962" (original property value)
+   - `X` in formulas → "Lesser of M467 (purchase price) and M962 (appraised value)"
    
    **CALCULATION SYNTAX:**
-   - {Math(formula|format)} for math: `{Math(({[M010]}+{[T054]})/{[M019]}*100|0))}` or `{Math({[C001]}+{[M585]}-{[M013]}|Money)}`
+   - {Math(formula|format)} - IMPORTANT: closes with `)` not `)]`
+   - Examples: `{Math(({[M010]}+{[T054]})/{[M019]}*100|0)}` or `{Math({[C001]}+{[M585]}-{[M013]}|Money)}`
    - {[DateAdd({[TAG]}|amount|format|unit)]} for dates: `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
-   - Common variables: M010 (principal), T054 (fees), M467 (purchase price), M962 (appraised value), M486 (first payment date)
-   - For "X" (lesser of purchase/appraisal): Use nested {If()} to handle blanks and compare values
+   - Common variables: M010 (principal), T054 (fees), M467 (purchase price), M962 (appraised value)
+   
+   **X VARIABLE (Lesser of M467/M962) - USE THIS PATTERN:**
+   When you see X in a formula like [(M010+T054/X)*100], use nested conditionals to handle blank values:
+   ```
+   {Math(({[M010]}+{[T054]})/
+     {If('{[M467]}' NOT IN ('', '0', NULL) AND '{[M962]}' NOT IN ('', '0', NULL))}
+       {If({[M467]} <= {[M962]})}{[M467]}{Else}{[M962]}{End If}
+     {Else If('{[M467]}' NOT IN ('', '0', NULL))}
+       {[M467]}
+     {Else}
+       {[M962]}
+     {End If}
+   *100|0)}
+   ```
+   Logic: If both exist → compare and use lesser. If only M467 → use M467. Else → use M962.
    
    **PLACEHOLDER VARIABLES:**
    - If you see `<EscrowEmail>`, `<CSPhoneNumber>`, `<CompanyLongName>`, `<HoursOfOperation>` in angle brackets
@@ -564,8 +579,8 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 
 ❌ **WRONG**: Leaving formulas as empty placeholders
    - Bad: `Currently, your Loan to Value is at %.`
-   - Good: `Currently, your Loan to Value is at {Math(({[M010]}+{[T054]})/{[M019]}*100|0)]}%.`
-   - Note: Use {Math()} for calculations, not {Calc()}
+   - Good: `Currently, your Loan to Value is at {Math(({[M010]}+{[T054]})/{If...}*100|0)}%.`
+   - Note: Use {Math(formula|format)} with `)` closing, NOT `{Calc()}` and NOT `)]` closing
 
 ❌ **WRONG**: Leaving dates as empty brackets
    - Bad: `Following your [] payment`

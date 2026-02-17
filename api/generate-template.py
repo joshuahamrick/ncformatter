@@ -1384,6 +1384,9 @@ CRITICAL NOTES:
 - Header type detection: NMLS (if mentioned) > {Insert(H003 TagHeader)} (default) > {[tagHeader]} (only if explicitly shown)
 - DEFAULT header format is {Insert(H003 TagHeader)} - use this unless NMLS is mentioned
 - Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
+- {End If} placement: {End If} goes DIRECTLY after the last conditional content, NO <br> before it. Any spacing <br> goes AFTER {End If}:
+  CORRECT: `<div>Last conditional content.</div>\n{End If}\n<br>\n<div>Next paragraph</div>`
+  WRONG:   `<div>Last conditional content.</div>\n<br>\n{End If}\n<div>Next paragraph</div>`
 - CRITICAL: After section headers (especially those ending with ":"), always check for bullet points that follow - format them as tables
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):

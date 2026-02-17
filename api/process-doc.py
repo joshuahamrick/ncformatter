@@ -25,25 +25,95 @@ def _align_to_str(alignment):
 def _extract_runs(paragraph):
 	runs = []
 	import re
+	from docx.oxml.ns import qn
 	
-	for run in paragraph.runs:
-		text = run.text or ''
+	# Extract ALL runs including those inside hyperlinks
+	# paragraph.runs misses hyperlink content because w:hyperlink wraps w:r elements
+	p_element = paragraph._p
+	
+	for child in p_element.iterchildren():
+		tag = child.tag.rsplit('}', 1)[-1]
 		
-		# Include ALL runs regardless of color or highlighting.
-		# Tracked changes are already handled by _build_ir_document which accepts
-		# all changes before extraction. Color/highlight filtering was too aggressive
-		# and caused real document content (conditional instructions, underlined text,
-		# colored labels) to be lost. The AI prompt handles ignoring markup annotations.
-		
-		runs.append({
-			'text': text,
-			'bold': bool(run.bold),
-			'italic': bool(run.italic),
-			'underline': bool(run.underline),
-			'fontSizePt': float(run.font.size.pt) if getattr(run.font, 'size', None) and run.font.size is not None else None,
-			'fontFamily': run.font.name if getattr(run.font, 'name', None) else None
-		})
+		if tag == 'r':
+			# Normal run
+			_append_run_from_element(child, runs, paragraph)
+		elif tag == 'hyperlink':
+			# Hyperlink - extract runs inside it, mark as underline (it's a link)
+			for sub_run in child.iterchildren():
+				sub_tag = sub_run.tag.rsplit('}', 1)[-1]
+				if sub_tag == 'r':
+					_append_run_from_element(sub_run, runs, paragraph, is_hyperlink=True)
+	
 	return runs
+
+
+def _append_run_from_element(r_element, runs, paragraph, is_hyperlink=False):
+	"""Extract run data from a w:r XML element and append to runs list."""
+	from docx.oxml.ns import qn
+	
+	# Get text from all w:t elements in this run
+	text_parts = []
+	for t_elem in r_element.iterchildren():
+		t_tag = t_elem.tag.rsplit('}', 1)[-1]
+		if t_tag == 't':
+			text_parts.append(t_elem.text or '')
+	
+	text = ''.join(text_parts)
+	if not text:
+		return
+	
+	# Extract formatting from rPr (run properties)
+	rPr = r_element.find(qn('w:rPr'))
+	
+	is_bold = False
+	is_italic = False
+	is_underline = is_hyperlink  # Hyperlinks are treated as underlined
+	font_size_pt = None
+	font_name = None
+	
+	if rPr is not None:
+		# Bold: <w:b/> or <w:b w:val="true"/>
+		b_elem = rPr.find(qn('w:b'))
+		if b_elem is not None:
+			val = b_elem.get(qn('w:val'))
+			is_bold = val is None or val.lower() in ('true', '1', 'on')
+		
+		# Italic: <w:i/>
+		i_elem = rPr.find(qn('w:i'))
+		if i_elem is not None:
+			val = i_elem.get(qn('w:val'))
+			is_italic = val is None or val.lower() in ('true', '1', 'on')
+		
+		# Underline: <w:u w:val="single"/>
+		u_elem = rPr.find(qn('w:u'))
+		if u_elem is not None:
+			val = u_elem.get(qn('w:val'))
+			if val and val.lower() != 'none':
+				is_underline = True
+		
+		# Font size: <w:sz w:val="22"/> (half-points)
+		sz_elem = rPr.find(qn('w:sz'))
+		if sz_elem is not None:
+			try:
+				half_pts = int(sz_elem.get(qn('w:val')))
+				font_size_pt = half_pts / 2.0
+			except (ValueError, TypeError):
+				pass
+		
+		# Font name: <w:rFonts w:ascii="Arial"/>
+		rFonts = rPr.find(qn('w:rFonts'))
+		if rFonts is not None:
+			font_name = rFonts.get(qn('w:ascii'))
+	
+	runs.append({
+		'text': text,
+		'bold': is_bold,
+		'italic': is_italic,
+		'underline': is_underline,
+		'fontSizePt': font_size_pt,
+		'fontFamily': font_name,
+		'isHyperlink': is_hyperlink
+	})
 
 
 def _detect_list_info(paragraph):

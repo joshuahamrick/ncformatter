@@ -247,19 +247,16 @@ def format_ir_for_prompt(ir):
 			# - {[CompanyLongName]} or [[CompanyLongName]] (company variables)
 			# Convert all to our standard {[TAG]} format
 			
-			# Preserve conditional instructions - Claude needs to see these to convert to {If()} logic
-			# Examples:
-			# - "(IF [[H003]] = '*' or 'NULL'; then suppress print of line; else produce:)" → Claude converts to {If()}
-			# - "(IF M007 IBM State Code = '19' then insert the below):" → Claude converts to {If()}
-			# These are real business logic, NOT markup to remove.
-			# Mark them clearly so Claude knows to convert them:
-			cleaned_text = re.sub(
-				r'\(IF\s+(\[\[?\w+\]\]?)\s*([^;]+);\s*then\s+suppress\s+print[^:]*:\s*\)',
-				r'[CONDITIONAL: IF \1 \2 then suppress, else show following content]',
-				cleaned_text, flags=re.IGNORECASE
-			).strip()
+			# Remove markup instructions that wrap actual content
+			# Examples from CA030:
+			# - "(IF [[H003]] = '*' or 'NULL'; then suppress print of line; else produce:)"
+			# - "(see "Additional Borrowers/Co-Borrowers" on Letter Library Business Rules...)"
+			# Keep the content after these instructions
 			
-			# Remove "(see ...)" references - these are documentation cross-references, not content
+			# Remove conditional instruction prefixes like "IF [[TAG]] = value; then suppress..."
+			cleaned_text = re.sub(r'^\(IF\s+\[\[?\w+\]\]?\s*[^;]+;\s*then\s+[^:]+:\s*\)', '', cleaned_text, flags=re.IGNORECASE).strip()
+			
+			# Remove "(see ...)" references
 			cleaned_text = re.sub(r'\(see\s+["\'][^"\']+["\']\s+on\s+[^)]+\)', '', cleaned_text, flags=re.IGNORECASE).strip()
 			
 			# CRITICAL: Convert markup variable formats to standard format
@@ -312,11 +309,6 @@ def format_ir_for_prompt(ir):
 			non_bold_runs = [r for r in runs if not r.get('bold', False) and r.get('text', '').strip()]
 			is_partial_bold = len(bold_runs) > 0 and len(non_bold_runs) > 0
 			
-			# Check if PARTIAL underline (some runs underlined, some not)
-			underline_runs = [r for r in runs if r.get('underline', False) and r.get('text', '').strip()]
-			non_underline_runs = [r for r in runs if not r.get('underline', False) and r.get('text', '').strip()]
-			is_partial_underline = len(underline_runs) > 0 and len(non_underline_runs) > 0
-			
 			font_size = None
 			for r in runs:
 				if r.get('fontSizePt'):
@@ -327,19 +319,37 @@ def format_ir_for_prompt(ir):
 			# Build formatting hints
 			formatting_hints = []
 			if has_bold:
+				# Check if bold is ONLY on variable tags (client marks tags bold for visibility)
+				import re as _re
+				tag_pattern = _re.compile(r'^[\s\{\[\]]*[A-Z]\d{2,4}[A-Z]?\d*[\s\{\[\]]*$|^\s*\{?\[?[A-Z]\w+\]?\}?\s*$')
+				bold_only_tags = all(
+					tag_pattern.match(r.get('text', '').strip()) or _re.search(r'\{\[[\w\.]+\]\}', r.get('text', ''))
+					for r in bold_runs
+				) if bold_runs else False
+				
 				if is_partial_bold:
-					# Show which parts are bold
-					bold_texts = [r.get('text', '').strip()[:50] for r in bold_runs[:3]]  # First 3 bold parts
-					formatting_hints.append(f"PARTIAL_BOLD({'; '.join(bold_texts)})")
+					if bold_only_tags:
+						# Bold is only on tags - note this so Claude doesn't apply bold
+						formatting_hints.append("BOLD_TAGS_ONLY")
+					else:
+						# Show which parts are bold
+						bold_texts = [r.get('text', '').strip()[:50] for r in bold_runs[:3]]  # First 3 bold parts
+						formatting_hints.append(f"PARTIAL_BOLD({'; '.join(bold_texts)})")
 				else:
-					formatting_hints.append("BOLD")
+					if bold_only_tags and len(cleaned_text.strip()) < 20:
+						formatting_hints.append("BOLD_TAGS_ONLY")
+					else:
+						formatting_hints.append("BOLD")
 			if has_underline:
-				if is_partial_underline:
-					# Show which parts are underlined
-					underline_texts = [r.get('text', '').strip()[:50] for r in underline_runs[:3]]
-					formatting_hints.append(f"PARTIAL_UNDERLINE({'; '.join(underline_texts)})")
-				else:
-					formatting_hints.append("UNDERLINE")
+				formatting_hints.append("UNDERLINE")
+			
+			# Check for hyperlinks - these are dynamic variables (plsMatrix)
+			has_hyperlink = any(r.get('isHyperlink', False) for r in runs)
+			if has_hyperlink:
+				hyperlink_texts = [r.get('text', '').strip()[:50] for r in runs if r.get('isHyperlink', False) and r.get('text', '').strip()]
+				if hyperlink_texts:
+					formatting_hints.append(f"HYPERLINK({'; '.join(hyperlink_texts)})")
+			
 			if font_size and font_size != 11.0:  # 11pt is default, only note if different
 				formatting_hints.append(f"FONT_SIZE_{int(font_size)}pt")
 			if alignment and alignment != 'left':
@@ -528,20 +538,12 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Do NOT stop until you've processed all content
    - Count paragraphs and verify you've included all of them
 
-2. HANDLE METADATA AND CONDITIONAL INSTRUCTIONS:
-   - Skip: "[H002] Company Address Line 1" - variable definitions (these are tag descriptions, not content)
-   - Skip: "(or if [H581] present)" - inline markup notes in parentheses
-   - CONVERT (do NOT skip): "IF M007 IBM State Code = '19' then insert the below:" → Convert to {If()} conditional
-     * These are real conditional instructions that control what content appears
-     * Format: {If('{[TAG]}' = 'value')} ... content ... {End If}
-     * The content that follows the instruction IS the conditional content
-   - CONVERT: "If [M065] >= 'July 29, 1999' then print:" → {If()} conditional wrapping the following content
+2. IGNORE METADATA - Filter out variable definitions and instructions:
+   - Skip: "[H002] Company Address Line 1" - variable definitions
+   - Skip: "(or if [H581] present)" - conditional instructions  
+   - Skip: "If [M065] ≥ 'July 29, 1999' then print:" - instructions (convert to {If()} instead)
    - Remove parenthesis descriptions like "(Property Line 1)", "(Due Date)", "(Balance)" after variables
    - Keep: "(the Property)" - actual content, not metadata
-   
-   **IMPORTANT**: Conditional instructions may appear in colored or highlighted text in the source 
-   document. These are NOT markup to ignore - they are real business logic that must be converted 
-   to {If()} conditionals. ALL text from the document is included regardless of color.
 
 3. STRUCTURE DETECTION - Scan for these patterns BEFORE salutation:
    - If you see "Loan Number:" label AND [M594] variable → Create Loan Number/RE table
@@ -625,6 +627,26 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    **CRITICAL**: If you see PARTIAL_BOLD, DO NOT make the entire paragraph bold!
    **CRITICAL**: Check the parentheses content to see exactly which text should be bold!
    
+   **BOLD ON VARIABLE TAGS - IMPORTANT:**
+   Variable tags (short alphanumeric codes like {[M594]}, {[U121]}, {[M010]}, etc.) are often 
+   displayed as bold in the source template. This is how the client MARKS that a tag is present - 
+   it does NOT mean the tag should be bold in the output.
+   - [FORMATTING: BOLD_TAGS_ONLY] means bold is ONLY on variable tags → Do NOT bold anything
+   - If a paragraph's ONLY bold content is a variable tag → Do NOT bold it
+   - If a label like "Your new loan number:" is followed by a bold tag → The LABEL may or may not 
+     be bold (check the label text itself), but the TAG should NOT be bold
+   - Only bold a variable tag if the surrounding sentence/phrase is genuinely bold text
+   - Example: "Your new loan number: {[M594]}" → Neither should be bold if only the tag was marked bold
+   
+   **HYPERLINK/LINK VARIABLES:**
+   When the source document contains hyperlinked text (URLs, email addresses, clickable text), 
+   these are variables that should be converted to plsMatrix format:
+   - Hyperlinked website text → `{[plsMatrix.WebSite]}`
+   - Hyperlinked email text → `{[plsMatrix.CSEmail]}` or `{[plsMatrix.EscrowEmail]}`
+   - The fact that text is a hyperlink in Word means it's a dynamic variable, NOT a static URL
+   - Always underline plsMatrix link variables: `<u>{[plsMatrix.WebSite]}</u>`
+   - If the hyperlink text looks like a URL (http://..., www...) → Convert to plsMatrix variable
+   
    **VARIABLES - plsMatrix PLACEHOLDERS:**
    - If you see <VariableName> in angle brackets (e.g., <EscrowEmail>, <CSPhoneNumber>), convert to {[plsMatrix.VariableName]}
    - Common plsMatrix variables: EscrowEmail, CSPhoneNumber, CompanyLongName, HoursOfOperation, SPOCContactPhone
@@ -706,6 +728,21 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Example: "Your new loan number:", "New toll-free line:", "New website..." should be ONE table
    - Rule: Check [FORMATTING: INDENT_X] to detect spatial alignment, then group into table
 
+❌ **WRONG**: Bolding variable tags just because they appear bold in source
+   - Bad: `<div><b>Your new loan number:</b> <b>{[M594]}</b></div>` (tags bold because client marks them)
+   - Good: `<div>Your new loan number:</div>` with `{[M594]}` not bold
+   - Rule: Bold on short tags like {[M594]} is just the client marking a tag, NOT actual bold formatting
+
+❌ **WRONG**: Treating hyperlinked text as static content
+   - Bad: `<div>New website: <u>www.example.com</u></div>`
+   - Good: `<div>New website: <u>{[plsMatrix.WebSite]}</u></div>`
+   - Rule: Hyperlinks in source are dynamic variables → convert to plsMatrix format
+
+❌ **WRONG**: Skipping colored or highlighted text
+   - Bad: Missing conditional sections, missing tags, missing paragraphs
+   - Good: ALL content from the document is included regardless of text color
+   - Rule: Color/highlighting in source is NOT markup to exclude - it's real content
+
 Generate the HTML template following these EXACT rules:
 
 STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
@@ -713,6 +750,11 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
    - Make a mental map: Where is "Loan Number:"? Where is "RE:"? Where is "Sincerely,"?
    - Identify ALL sections: header area, body paragraphs, signature area, legal notices
    - Count total paragraphs so you know when you're done
+   - Look for CONDITIONAL SECTIONS: Text like "(IF TAG = value then insert the below):" 
+     indicates conditional content. Convert these to {If()} blocks in the output.
+     Example: "(IF M007 IBM State Code = "19" then insert the below):" → {If('{[M007]}' = '19')}
+   - ALL content must be included regardless of color or highlighting in the source document
+   - Colored or highlighted text is NOT markup to be excluded - it's real content
 
 STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
    - Look for "Loan Number:" text → If found, create table row
@@ -946,10 +988,7 @@ STEP 4 - VERIFY COMPLETENESS:
      * Phone numbers like "1-800-569-4287" or "1-888-995-HOPE (4673)" → <u>1-800-569-4287</u>
      * URLs like "http://www.hud.gov/offices/hsg/sfh/hcc/hcs.cfm" → <u>http://www.hud.gov/...</u>
      * Email addresses → <u>email@example.com</u>
-   - CRITICAL: If a paragraph shows [FORMATTING: UNDERLINE], the ENTIRE paragraph text is underlined
-   - CRITICAL: If a paragraph shows [FORMATTING: PARTIAL_UNDERLINE(text)], ONLY the specified text is underlined
-     * Example: PARTIAL_UNDERLINE(number) → wrap ONLY "number" in <u> tags: "assigned a new loan <u>number</u>"
-     * This is the EXACT text that should be underlined - do not expand or contract the underline range
+   - CRITICAL: If a paragraph shows [FORMATTING: UNDERLINE], identify which text should be underlined (usually phone numbers, URLs, or specific phrases)
    - CRITICAL: If a paragraph shows [FORMATTING: BOLD], identify which words/phrases should be bold:
      * If the entire paragraph should be bold: <div><b>entire text</b></div>
      * If only part should be bold: <div>regular text <b>bold portion</b> more regular text</div>
@@ -1186,10 +1225,6 @@ BOLD TEXT ANALYSIS (MUST PERFORM FOR EVERY PARAGRAPH):
   
 - STEP 4: Apply bold formatting consistently throughout the document
 - STEP 5: Double-check that ALL [FORMATTING: BOLD] and [FORMATTING: PARTIAL_BOLD] notes have been addressed
-- STEP 6: NEVER add bold that is NOT indicated by [FORMATTING: BOLD] or [FORMATTING: PARTIAL_BOLD]
-  * If a paragraph has NO bold formatting note, do NOT bold it - even if it looks like a label or header
-  * Label text in tables (like "Your new loan number:") should NOT be bolded unless the source explicitly says so
-  * Only bold what the [FORMATTING] notes tell you to bold
 
 BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
 - STEP 1: Scan Document Content for [FORMATTING: LIST_ITEM_LEVEL_X] notes - these indicate actual Word list items

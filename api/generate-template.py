@@ -75,6 +75,7 @@ def load_few_shot_examples():
 	
 	# Load minimal examples to reduce token usage - only most critical ones
 	curated = [
+		'MI001/MI001-formatted.html',  # PMI with numbered lists, partial bold, calculations
 		'MI008/MI008-formatted.html',  # PMI Auto Term with bullet points and different header layout
 		'CA003/CA003-formatted.html',  # ACH with conditionals
 		'CA030/CA030-formatted.html',  # Initial contact with RE/Loan Number table and bullet points
@@ -440,6 +441,25 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 
 CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
 
+0. FORMULAS AND CALCULATIONS - NEVER leave these as empty placeholders:
+   
+   **FORMULA PATTERNS TO RECOGNIZE:**
+   - `[(M010E6 + T054E6/X)*100]%` → Convert to `{[Calc(({[M010]}+{[T054]})/{[M019]}*100|0)]}%`
+   - `[M486E8 + 2 years]` → Convert to `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
+   - `<VariableName>` → Convert to `{[plsMatrix.VariableName]}`
+   
+   **CALCULATION SYNTAX:**
+   - {[Calc(formula|decimals)]} for math: `{[Calc(({[M010]}+{[T054]})/{[M019]}*100|0)]}`
+   - {[DateAdd({[TAG]}|amount|format|unit)]} for dates: `{[DateAdd({[M486]}|2|MMM yyyy|Year)]}`
+   - Common variables: M010 (principal), T054 (fees), M019 (property value), M486 (first payment date)
+   
+   **PLACEHOLDER VARIABLES:**
+   - If you see `<EscrowEmail>`, `<CSPhoneNumber>`, `<CompanyLongName>`, `<HoursOfOperation>` in angle brackets
+   - Convert to: `{[plsMatrix.EscrowEmail]}`, `{[plsMatrix.CSPhoneNumber]}`, etc.
+   - ALWAYS wrap email/phone in underline: `<u>{[plsMatrix.CSPhoneNumber]}</u>`
+   
+   **CRITICAL**: NEVER output empty `%` or `[]` - always convert formulas to proper syntax!
+
 1. SYSTEMATIC EXTRACTION - Read the ENTIRE Document Content from start to finish:
    - Extract EVERY paragraph in the exact order it appears
    - Do NOT stop until you've processed all content
@@ -460,19 +480,50 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
 
 4. FORMATTING RULES:
    
-   **LIST FORMATTING:**
+   **LIST FORMATTING - CRITICAL RULES:**
    - Look for [FORMATTING: LIST_ITEM_LEVEL_X] in Document Content
-   - Check if list uses NUMBERED markers (1., 2., 3.) or BULLET markers (•, -, *)
-   - For NUMBERED lists: <table width="100%"><tbody><tr><td width="5%" valign="top">1.</td><td>text</td></tr>...
-   - For BULLET lists: <table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>text</td></tr>...
-   - NEVER change numbered lists to bullets or vice versa
+   - Check the ACTUAL TEXT for list markers:
+     * If you see "1.", "2.", "3." → USE NUMBERED FORMAT
+     * If you see "•", "-", "*" → USE BULLET FORMAT
    
-   **BOLD FORMATTING - CRITICAL:**
-   - Check [FORMATTING: BOLD] notes carefully for WHICH TEXT is bold, not just that paragraph has bold
-   - SENTENCE-LEVEL BOLD: If only first sentence is bold, use <b>First sentence.</b> Rest of paragraph.
-   - PARTIAL BOLD: For bold words in middle of paragraph, use: text <b>bold part</b> more text
-   - MIXED BOLD+UNDERLINE: <b>Text with <u>underlined part</u> within bold.</b>
-   - DO NOT make entire paragraph bold if only part should be bold
+   **NUMBERED LIST FORMAT (width="5%"):**
+   <table width="100%"><tbody><tr>
+     <td width="5%" valign="top">1.</td>
+     <td>First item text</td>
+   </tr><tr>
+     <td width="5%" valign="top">2.</td>
+     <td>Second item text</td>
+   </tr></tbody></table>
+   
+   **BULLET LIST FORMAT (width="3%", border-collapse):**
+   <table width="100%" style="border-collapse: collapse"><tbody><tr>
+     <td width="3%" valign="top">•</td>
+     <td>First item text</td>
+   </tr></tbody></table>
+   
+   **CRITICAL**: NEVER change numbered lists (1., 2.) to bullets (•) or vice versa!
+   **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%"!
+   
+   **BOLD FORMATTING - CRITICAL RULES:**
+   
+   Check for [FORMATTING: BOLD] or [FORMATTING: PARTIAL_BOLD(...)] notes:
+   
+   **[FORMATTING: PARTIAL_BOLD(text here)]** - Only specific parts are bold:
+   - The text in parentheses shows WHICH PARTS are bold
+   - Example: "PARTIAL_BOLD(Please note that all appraisals)" = only that text is bold
+   - Format: <b>Bold part only.</b> Rest of paragraph continues.
+   
+   **Common patterns:**
+   - First sentence only: <div><b>First sentence ends.</b> More text continues here.</div>
+   - Mid-paragraph: <div>Regular text <b>bold term</b> more regular text.</div>
+   - Bold with underline inside: <div><b>Bold text with <u>underlined part</u> inside.</b></div>
+   - Nested in tables: <td>Regular text with <b>Exterior BPO</b> in middle.</td>
+   
+   **[FORMATTING: BOLD]** - Entire paragraph is bold:
+   - Wrap entire text: <div><b>All text is bold here.</b></div>
+   
+   **CRITICAL**: If you see PARTIAL_BOLD, DO NOT make the entire paragraph bold!
+   **CRITICAL**: Check the parentheses content to see exactly which text should be bold!
    
    **VARIABLES - plsMatrix PLACEHOLDERS:**
    - If you see <VariableName> in angle brackets (e.g., <EscrowEmail>, <CSPhoneNumber>), convert to {[plsMatrix.VariableName]}
@@ -506,6 +557,28 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 3. Where does "Sincerely," appear? → Note the paragraph number
 4. What comes AFTER "Sincerely,"? → List all remaining content
 5. How many total paragraphs are there? → You MUST extract this many
+
+**COMMON ERRORS TO AVOID (especially in MI001-type PMI documents):**
+
+❌ **WRONG**: Leaving formulas as empty placeholders
+   - Bad: `Currently, your Loan to Value is at %.`
+   - Good: `Currently, your Loan to Value is at {[Calc(({[M010]}+{[T054]})/{[M019]}*100|0)]}%.`
+
+❌ **WRONG**: Leaving dates as empty brackets
+   - Bad: `Following your [] payment`
+   - Good: `Following your {[DateAdd({[M486]}|2|MMM yyyy|Year)]} payment`
+
+❌ **WRONG**: Using bullets when document has numbered lists
+   - Bad: `<td width="3%" valign="top">•</td>` (for items labeled 1., 2.)
+   - Good: `<td width="5%" valign="top">1.</td>` (for first item), `<td width="5%" valign="top">2.</td>` (for second)
+
+❌ **WRONG**: Over-bolding entire paragraphs when only part is bold
+   - Bad: `<div><b>Please note that all appraisals must be ordered through our offices and are at the expense of the property owner. Due to your loan's investor...</b></div>`
+   - Good: `<div><b>Please note that all appraisals must be ordered through our offices and are at the expense of the property owner.</b> Due to your loan's investor...</div>`
+
+❌ **WRONG**: Not underlining email/phone in plsMatrix variables
+   - Bad: `{[plsMatrix.CSPhoneNumber]}`
+   - Good: `<u>{[plsMatrix.CSPhoneNumber]}</u>`
 
 Generate the HTML template following these EXACT rules:
 

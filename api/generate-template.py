@@ -79,8 +79,8 @@ def load_few_shot_examples():
 		'MI008/MI008-formatted.html',  # PMI Auto Term with bullet points and different header layout
 		'CA003/CA003-formatted.html',  # ACH with conditionals
 		'CA030/CA030-formatted.html',  # Initial contact with RE/Loan Number table and bullet points
-		'LM401/LM401-formatted.html'  # Complex table + conditionals
-		# Removed: ES114, GB001, CA005, CS101, SI002 to aggressively reduce token usage
+		'LM401/LM401-formatted.html',  # Complex table + conditionals
+		'WL009/WL009-formatted.html',  # HELOC Welcome with centered title, FAQ bold headers, contact block, partial bold closing
 	]
 	
 	examples = []
@@ -537,8 +537,7 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    **PLACEHOLDER VARIABLES:**
    - If you see `<EscrowEmail>`, `<CSPhoneNumber>`, `<CompanyLongName>`, `<HoursOfOperation>` in angle brackets
    - Convert to: `{[plsMatrix.EscrowEmail]}`, `{[plsMatrix.CSPhoneNumber]}`, etc.
-   - ONLY underline if it was a hyperlink in the source (check for [FORMATTING: HYPERLINK(...)] or [FORMATTING: UNDERLINE])
-   - Do NOT automatically underline phone numbers or emails just because they are plsMatrix variables
+   - ALWAYS wrap email/phone in underline: `<u>{[plsMatrix.CSPhoneNumber]}</u>`
    
    **CRITICAL**: NEVER output empty `%` or `[]` - always convert formulas to proper syntax!
 
@@ -660,10 +659,8 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Hyperlinked website text → `{[plsMatrix.WebSite]}`
    - Hyperlinked email text → `{[plsMatrix.CSEmail]}` or `{[plsMatrix.EscrowEmail]}`
    - The fact that text is a hyperlink in Word means it's a dynamic variable, NOT a static URL
+   - Always underline plsMatrix link variables: `<u>{[plsMatrix.WebSite]}</u>`
    - If the hyperlink text looks like a URL (http://..., www...) → Convert to plsMatrix variable
-   - ONLY apply underline when the paragraph has [FORMATTING: HYPERLINK(...)] or [FORMATTING: UNDERLINE]
-   - Do NOT automatically underline phone numbers or email variables just because they are plsMatrix variables
-   - Same contact info can appear WITH underline in one paragraph and WITHOUT in another — always follow the source formatting per-paragraph
    
    **VARIABLES - plsMatrix PLACEHOLDERS:**
    - If you see <VariableName> in angle brackets (e.g., <EscrowEmail>, <CSPhoneNumber>), convert to {[plsMatrix.VariableName]}
@@ -755,12 +752,6 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: `<div>New website: <u>www.example.com</u></div>`
    - Good: `<div>New website: <u>{[plsMatrix.WebSite]}</u></div>`
    - Rule: Hyperlinks in source are dynamic variables → convert to plsMatrix format
-
-❌ **WRONG**: Automatically underlining all phone numbers and email variables
-   - Bad: `please contact us at <u>{[plsMatrix.CSPhoneNumber]}</u>` (when source has no underline/hyperlink)
-   - Good: `please contact us at {[plsMatrix.CSPhoneNumber]}` (no underline unless source has it)
-   - Rule: Underline ONLY when [FORMATTING: UNDERLINE] or [FORMATTING: HYPERLINK(...)] is present on THAT paragraph
-   - The SAME variable can appear underlined in one paragraph and plain in another — follow each paragraph's own formatting
 
 ❌ **WRONG**: Skipping colored or highlighted text
    - Bad: Missing conditional sections, missing tags, missing paragraphs
@@ -1013,12 +1004,9 @@ STEP 4 - VERIFY COMPLETENESS:
    - STEP 4: If a paragraph has [FORMATTING: FONT_SIZE_Xpt], add style="font-size: Xpt"
    - STEP 5: If a paragraph has [FORMATTING: ALIGN_CENTER], add style="text-align: center"
    - CRITICAL: Check EVERY paragraph for formatting notes - do NOT skip any
-   - CRITICAL: Only underline phone numbers, URLs, and emails if the SOURCE paragraph has [FORMATTING: UNDERLINE] or [FORMATTING: HYPERLINK(...)]:
-     * If [FORMATTING: UNDERLINE] present: underline the appropriate text (phone, URL, email) in that paragraph
-     * If [FORMATTING: HYPERLINK(...)] present: underline the hyperlinked text and convert to plsMatrix variable
-     * If NEITHER is present: do NOT underline, even for contact info like phone numbers or emails
-     * Phone numbers like "1-800-569-4287" → <u>1-800-569-4287</u> ONLY if underlined in source
-     * URLs like "http://www.hud.gov/..." → <u>http://www.hud.gov/...</u> ONLY if underlined/linked in source
+   - CRITICAL: Underline phone numbers, URLs, and email addresses if they appear underlined in the source:
+     * Phone numbers like "1-800-569-4287" or "1-888-995-HOPE (4673)" → <u>1-800-569-4287</u>
+     * URLs like "http://www.hud.gov/offices/hsg/sfh/hcc/hcs.cfm" → <u>http://www.hud.gov/...</u>
      * Email addresses → <u>email@example.com</u>
    - CRITICAL: If a paragraph shows [FORMATTING: UNDERLINE], identify which text should be underlined (usually phone numbers, URLs, or specific phrases)
    - CRITICAL: If a paragraph shows [FORMATTING: BOLD], identify which words/phrases should be bold:
@@ -1396,14 +1384,6 @@ CRITICAL NOTES:
 - Header type detection: NMLS (if mentioned) > {Insert(H003 TagHeader)} (default) > {[tagHeader]} (only if explicitly shown)
 - DEFAULT header format is {Insert(H003 TagHeader)} - use this unless NMLS is mentioned
 - Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
-- {End If} placement: {End If} goes DIRECTLY after the last conditional content, NO <br> before it. Any spacing <br> goes AFTER {End If}:
-  CORRECT: `<div>Last conditional content.</div>\n{End If}\n<br>\n<div>Next paragraph</div>`
-  WRONG:   `<div>Last conditional content.</div>\n<br>\n{End If}\n<div>Next paragraph</div>`
-- Spacing between paragraphs is driven by ACTUAL blank lines in the source document, not by punctuation:
-  - If there is a visible blank line/space in the source between two paragraphs → add <br>
-  - If paragraphs are directly adjacent with no blank line → no <br> between them
-  - Do NOT infer spacing from punctuation (e.g., a paragraph ending in ":" does not automatically get a <br> after it)
-  - The [FORMATTING: spacingBeforePt / spacingAfterPt] hints can help detect this
 - CRITICAL: After section headers (especially those ending with ":"), always check for bullet points that follow - format them as tables
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):

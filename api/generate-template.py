@@ -438,6 +438,20 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	# Format IR content
 	ir_content = format_ir_for_prompt(ir)
 	
+	# Append text box content if present (floating text boxes are not in body flow)
+	text_boxes = ir.get('meta', {}).get('textBoxes', [])
+	if text_boxes:
+		ir_content += "\n\n=== FLOATING TEXT BOXES (appear as bordered boxes in document) ===\n"
+		ir_content += "IMPORTANT: These are visually prominent boxes (often with borders) that appear at the top right or elsewhere.\n"
+		ir_content += "They typically contain Loan Number, Property Address, or other key reference info.\n"
+		ir_content += "Include their content as a table in the appropriate location (usually just before or after the salutation area).\n"
+		for i, tb in enumerate(text_boxes):
+			ir_content += f"\nText Box {i+1}:\n"
+			for row in tb.get('rows', []):
+				text = ''.join(r.get('text', '') for r in row.get('runs', []))
+				if text.strip():
+					ir_content += f"  {text.strip()}\n"
+	
 	# Build few-shot examples section - show ALL examples with proper formatting
 	few_shot_text = "\n## CRITICAL: Example Outputs - Study These Carefully\n\n"
 	few_shot_text += "These examples show the EXACT formatting structure you must follow:\n"
@@ -770,6 +784,10 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
    - Make a mental map: Where is "Loan Number:"? Where is "RE:"? Where is "Sincerely,"?
    - Identify ALL sections: header area, body paragraphs, signature area, legal notices
    - Count total paragraphs so you know when you're done
+   - **CHECK FOR FLOATING TEXT BOXES**: Look for the "=== FLOATING TEXT BOXES ===" section at the bottom of Document Content.
+     If present, these are bordered boxes (often upper right) containing Loan Number, Property Address, etc.
+     ALWAYS convert these to a table in the header area (after mailing address, before salutation).
+     Even if the body paragraphs don't mention "Loan Number:", if a text box has it — include the table.
    - Look for CONDITIONAL SECTIONS: Text like "(IF TAG = value then insert the below):" 
      indicates conditional content. Convert these to {If()} blocks in the output.
      Example: "(IF M007 IBM State Code = "19" then insert the below):" → {If('{[M007]}' = '19')}

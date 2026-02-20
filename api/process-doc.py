@@ -263,6 +263,58 @@ def _build_ir_document(doc):
 	except Exception:
 		pass  # Headers might not be accessible, continue without them
 	
+	# Extract text box content first (floating text boxes are not in body flow)
+	# They appear as w:txbxContent inside drawing/shape elements
+	text_box_blocks = []
+	seen_textbox_texts = set()
+	for txbx in doc.element.body.iter(qn('w:txbxContent')):
+		rows = []
+		for p_elem in txbx.iter(qn('w:p')):
+			text = ''.join(t.text or '' for t in p_elem.iter(qn('w:t')))
+			text = text.strip()
+			if not text:
+				continue
+			# Deduplicate (Word sometimes duplicates text boxes for compatibility)
+			if text in seen_textbox_texts:
+				continue
+			seen_textbox_texts.add(text)
+			# Build a simple paragraph IR for each line in the text box
+			runs = []
+			for r_elem in p_elem.iter(qn('w:r')):
+				t_text = ''.join(t.text or '' for t in r_elem.iter(qn('w:t')))
+				if not t_text:
+					continue
+				rPr = r_elem.find(qn('w:rPr'))
+				is_bold = False
+				if rPr is not None:
+					b = rPr.find(qn('w:b'))
+					if b is not None:
+						val = b.get(qn('w:val'))
+						is_bold = val is None or val.lower() in ('true', '1', 'on')
+				runs.append({'text': t_text, 'bold': is_bold, 'italic': False, 'underline': False, 'fontSizePt': None, 'fontFamily': None, 'isHyperlink': False})
+			if runs:
+				rows.append({
+					'type': 'paragraph',
+					'runs': runs,
+					'align': 'left',
+					'leadingSpaces': None,
+					'styleName': None,
+					'isListItem': False,
+					'listLevel': None,
+					'listMarker': None,
+					'spacingBeforePt': None,
+					'spacingAfterPt': None,
+					'lineHeightMultiple': None,
+					'leftIndentPt': None,
+					'firstLineIndentPt': None,
+					'hangingIndentPt': None
+				})
+		if rows:
+			text_box_blocks.append({
+				'type': 'textbox',
+				'rows': rows
+			})
+	
 	# Iterate block items in document order: paragraphs and tables
 	# python-docx doesn't provide a direct unified iterator; iterate through document._body
 	for element in doc.element.body.iterchildren():
@@ -286,7 +338,8 @@ def _build_ir_document(doc):
 		'confidence': 1.0,
 		'images': [],
 		'meta': {
-			'headerTexts': header_texts
+			'headerTexts': header_texts,
+			'textBoxes': text_box_blocks
 		}
 	}
 

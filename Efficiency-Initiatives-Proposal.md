@@ -1,6 +1,6 @@
 # Programmer Efficiency & Profitability Initiatives
 
-Author: Josh (Programmer, New Course Communications)
+Author: Josh H. (Programmer, New Course Communications)
 
 Date: November 2025
 
@@ -8,8 +8,8 @@ Date: November 2025
 
 **The Vision:** Two massive efficiency checkpoints that transform how we work:
 
-1. **~50% Efficiency Gain** (Immediate): Foundational automation that cuts manual work in half
-2. **95% Faster** (Ultimate Goal): End-to-end automation that transforms CRF creation → "Samples Under Review" from hours/days to almost instantaneous
+1. **Immediate**: Foundational automation that cuts manual work in half
+2. **Ultimate Goal**: End-to-end automation that transforms CRF creation → "Samples Under Review" from hours/days to almost instantaneous
 
 **How We Get There:** I propose a focused set of improvements that can increase programmer efficiency by ~50% (or more) and translate directly into higher throughput, faster turnaround, and improved profitability. These foundational pieces enable the ultimate automation pipeline:
 
@@ -21,9 +21,9 @@ This plan prioritizes quick wins that compound, followed by structural fixes tha
 
 ---
 
-## 🎯 Phase 1: Foundational Automation (~50% Efficiency Gain)
+## 🎯 Phase 1: Foundational Automation
 
-**These initiatives deliver immediate impact and enable the ultimate automation pipeline.** Each piece below is a building block that makes the 95% faster end-to-end automation possible.
+**These initiatives deliver immediate impact and enable the ultimate automation pipeline.** Each piece below is a building block that makes the end-to-end automation possible.
 
 ### 1) Letter Template Formatter & Automation Suite (highest ROI)
 
@@ -44,12 +44,12 @@ These foundational improvements support Phase 1 efficiency gains and enable Phas
 #### Streamline NcConnect Core Workflow
 
 - Systematically fix high‑friction bugs (tab resets, unreliable save flows, counter‑intuitive task steps, pdf version preview issues) that force programmers to reopen tasks or take detours.
-- Grow the developer team to reduce backlog and accelerate fixes/iteration.
+- Grow the developer team to reduce backlog and accelerate fixes/iteration, possibly intorduce AI assisted workflows.
 - Combine letter "product creation" and "composition creation" into a single action—when a product is created, its composition may be composed and ready for assignment. (low friction task, low priority)
 
 #### CRF Folder Automation
 
-- On CRF creation, automatically create the server folder and ingest all CRF‑attached files—removing a fully manual step.
+- On CRF creation, automatically create the server folder and ingest all CRF‑attached files—removing a fully manual step, and repeated deep file path navigation.
 
 #### Unified Workspace for Data Drops & File Reviewing
 
@@ -95,7 +95,7 @@ These foundational improvements support Phase 1 efficiency gains and enable Phas
 
 ---
 
-## 🚀 Phase 2: End-to-End Automation (95% Faster)
+## 🚀 Phase 2: End-to-End Automation 
 
 **The Ultimate Goal:** Once Phase 1 foundational pieces are in place, we can build a fully automated pipeline that transforms CRF creation → "Samples Under Review" from hours/days to **almost instantaneous—literally about 95% faster.**
 
@@ -110,7 +110,7 @@ This transforms programming from a series of manual steps into a streamlined, au
 1. **CRF Creation Trigger**: When a CRF is created in SharePoint, the automation pipeline activates
 2. **Automatic Folder Creation**: Server folder structure is created automatically
 3. **File Ingestion**: All CRF-attached files are automatically downloaded and organized
-4. **Composition & Product Creation**: Letter compositions and products are automatically created in NcConnect based on CRF metadata (standardising the AE, and client input becomes prominent here, unless we would like to create AI integration!)
+4. **Composition & Product Creation**: Letter compositions and products are automatically created in NcConnect based on CRF metadata (standardising the AE, and client input becomes prominent here)
 5. **Template Formatting**: Word templates are automatically formatted using the Letter Template Formatter
 6. **Package Assembly**: If AEs follow standardized formatting/forms, product packages can be automatically assembled
 7. **Sample Generation**: Files are automatically dropped to trigger sample generation
@@ -159,12 +159,12 @@ This vision transforms programming from a series of manual steps into a streamli
 - Less time spent navigating and dropping files (unified workspace, automating file path navgation/file generation)
 - Fewer client status questions (client transparency portal)
 - Smoother daily work in NcConnect (fewer bugs, reliable saves, better editor)
-- Quicker startup on new work (CRF folders created automatically, document generation largely automated by drag-n-drop formatter)
+- Quicker startup on new work (We eliminate the most time-intensive portion of our programmers’ workload. That shifts effort from repetitive setup tasks to higher-value work, this increases both speed and output. Effectively raising our value per programmer.)
 - Reduced context‑switching for programmers (QC team covers paper QCs, QC orders being automated)
 
 ## Optional: AI‑Enabled Acceleration (guardrailed)
 
-- With approved tooling (e.g., Cursor) and lightweight process guardrails, we can amplify individual output (faster refactors, codemods, documentation, test generation). This is a force‑multiplier, not a dependency.
+- With approved tooling (e.g., Cursor, Claude Code) and lightweight process guardrails, we can amplify individual output (faster refactors, codemods, documentation, test generation). This is a force‑multiplier, not a dependency.
 
 ## Security & Access Considerations
 

@@ -551,7 +551,29 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    **PLACEHOLDER VARIABLES:**
    - If you see `<EscrowEmail>`, `<CSPhoneNumber>`, `<CompanyLongName>`, `<HoursOfOperation>` in angle brackets
    - Convert to: `{[plsMatrix.EscrowEmail]}`, `{[plsMatrix.CSPhoneNumber]}`, etc.
-   - ALWAYS wrap email/phone in underline: `<u>{[plsMatrix.CSPhoneNumber]}</u>`
+   - ONLY underline if the source paragraph has [FORMATTING: UNDERLINE] or [FORMATTING: HYPERLINK(...)]
+   
+   **Compress() FOR STACKED ADDRESS/CONTACT LINES:**
+   When you see consecutive variables stacked on separate lines that represent address or contact blocks 
+   (company name, address line 1, address line 2, address line 3, etc.), use {Compress()} to combine them.
+   Compress() suppresses blank lines so if a variable is empty it doesn't leave a gap.
+   
+   Examples:
+   - Company + address stack:
+     `{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|{[plsMatrix.CompanyReturnAddr3]})}`
+   - LockBox address stack:
+     `{Compress({[plsMatrix.InCareOfCompanyShortName]}|{[plsMatrix.LockBoxAddr1]}|{[plsMatrix.LockBoxAddr2]}|{[plsMatrix.LockBoxAddr3]})}`
+   - Property address (always):
+     `{Compress({[M567]}|{[M583]}|{[M568]})}`
+   
+   Use Compress() when:
+   - 3+ consecutive lines are ALL variable-only (no static text mixed in)
+   - They represent an address block, mailing info, or similar stacked contact info
+   - Any of the lines could potentially be empty/blank
+   
+   Do NOT use Compress() when:
+   - Lines contain a mix of static text and variables (e.g., "Phone number: {[CSPhoneNumber]}")
+   - Lines are intentionally separate (e.g., email on one line, website on another, hours on another)
    
    **CRITICAL**: NEVER output empty `%` or `[]` - always convert formulas to proper syntax!
 

@@ -300,7 +300,7 @@ def format_ir_for_prompt(ir):
 			# Also remove generic patterns: (Description) that appear after variable tags
 			# But be careful - only remove if it looks like metadata, not actual content
 			# Pattern: (Capitalized Description) after a variable tag or in a calculation
-			cleaned_text = re.sub(r'\s*\([A-Z][^)]*(?:Balance|Date|Address|Number|Line|Code|Indicator|Name)\)', '', cleaned_text)
+			cleaned_text = re.sub(r'\s*\([A-Z][^)]*(?:Balance|Date|Address|Number|Line|Code|Indicator|Name)[^)]*\)', '', cleaned_text)
 			
 			# Clean up extra spaces
 			cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
@@ -874,6 +874,21 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: `<div>Your Principal Balance is currently: ${[M010]}</div>`
    - Good: `<div>Your Principal Balance is currently: {Money({[M010]})}</div>`
    - Rule: `$` + tag → `{Money({[TAG]})}` function, NEVER literal dollar sign before a tag
+
+❌ **WRONG**: Ignoring metadata instructions like "LAST 4 DIGITS" or "PRINT LAST 4"
+   - Bad: Using `{[M594]}` when the source says *PRINT LAST 4 DIGITS OF LOAN NUMBER*
+   - Good: Using `{[loanNumberLast4]}` when any "last 4" instruction appears near the loan number
+   - Rule: Read ALL asterisked (*...*) metadata instructions — they contain critical variable selection info
+
+❌ **WRONG**: Not reading the EXACT label from the source document
+   - Bad: Using "Loan Number:" when the source says "Re: Loan Number:"
+   - Good: Copying the label text EXACTLY as it appears in the source
+   - Rule: Labels in Loan Number/RE tables must match the source document verbatim
+
+❌ **WRONG**: Using {Insert(H003 TagHeader)} when H003 has no conditional logic
+   - Bad: `{Insert(H003 TagHeader)}` when H003 just appears as a plain tag `{[H003]} (Company Address Line 2)`
+   - Good: `{[tagHeader]}` — the default when no suppress/conditional logic exists around H003
+   - Rule: Only use {Insert(H003 TagHeader)} when you see conditional suppression language around H003
 
 Generate the HTML template following these EXACT rules:
 

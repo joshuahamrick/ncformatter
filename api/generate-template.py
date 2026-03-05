@@ -11,13 +11,14 @@ except ImportError:
 	ANTHROPIC_AVAILABLE = False
 
 try:
-	from api.pii_scanner import scan_ir_for_pii, build_error_response
+	from api.pii_scanner import scan_ir_for_pii, build_error_response, log_audit_event
 except ImportError:
 	try:
-		from pii_scanner import scan_ir_for_pii, build_error_response
+		from pii_scanner import scan_ir_for_pii, build_error_response, log_audit_event
 	except ImportError:
 		scan_ir_for_pii = None
 		build_error_response = None
+		log_audit_event = None
 
 # Import normalization (we'll create a Python version)
 def normalize_html(html):
@@ -562,27 +563,38 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Convert to: `{[plsMatrix.EscrowEmail]}`, `{[plsMatrix.CSPhoneNumber]}`, etc.
    - ONLY underline if the source paragraph has [FORMATTING: UNDERLINE] or [FORMATTING: HYPERLINK(...)]
    
-   **Compress() FOR STACKED ADDRESS/CONTACT LINES:**
-   When you see consecutive variables stacked on separate lines that represent address or contact blocks 
-   (company name, address line 1, address line 2, address line 3, etc.), use {Compress()} to combine them.
-   Compress() suppresses blank lines so if a variable is empty it doesn't leave a gap.
+   **INLINE ADDRESS CONDITIONALS:**
+   When address variables appear INLINE in a sentence (not stacked), check if any are optional.
+   Common pattern: M567 (street) and M568 (city/state/zip) are required, but M583 (unit number) 
+   is optional and may be empty. When an optional variable appears between commas, wrap it in a 
+   conditional to suppress the extra comma when empty:
+   - WRONG: `{[M567]}, {[M583]}, {[M568]}` (leaves ", ," if M583 is empty)
+   - RIGHT: `{[M567]}{If('{[M583]}' <> '')}, {[M583]}{End If}, {[M568]}`
+   Detection: In the source document, required variables are often in RED and optional ones 
+   are in BLACK (or a different color). If a variable in an inline list is a different color 
+   from the others, it's likely optional and needs a conditional wrapper.
    
-   Examples:
-   - Company + address stack:
-     `{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|{[plsMatrix.CompanyReturnAddr3]})}`
-   - LockBox address stack:
-     `{Compress({[plsMatrix.InCareOfCompanyShortName]}|{[plsMatrix.LockBoxAddr1]}|{[plsMatrix.LockBoxAddr2]}|{[plsMatrix.LockBoxAddr3]})}`
-   - Property address (always):
-     `{Compress({[M567]}|{[M583]}|{[M568]})}`
+   **Compress() — STACKING LINES WITHOUT GAPS:**
+   Compress() takes multiple values separated by `|` and stacks them as lines, 
+   suppressing any that are empty. Use it whenever you have consecutive lines that 
+   would normally be separate `<div>` elements but need to collapse blank ones.
+   
+   The pattern: instead of `<div>{[A]}</div><div>{[B]}</div><div>{[C]}</div>`,
+   use `{Compress({[A]}|{[B]}|{[C]})}`.
    
    Use Compress() when:
-   - 3+ consecutive lines are ALL variable-only (no static text mixed in)
-   - They represent an address block, mailing info, or similar stacked contact info
-   - Any of the lines could potentially be empty/blank
+   - 2+ consecutive lines are variable-only (no static text mixed in) and stacked
+   - Any of those lines could potentially be empty/blank
+   - Common cases: address blocks, mailing info, contact stacks, property addresses
+   - Can be ANY number of items — 2, 3, 4, 5+ depending on the document
+   
+   You can wrap Compress() in a styled div for alignment:
+   `<div style="text-align: center">{Compress({[A]}|{[B]}|{[C]})}</div>`
    
    Do NOT use Compress() when:
-   - Lines contain a mix of static text and variables (e.g., "Phone number: {[CSPhoneNumber]}")
-   - Lines are intentionally separate (e.g., email on one line, website on another, hours on another)
+   - Lines contain a mix of static text and variables (e.g., "Phone number: {[plsMatrix.CSPhoneNumber]}")
+   - Lines are intentionally separate with different purposes (e.g., phone on one line, website on another, hours on another)
+   - The lines have `<br>` breaks between them in the source — that spacing is intentional
    
    **COMPLETE FUNCTION REFERENCE** (use these when appropriate — do not invent syntax):
 
@@ -754,7 +766,8 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Hyperlinked website text → `{[plsMatrix.WebSite]}`
    - Hyperlinked email text → `{[plsMatrix.CSEmail]}` or `{[plsMatrix.EscrowEmail]}`
    - The fact that text is a hyperlink in Word means it's a dynamic variable, NOT a static URL
-   - Always underline plsMatrix link variables: `<u>{[plsMatrix.WebSite]}</u>`
+   - ONLY underline if the source paragraph has [FORMATTING: UNDERLINE] or [FORMATTING: HYPERLINK(...)]
+   - Do NOT automatically underline phone numbers, fax numbers, or email variables
    - If the hyperlink text looks like a URL (http://..., www...) → Convert to plsMatrix variable
    
    **VARIABLES - plsMatrix PLACEHOLDERS:**
@@ -762,7 +775,8 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Common plsMatrix variables: EscrowEmail, CSPhoneNumber, CompanyLongName, HoursOfOperation, SPOCContactPhone
    
    **OTHER FORMATTING:**
-   - Underlined text → <u>text</u> (phone numbers, URLs, specific emphasized terms)
+   - Underlined text → <u>text</u> ONLY when [FORMATTING: UNDERLINE] is present in the source
+   - Do NOT automatically underline phone numbers, fax numbers, emails, or URLs unless the source explicitly marks them as underlined
    - Each HTML element on its own line
 
 5. COMPLETE EXTRACTION - Include ALL content after main body:
@@ -784,11 +798,13 @@ Document Content:
 
 **BEFORE YOU START - MANDATORY PRE-SCAN:**
 Read the ENTIRE Document Content once before generating ANY HTML. Answer these questions:
-1. Is there a "Loan Number:" label? → YES = create table row with {[M594]}
-2. Is there a "RE:" label? → YES = create table row with {Compress({[M567]}|{[M583]}|{[M568]})}
-3. Where does "Sincerely," appear? → Note the paragraph number
-4. What comes AFTER "Sincerely,"? → List all remaining content
-5. How many total paragraphs are there? → You MUST extract this many
+1. Is there a "Loan Number:" or "Re: Loan Number:" label? → Note the EXACT label text. Check for metadata instructions like "LAST 4 DIGITS" → determines variable ({[M594]} vs {[loanNumberLast4]})
+2. Is there a "RE:" or "Property Address:" label? → YES = create table row with {Compress({[M567]}|{[M583]}|{[M568]})}
+3. Is there conditional logic around H003 (suppress/hide language)? → YES = {Insert(H003 TagHeader)}, NO = {[tagHeader]}
+4. Where does "Sincerely," appear? → Note the paragraph number
+5. What comes AFTER "Sincerely,"? → List all remaining content
+6. How many total paragraphs are there? → You MUST extract this many
+7. CRITICAL: Read EVERY label, tag, and instruction EXACTLY as written in the source — do not substitute, assume, or generalize
 
 **COMMON ERRORS TO AVOID (especially in MI001-type PMI documents):**
 
@@ -823,14 +839,15 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: `<div><b>Please note that all appraisals must be ordered through our offices and are at the expense of the property owner. Due to your loan's investor...</b></div>`
    - Good: `<div><b>Please note that all appraisals must be ordered through our offices and are at the expense of the property owner.</b> Due to your loan's investor...</div>`
 
-❌ **WRONG**: Not underlining email/phone in plsMatrix variables
-   - Bad: `{[plsMatrix.CSPhoneNumber]}`
-   - Good: `<u>{[plsMatrix.CSPhoneNumber]}</u>`
+❌ **WRONG**: Underlining phone/email/fax when source does NOT show underline
+   - Bad: `<u>{[plsMatrix.CSPhoneNumber]}</u>` (added underline not in source)
+   - Good: `{[plsMatrix.CSPhoneNumber]}` (no underline unless source explicitly has [FORMATTING: UNDERLINE])
+   - Rule: ONLY underline if the source paragraph explicitly has underline formatting — do NOT assume phone numbers/emails/fax should be underlined
 
-❌ **WRONG**: Incorrect signature spacing (too many <br> tags after Sincerely)
-   - Bad: `<br><div>Sincerely,</div><br><br><br><div>Department</div>`
-   - Good: `<br><br><div>Sincerely,</div><div>Department</div><div>{[plsMatrix.CompanyLongName]}</div>`
-   - Rule: 2 <br> tags BEFORE "Sincerely,", NO <br> tags after or between department/company
+❌ **WRONG**: Guessing spacing around Sincerely instead of reading the source
+   - Rule: The `<br>` tags around "Sincerely," are determined by ACTUAL blank lines in the source document
+   - Count the blank lines before and after "Sincerely," in the source — each blank line = one `<br>`
+   - Do NOT assume a fixed pattern — read the spacing from the document
 
 ❌ **WRONG**: Not detecting aligned label-value groups as tables
    - Bad: Multiple consecutive `<div>Label: value</div>` with same indentation
@@ -1103,11 +1120,10 @@ STEP 4 - VERIFY COMPLETENESS:
    - STEP 4: If a paragraph has [FORMATTING: FONT_SIZE_Xpt], add style="font-size: Xpt"
    - STEP 5: If a paragraph has [FORMATTING: ALIGN_CENTER], add style="text-align: center"
    - CRITICAL: Check EVERY paragraph for formatting notes - do NOT skip any
-   - CRITICAL: Underline phone numbers, URLs, and email addresses if they appear underlined in the source:
-     * Phone numbers like "1-800-569-4287" or "1-888-995-HOPE (4673)" → <u>1-800-569-4287</u>
-     * URLs like "http://www.hud.gov/offices/hsg/sfh/hcc/hcs.cfm" → <u>http://www.hud.gov/...</u>
-     * Email addresses → <u>email@example.com</u>
-   - CRITICAL: If a paragraph shows [FORMATTING: UNDERLINE], identify which text should be underlined (usually phone numbers, URLs, or specific phrases)
+   - CRITICAL: ONLY underline text when the source explicitly shows [FORMATTING: UNDERLINE] or [FORMATTING: HYPERLINK(...)]
+     * Do NOT automatically underline phone numbers, fax numbers, emails, or URLs
+     * If the source paragraph has [FORMATTING: UNDERLINE], then apply <u> to the relevant text
+     * If no underline formatting is indicated, leave the text plain — even for phone numbers and emails
    - CRITICAL: If a paragraph shows [FORMATTING: BOLD], identify which words/phrases should be bold:
      * If the entire paragraph should be bold: <div><b>entire text</b></div>
      * If only part should be bold: <div>regular text <b>bold portion</b> more regular text</div>
@@ -1144,12 +1160,10 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 1. HEADER DETECTION - Look at the Document Content to determine the correct header type:
    - CRITICAL HEADER LOGIC (in priority order):
      a) If Document Content mentions NMLS or NMLSID → Use: <div>{Header(NMLSID)}</div>
-     b) If Document Content shows H003 with a conditional (e.g., "IF {[H003]} = '*' or 'NULL'; then suppress print of line; else produce:") → Use: <div>{Insert(H003 TagHeader)}</div>
-     c) If Document Content shows just {[tagHeader]} or tagHeader without H003 conditional → Use: <div>{[tagHeader]}</div>
-     d) DEFAULT: Use <div>{Insert(H003 TagHeader)}</div> for most documents
-   - IMPORTANT: Check Document Content for header structure - if it shows tagHeader directly without H003 conditional, use {tagHeader}
-   - IMPORTANT: If H003 has a conditional (suppress if empty), use {Insert(H003 TagHeader)}
-   - Extract the EXACT header structure from the Document Content
+     b) If Document Content shows H003 with a CONDITIONAL (e.g., "IF {[H003]} = '*' or 'NULL'; then suppress print of line; else produce:", or similar conditional logic around H003) → Use: <div>{Insert(H003 TagHeader)}</div>
+     c) DEFAULT: If no conditional logic around H003, use: <div>{[tagHeader]}</div>
+   - The key distinction: {Insert(H003 TagHeader)} is ONLY for when the document has conditional suppression logic around H003. If H003 just appears as a plain tag (e.g., "{[H003]} (Company Address Line 2)"), use {[tagHeader]}.
+   - The conditional wording varies across documents — look for any language about suppressing, hiding, or conditionally printing H003.
 
 2. LOAN NUMBER AND RE: TABLE - CRITICAL SYSTEMATIC DETECTION:
    - STEP 1: Scan Document Content for EXPLICIT labels like "Loan Number:" or "RE:" or "Re:" appearing as standalone text (not just variable tags)
@@ -1162,8 +1176,14 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
      * CORRECT: If you see a separate paragraph/line like "Loan Number: [M594]" or "RE: [M567]" → This IS a Loan Number/RE table
    - STEP 4: Only create the table if you find EXPLICIT labels ("Loan Number:", "RE:", "Re:") appearing as separate labeled sections
    - STEP 5: If labels exist, create table with:
-     * First row: Loan Number label (extract EXACT label from Document Content) → {[M594]}
+     * First row: Loan Number label (extract EXACT label from Document Content) → variable (see below)
      * Second row: RE: label (extract EXACT label) → {Compress({[M567]}|{[M583]}|{[M568]})}
+   - LOAN NUMBER VARIABLE DETECTION:
+     * If metadata says "LAST 4 DIGITS" or "last four" or similar → use `{[loanNumberLast4]}`
+     * Otherwise → use `{[M594]}`
+     * The "last 4" instruction often appears as red metadata text after the tag, e.g.: 
+       "{[M594]} (Loan Number) *METADATA ONLY PRINT LAST 4 DIGITS OF LOAN NUMBER*"
+     * The exact wording varies — look for any mention of "last 4", "last four", "partial", etc.
    - STEP 6: Format labels WITHOUT bold tags: <td width="20%" valign="top">Loan Number:</td>
    - CRITICAL: Labels should NOT be bold in the RE/Loan Number table - only the text should appear
    - CRITICAL: ONLY include this table if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections
@@ -1187,7 +1207,7 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
      </tr></tbody></table>
 
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
-<div>{Insert(H003 TagHeader)}</div>  <!-- DEFAULT: Use {Insert(H003 TagHeader)} unless NMLS is mentioned. Only use {[tagHeader]} if Document Content explicitly shows tagHeader without H003 -->
+<div>{[tagHeader]}</div>  <!-- DEFAULT: Use {[tagHeader]} unless H003 has conditional logic (then use {Insert(H003 TagHeader)}) or NMLS is mentioned (then use {Header(NMLSID)}) -->
 <br>
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
@@ -1480,8 +1500,8 @@ BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
 CRITICAL NOTES:
 - Most letters MUST include a Loan Number and RE: table after mailing address and before salutation
 - The table structure VARIES by document - extract the EXACT structure from Document Content (labels may be "Loan Number:", "Re: Loan Number:", "RE: Loan Number:", etc.)
-- Header type detection: NMLS (if mentioned) > {Insert(H003 TagHeader)} (default) > {[tagHeader]} (only if explicitly shown)
-- DEFAULT header format is {Insert(H003 TagHeader)} - use this unless NMLS is mentioned
+- Header type detection: NMLS (if mentioned) > {Insert(H003 TagHeader)} (only if H003 has conditional logic) > {[tagHeader]} (default)
+- DEFAULT header format is {[tagHeader]} — only use {Insert(H003 TagHeader)} when H003 has conditional suppression logic
 - Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
 - CRITICAL: After section headers (especially those ending with ":"), always check for bullet points that follow - format them as tables
 
@@ -1587,6 +1607,8 @@ class handler(BaseHTTPRequestHandler):
 				pii_result = scan_ir_for_pii(ir)
 				if pii_result.has_pii or pii_result.severity == 'BLOCKED':
 					error_msg = build_error_response(pii_result)
+					if log_audit_event:
+						log_audit_event('GENERATE_BLOCKED', None, pii_result, error_msg[:120] if error_msg else '')
 					print(f"PII SCAN BLOCKED: {pii_result.to_dict()}")
 					return self._send(403, {
 						'success': False,
@@ -1594,6 +1616,8 @@ class handler(BaseHTTPRequestHandler):
 						'pii_scan': pii_result.to_dict()
 					})
 				elif pii_result.severity == 'WARNING':
+					if log_audit_event:
+						log_audit_event('GENERATE_WARNING', None, pii_result, 'Proceeding with warnings')
 					print(f"PII SCAN WARNING (proceeding): {pii_result.to_dict()}")
 			else:
 				print("WARNING: PII scanner module not available - proceeding without scan")
@@ -1611,7 +1635,7 @@ class handler(BaseHTTPRequestHandler):
 				print(f"Available env vars: {list(os.environ.keys())[:10]}...")  # Debug: show first 10 env vars
 				return self._send(500, {'success': False, 'error': key_error})
 			
-			print(f"Anthropic API key found: {api_key[:10]}... (length: {len(api_key)})")
+			print(f"Anthropic API key found (length: {len(api_key)})")
 			
 			# Initialize Anthropic client
 			client = anthropic.Anthropic(api_key=api_key)

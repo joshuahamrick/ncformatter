@@ -114,12 +114,17 @@ class WordFormatter {
     /**
      * Client-side PII pre-check. Scans extracted IR text for patterns
      * that suggest real customer data rather than template variables.
+     * Mirrors the server-side pii_scanner.py detections.
      */
     _clientSidePIICheck(ir) {
         if (!ir || !ir.blocks) return null;
 
         const templateVarPattern = /\{\[[\w.]+\]\}|\[\[[A-Z]\w+\]\]|\{\{[A-Z]\w+\}\}/;
-        const ssnPattern = /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/;
+        const ssnPattern = /\b\d{3}[-\s]\d{2}[-\s]\d{4}\b/;
+        const addressPattern = /\b\d{1,6}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3}\s+(?:St|Street|Ave|Avenue|Blvd|Dr|Drive|Ln|Lane|Rd|Road|Ct|Way|Pl|Cir|Pkwy)\b/i;
+        const cityStateZip = /[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?,?\s+(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\s+\d{5}/i;
+        const salutationName = /Dear\s+(?!\{|\[)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/;
+        const dobPattern = /(?:DOB|Date\s+of\s+Birth|Birth\s*Date)\s*:?\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/i;
 
         let hasTemplateVars = false;
         let totalText = '';
@@ -133,18 +138,36 @@ class WordFormatter {
         }
 
         const findings = [];
+        let shouldBlock = false;
 
         if (!hasTemplateVars && totalText.length > 200) {
             findings.push('No template variables detected — this may be a populated document with real customer data.');
+            shouldBlock = true;
         }
 
         if (ssnPattern.test(totalText)) {
             findings.push('Possible Social Security Number detected.');
+            shouldBlock = true;
+        }
+
+        if (addressPattern.test(totalText) && cityStateZip.test(totalText)) {
+            findings.push('Real US mailing address detected (street + city/state/zip).');
+            shouldBlock = true;
+        }
+
+        if (salutationName.test(totalText)) {
+            findings.push('Real person name detected in salutation (e.g. "Dear John Smith").');
+            shouldBlock = true;
+        }
+
+        if (dobPattern.test(totalText)) {
+            findings.push('Date of birth pattern detected.');
+            shouldBlock = true;
         }
 
         if (findings.length > 0) {
             return {
-                blocked: !hasTemplateVars,
+                blocked: shouldBlock,
                 findings: findings,
                 message: 'PII Policy Warning: ' + findings.join(' ')
             };
@@ -183,6 +206,14 @@ class WordFormatter {
 				
 				if (!response.ok) {
 					const errorText = await response.text().catch(() => 'Unknown error');
+					if (response.status === 403) {
+						try {
+							const errJson = JSON.parse(errorText);
+							throw new Error(errJson.error || 'Document blocked by PII policy scanner.');
+						} catch (parseErr) {
+							if (parseErr.message.includes('PII') || parseErr.message.includes('BLOCKED')) throw parseErr;
+						}
+					}
 					throw new Error(`DOCX processing failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 200)}`);
 				}
 				
@@ -493,7 +524,25 @@ class WordFormatter {
 
     showError(message) {
         this.hideProcessing();
-        alert('Error: ' + message);
+        const errorDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        if (errorDiv && errorText) {
+            const isPIIBlock = message.includes('PII Policy') || message.includes('DOCUMENT BLOCKED');
+            if (isPIIBlock) {
+                errorDiv.style.borderLeft = '5px solid #c53030';
+                errorDiv.style.background = '#fff5f5';
+            } else {
+                errorDiv.style.borderLeft = '';
+                errorDiv.style.background = '';
+            }
+            errorText.style.whiteSpace = 'pre-wrap';
+            errorText.textContent = message;
+            errorDiv.style.display = 'block';
+            if (this.resultsSection) this.resultsSection.style.display = 'none';
+            if (this.chatPanel) this.chatPanel.style.display = 'none';
+        } else {
+            alert('Error: ' + message);
+        }
     }
 
     switchTab(tabName) {

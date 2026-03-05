@@ -10,14 +10,15 @@ except ImportError:
 	ANTHROPIC_AVAILABLE = False
 
 try:
-	from api.pii_scanner import scan_ir_for_pii, scan_text_for_pii, build_error_response
+	from api.pii_scanner import scan_ir_for_pii, scan_text_for_pii, build_error_response, log_audit_event
 except ImportError:
 	try:
-		from pii_scanner import scan_ir_for_pii, scan_text_for_pii, build_error_response
+		from pii_scanner import scan_ir_for_pii, scan_text_for_pii, build_error_response, log_audit_event
 	except ImportError:
 		scan_ir_for_pii = None
 		scan_text_for_pii = None
 		build_error_response = None
+		log_audit_event = None
 
 # Import normalization - MINIMAL normalization that PRESERVES formatting
 def normalize_html(html):
@@ -97,6 +98,8 @@ class handler(BaseHTTPRequestHandler):
 				html_scan = scan_text_for_pii(current_html or '')
 				if html_scan.has_pii:
 					error_msg = build_error_response(html_scan)
+					if log_audit_event:
+						log_audit_event('PATCH_BLOCKED_HTML', None, html_scan)
 					print(f"PII SCAN BLOCKED (HTML): {html_scan.to_dict()}")
 					return self._send(403, {
 						'success': False,
@@ -107,6 +110,8 @@ class handler(BaseHTTPRequestHandler):
 				ir_scan = scan_ir_for_pii(ir)
 				if ir_scan.has_pii or ir_scan.severity == 'BLOCKED':
 					error_msg = build_error_response(ir_scan)
+					if log_audit_event:
+						log_audit_event('PATCH_BLOCKED_IR', None, ir_scan)
 					print(f"PII SCAN BLOCKED (IR): {ir_scan.to_dict()}")
 					return self._send(403, {
 						'success': False,

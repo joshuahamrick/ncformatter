@@ -11,6 +11,16 @@ try:
 except ImportError:
 	DOCX_AVAILABLE = False
 
+try:
+	from api.pii_scanner import scan_ir_for_pii, build_error_response, log_audit_event
+except ImportError:
+	try:
+		from pii_scanner import scan_ir_for_pii, build_error_response, log_audit_event
+	except ImportError:
+		scan_ir_for_pii = None
+		build_error_response = None
+		log_audit_event = None
+
 
 def _align_to_str(alignment):
 	if alignment == WD_ALIGN_PARAGRAPH.CENTER:
@@ -363,6 +373,24 @@ class handler(BaseHTTPRequestHandler):
 			doc = Document(io.BytesIO(file_bytes))
 
 			ir = _build_ir_document(doc)
+
+			# PII early-gate: scan the IR before returning it to the client
+			pii_scan = None
+			if scan_ir_for_pii is not None:
+				pii_scan = scan_ir_for_pii(ir)
+				if pii_scan.has_pii or pii_scan.severity == 'BLOCKED':
+					error_msg = build_error_response(pii_scan)
+					if log_audit_event:
+						log_audit_event('DOC_BLOCKED', file_name, pii_scan, error_msg[:120] if error_msg else '')
+					return self._send(403, {
+						'success': False,
+						'error': error_msg or 'Document blocked by PII policy scanner.',
+						'pii_scan': pii_scan.to_dict()
+					})
+
+			if log_audit_event:
+				log_audit_event('DOC_PROCESSED', file_name, pii_scan, 'IR extraction successful')
+
 			return self._send(200, {'success': True, 'fileName': file_name, 'ir': ir})
 		except Exception as e:
 			err = {

@@ -6,10 +6,21 @@ before it is sent to external AI services. Blocks requests containing
 real customer data while allowing template variables to pass through.
 
 Policy Reference: Newcourse Communications AI Usage Policy V1.0
+
+Detection layers:
+  1. Template-variable presence check (documents without {[TAG]} markers are suspect)
+  2. SSN pattern matching
+  3. Real mailing address detection
+  4. Real person-name heuristics
+  5. Bare dollar amounts (outside template Money() wrappers)
+  6. Real email and phone detection
+  7. Long digit-string (account / loan number) detection
 """
 import re
+from datetime import datetime, timezone
 
-# Template variable patterns that are SAFE (not real data)
+# ── Template Variable Patterns (SAFE) ──────────────────────────────────────
+
 TEMPLATE_PATTERNS = [
     r'\{\[[\w\.]+\]\}',       # {[TAG]} or {[plsMatrix.Name]}
     r'\[\[[A-Z]\w+\]\]',      # [[TAG]]
@@ -53,8 +64,8 @@ def _strip_template_vars(text):
 
 SSN_PATTERN = re.compile(
     r'(?<!\d)'
-    r'(?:\d{3}[-\s]\d{2}[-\s]\d{4}'  # 123-45-6789 or 123 45 6789
-    r'|\d{9})'                        # 123456789
+    r'(?:\d{3}[-\s]\d{2}[-\s]\d{4}'
+    r'|\d{9})'
     r'(?!\d)'
 )
 
@@ -62,53 +73,62 @@ ACCOUNT_NUMBER_PATTERN = re.compile(
     r'(?<!\d)\d{8,17}(?!\d)'
 )
 
-REAL_PHONE_PATTERN = re.compile(
-    r'(?<!\d)'
-    r'(?:\+?1[-.\s]?)?'
-    r'(?:\(?\d{3}\)?[-.\s]?)'
-    r'\d{3}[-.\s]?\d{4}'
-    r'(?!\d)'
-)
-
 REAL_EMAIL_PATTERN = re.compile(
     r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
 )
 
-# Known safe servicer emails / phones that appear in templates
-SAFE_EMAILS = {
-    'mortgagedefault@commercebank.com',
-    'example@example.com',
+# US mailing address: number + street name + optional suffix, followed by city/state/zip
+US_ADDRESS_PATTERN = re.compile(
+    r'\b\d{1,6}\s+'                                      # street number
+    r'(?:[NSEW]\.?\s+)?'                                  # optional directional
+    r'[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,3}\s+'       # street name words
+    r'(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Ln|Lane|Rd|Road|Ct|Court|Way|Pl|Place|Cir|Circle|Pkwy|Parkway)\b',
+    re.IGNORECASE
+)
+
+CITY_STATE_ZIP_PATTERN = re.compile(
+    r'[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?,?\s+'               # city name
+    r'(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)'
+    r'\s+\d{5}(?:-\d{4})?',
+    re.IGNORECASE
+)
+
+# Real dollar amounts (bare $1,234.56 NOT inside a Money()/Math() wrapper)
+BARE_DOLLAR_PATTERN = re.compile(
+    r'(?<!\{Money\()\$\s?\d[\d,]+\.\d{2}\b'
+)
+
+# Person name heuristic: "Dear John Smith," or "Mr./Mrs./Ms. Firstname Lastname"
+SALUTATION_NAME_PATTERN = re.compile(
+    r'Dear\s+(?!{|\[)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+',
+    re.MULTILINE
+)
+
+TITLE_NAME_PATTERN = re.compile(
+    r'\b(?:Mr|Mrs|Ms|Miss|Dr|Prof)\.?\s+[A-Z][a-z]+\s+[A-Z][a-z]+',
+)
+
+# Date of birth: "DOB", "Date of Birth", "Birth Date" followed by a real date
+DOB_PATTERN = re.compile(
+    r'(?:DOB|Date\s+of\s+Birth|Birth\s*Date)\s*:?\s*'
+    r'(?:\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+    re.IGNORECASE
+)
+
+# Known-safe servicer emails / domains
+SAFE_EMAIL_DOMAINS = {
+    'commercebank.com',
+    'example.com',
+    'newcoursecc.com',
 }
-
-SAFE_PHONE_PREFIXES = [
-    '1-800-', '1-888-', '1-877-', '1-866-', '1-855-', '1-844-',
-    '800-', '888-', '877-', '866-', '855-', '844-',
-]
-
-DATE_PATTERN = re.compile(
-    r'(?:\d{1,2}[/-]\d{1,2}[/-]\d{2,4})'
-    r'|(?:(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})'
-)
-
-DOLLAR_AMOUNT_PATTERN = re.compile(
-    r'\$\s?\d[\d,]*\.?\d{0,2}'
-)
-
-
-def _is_safe_phone(phone_str):
-    normalized = re.sub(r'[\s.()\-]', '', phone_str)
-    if normalized.startswith('1'):
-        normalized = normalized[1:]
-    if normalized.startswith('8') and len(normalized) == 10:
-        return True
-    return False
 
 
 def _is_safe_email(email_str):
-    return email_str.lower() in SAFE_EMAILS
+    domain = email_str.lower().split('@')[-1]
+    return domain in SAFE_EMAIL_DOMAINS
 
 
-# ── Main Scanning Function ────────────────────────────────────────────────
+# ── Scan Result Object ────────────────────────────────────────────────────
 
 class PIIScanResult:
     def __init__(self):
@@ -139,12 +159,13 @@ class PIIScanResult:
         }
 
 
+# ── Core Scanning ─────────────────────────────────────────────────────────
+
 def scan_text_for_pii(text):
     """
     Scan a block of text for potential PII.
 
-    Returns a PIIScanResult with findings. If has_pii is True, the text
-    should NOT be sent to an external AI service.
+    Returns a PIIScanResult with findings.
     """
     result = PIIScanResult()
 
@@ -158,7 +179,7 @@ def scan_text_for_pii(text):
 
     cleaned = _strip_template_vars(text)
 
-    # SSN detection
+    # 1. SSN detection (always BLOCKED)
     ssn_matches = SSN_PATTERN.findall(cleaned)
     for m in ssn_matches:
         digits_only = re.sub(r'\D', '', m)
@@ -166,13 +187,56 @@ def scan_text_for_pii(text):
             continue
         result.add_finding('SSN', f'Possible Social Security Number detected: {m[:3]}-**-****')
 
-    # Real email detection (not template variable, not safe list)
+    # 2. Date of birth (BLOCKED)
+    if DOB_PATTERN.search(cleaned):
+        result.add_finding('DOB', 'Date of birth pattern detected')
+
+    # 3. Real mailing address detection (BLOCKED)
+    if US_ADDRESS_PATTERN.search(cleaned) and CITY_STATE_ZIP_PATTERN.search(cleaned):
+        result.add_finding(
+            'ADDRESS',
+            'Real US mailing address pattern detected (street + city/state/zip)',
+            severity='BLOCKED'
+        )
+    elif CITY_STATE_ZIP_PATTERN.search(cleaned):
+        result.add_finding(
+            'ADDRESS',
+            'City/State/ZIP pattern detected outside template variables',
+            severity='WARNING'
+        )
+
+    # 4. Person name heuristics (BLOCKED — "Dear John Smith,")
+    sal_match = SALUTATION_NAME_PATTERN.search(cleaned)
+    if sal_match:
+        result.add_finding(
+            'PERSON_NAME',
+            f'Real person name in salutation: "{sal_match.group()[:20]}..."',
+            severity='BLOCKED'
+        )
+    title_match = TITLE_NAME_PATTERN.search(cleaned)
+    if title_match:
+        result.add_finding(
+            'PERSON_NAME',
+            f'Titled person name detected: "{title_match.group()[:20]}..."',
+            severity='WARNING'
+        )
+
+    # 5. Bare dollar amounts not inside Money()/Math() (WARNING)
+    bare_dollars = BARE_DOLLAR_PATTERN.findall(cleaned)
+    if len(bare_dollars) >= 3:
+        result.add_finding(
+            'FINANCIAL_DATA',
+            f'{len(bare_dollars)} bare dollar amounts detected outside template functions',
+            severity='WARNING'
+        )
+
+    # 6. Real email detection
     email_matches = REAL_EMAIL_PATTERN.findall(cleaned)
     for email in email_matches:
         if not _is_safe_email(email):
             result.add_finding('EMAIL', f'Real email address detected: {email[:3]}***', severity='WARNING')
 
-    # Account number detection: long digit strings not near template context
+    # 7. Account number detection (long digit strings)
     acct_matches = ACCOUNT_NUMBER_PATTERN.findall(cleaned)
     for acct in acct_matches:
         digits = re.sub(r'\D', '', acct)
@@ -185,8 +249,6 @@ def scan_text_for_pii(text):
 def scan_ir_for_pii(ir):
     """
     Scan an entire IR document structure for PII.
-
-    Returns a PIIScanResult aggregating all findings across all blocks.
     """
     aggregate = PIIScanResult()
 
@@ -218,7 +280,6 @@ def scan_ir_for_pii(ir):
                 if text.strip():
                     all_text_parts.append(text)
 
-    # Also scan text boxes in meta
     meta = ir.get('meta', {})
     for tb in meta.get('textBoxes', []):
         for row in tb.get('rows', []):
@@ -236,8 +297,6 @@ def scan_ir_for_pii(ir):
     aggregate.severity = block_result.severity
     aggregate.findings = block_result.findings
 
-    # If NO template variables were found AND the document has substantial text,
-    # this is likely a populated/merged document, not a template.
     if not aggregate.has_template_vars and len(full_text) > 200:
         aggregate.add_finding(
             'NO_TEMPLATE_VARS',
@@ -250,6 +309,8 @@ def scan_ir_for_pii(ir):
     return aggregate
 
 
+# ── Error Response Builder ────────────────────────────────────────────────
+
 def build_error_response(scan_result):
     """Build a user-friendly error message from a PII scan result."""
     if not scan_result.has_pii and scan_result.severity != 'BLOCKED':
@@ -260,7 +321,7 @@ def build_error_response(scan_result):
         findings_summary.append(f"- [{f['category']}] {f['detail']}")
 
     msg = (
-        "DOCUMENT BLOCKED - PII Policy Violation Detected\n\n"
+        "DOCUMENT BLOCKED — PII Policy Violation Detected\n\n"
         "This document appears to contain real customer data and cannot be "
         "sent to the AI service per the Newcourse Communications AI Usage Policy.\n\n"
         "Findings:\n" + '\n'.join(findings_summary) + "\n\n"
@@ -270,3 +331,22 @@ def build_error_response(scan_result):
         "If you believe this is a false positive, contact your manager or the CPTO."
     )
     return msg
+
+
+# ── Audit Logger ──────────────────────────────────────────────────────────
+
+def log_audit_event(event_type, file_name=None, scan_result=None, detail=None):
+    """
+    Write a structured audit line to stdout (captured by Vercel's log drain).
+
+    Format: [AUDIT] <ISO timestamp> | <event> | file=<name> | severity=<sev> | findings=<n> | detail=<msg>
+    """
+    ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    sev = scan_result.severity if scan_result else 'N/A'
+    count = scan_result.to_dict()['finding_count'] if scan_result else 0
+    safe_name = (file_name or 'unknown').replace('|', '_')
+    safe_detail = (detail or '').replace('|', '_')[:200]
+    print(
+        f"[AUDIT] {ts} | {event_type} | file={safe_name} "
+        f"| severity={sev} | findings={count} | detail={safe_detail}"
+    )

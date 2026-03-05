@@ -9,6 +9,16 @@ try:
 except ImportError:
 	ANTHROPIC_AVAILABLE = False
 
+try:
+	from api.pii_scanner import scan_ir_for_pii, scan_text_for_pii, build_error_response
+except ImportError:
+	try:
+		from pii_scanner import scan_ir_for_pii, scan_text_for_pii, build_error_response
+	except ImportError:
+		scan_ir_for_pii = None
+		scan_text_for_pii = None
+		build_error_response = None
+
 # Import normalization - MINIMAL normalization that PRESERVES formatting
 def normalize_html(html):
 	"""Minimal normalization - preserve newlines and formatting structure"""
@@ -81,6 +91,28 @@ class handler(BaseHTTPRequestHandler):
 			
 			if not isinstance(instruction, str):
 				return self._send(400, {'success': False, 'error': 'instruction must be a string'})
+			
+			# PII Policy Compliance Check - scan HTML and IR before sending to AI
+			if scan_text_for_pii is not None:
+				html_scan = scan_text_for_pii(current_html or '')
+				if html_scan.has_pii:
+					error_msg = build_error_response(html_scan)
+					print(f"PII SCAN BLOCKED (HTML): {html_scan.to_dict()}")
+					return self._send(403, {
+						'success': False,
+						'error': error_msg or 'Content blocked by PII policy scanner.',
+						'pii_scan': html_scan.to_dict()
+					})
+			if scan_ir_for_pii is not None and ir:
+				ir_scan = scan_ir_for_pii(ir)
+				if ir_scan.has_pii or ir_scan.severity == 'BLOCKED':
+					error_msg = build_error_response(ir_scan)
+					print(f"PII SCAN BLOCKED (IR): {ir_scan.to_dict()}")
+					return self._send(403, {
+						'success': False,
+						'error': error_msg or 'Document blocked by PII policy scanner.',
+						'pii_scan': ir_scan.to_dict()
+					})
 			
 			if not ANTHROPIC_AVAILABLE:
 				return self._send(500, {'success': False, 'error': 'Anthropic library not available. Install with: pip install anthropic'})

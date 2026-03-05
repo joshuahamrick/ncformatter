@@ -111,6 +111,47 @@ class WordFormatter {
                file.name.toLowerCase().endsWith('.doc');
     }
 
+    /**
+     * Client-side PII pre-check. Scans extracted IR text for patterns
+     * that suggest real customer data rather than template variables.
+     */
+    _clientSidePIICheck(ir) {
+        if (!ir || !ir.blocks) return null;
+
+        const templateVarPattern = /\{\[[\w.]+\]\}|\[\[[A-Z]\w+\]\]|\{\{[A-Z]\w+\}\}/;
+        const ssnPattern = /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/;
+
+        let hasTemplateVars = false;
+        let totalText = '';
+
+        for (const block of ir.blocks) {
+            if (block.type === 'paragraph' && block.runs) {
+                const text = block.runs.map(r => r.text || '').join('');
+                totalText += text + '\n';
+                if (templateVarPattern.test(text)) hasTemplateVars = true;
+            }
+        }
+
+        const findings = [];
+
+        if (!hasTemplateVars && totalText.length > 200) {
+            findings.push('No template variables detected — this may be a populated document with real customer data.');
+        }
+
+        if (ssnPattern.test(totalText)) {
+            findings.push('Possible Social Security Number detected.');
+        }
+
+        if (findings.length > 0) {
+            return {
+                blocked: !hasTemplateVars,
+                findings: findings,
+                message: 'PII Policy Warning: ' + findings.join(' ')
+            };
+        }
+        return null;
+    }
+
     async processFile(file) {
         console.log('Processing file:', file.name);
         
@@ -158,6 +199,22 @@ class WordFormatter {
 				if (!result.success) throw new Error(result.error || 'DOCX processing error');
 				const ir = result.ir;
 				
+				// Client-side PII pre-check before sending to AI
+				const piiCheck = this._clientSidePIICheck(ir);
+				if (piiCheck && piiCheck.blocked) {
+					throw new Error(
+						'DOCUMENT BLOCKED — PII Policy Violation\n\n' +
+						piiCheck.findings.join('\n') + '\n\n' +
+						'Only template documents (containing variables like {[M594]}, {[Salutation]}) ' +
+						'should be processed. Populated/merged letters with real customer data are prohibited ' +
+						'per the Newcourse Communications AI Usage Policy.\n\n' +
+						'If you believe this is an error, contact your manager or the CPTO.'
+					);
+				}
+				if (piiCheck && !piiCheck.blocked) {
+					console.warn('PII pre-check warning:', piiCheck.findings);
+				}
+				
 				// Store IR for chat adjustments
 				this.lastIr = ir;
 				
@@ -191,6 +248,18 @@ class WordFormatter {
 						console.warn('PDF server fallback failed:', e);
 					}
 				}
+				// Client-side PII pre-check for PDF path
+				const pdfPiiCheck = this._clientSidePIICheck(ir);
+				if (pdfPiiCheck && pdfPiiCheck.blocked) {
+					throw new Error(
+						'DOCUMENT BLOCKED — PII Policy Violation\n\n' +
+						pdfPiiCheck.findings.join('\n') + '\n\n' +
+						'Only template documents (containing variables like {[M594]}, {[Salutation]}) ' +
+						'should be processed. Populated/merged letters with real customer data are prohibited ' +
+						'per the Newcourse Communications AI Usage Policy.'
+					);
+				}
+				
 				// Store IR for chat adjustments
 				this.lastIr = ir;
 				
@@ -255,10 +324,11 @@ class WordFormatter {
             }
             
             if (!response.ok || !result.success) {
-                // Get the actual error message from the API response
                 const errorMsg = result.error || `HTTP ${response.status}: ${response.statusText}`;
                 console.error('API Error:', errorMsg);
-                console.error('Full response:', result);
+                if (response.status === 403) {
+                    console.error('PII Policy Block:', result.pii_scan);
+                }
                 throw new Error(errorMsg);
             }
             

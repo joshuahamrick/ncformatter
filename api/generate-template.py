@@ -1190,36 +1190,32 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
      * WRONG: If you see "property located at {[M567]}, {[M583]}, {[M568]}" in a paragraph → This is NOT a Loan Number/RE table
      * CORRECT: If you see a separate paragraph/line like "Loan Number: [M594]" or "RE: [M567]" → This IS a Loan Number/RE table
    - STEP 4: Only create the table if you find EXPLICIT labels ("Loan Number:", "RE:", "Re:") appearing as separate labeled sections
-   - STEP 5: If labels exist, create table with:
-     * First row: Loan Number label (extract EXACT label from Document Content) → variable (see below)
-     * Second row: RE: label (extract EXACT label) → {Compress({[M567]}|{[M583]}|{[M568]})}
+   - STEP 5: If labels exist, create a **2-COLUMN** table (label | value). NEVER 3 columns.
+     * First row: The FULL loan number label as ONE cell → loan number variable
+     * Second row: RE/Property label → {Compress({[M567]}|{[M583]}|{[M568]})}
    - LOAN NUMBER VARIABLE DETECTION:
      * If metadata says "LAST 4 DIGITS" or "last four" or similar → use `{[loanNumberLast4]}`
      * Otherwise → use `{[M594]}`
-     * The "last 4" instruction often appears as red metadata text after the tag, e.g.: 
-       "{[M594]} (Loan Number) *METADATA ONLY PRINT LAST 4 DIGITS OF LOAN NUMBER*"
-     * The exact wording varies — look for any mention of "last 4", "last four", "partial", etc.
-   - STEP 6: Format labels WITHOUT bold tags: <td width="20%" valign="top">Loan Number:</td>
-   - CRITICAL: Labels should NOT be bold in the RE/Loan Number table - only the text should appear
-   - CRITICAL: ONLY include this table if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections
-   - CRITICAL: DO NOT create this table just because property address variables appear in regular content paragraphs
-   - CRITICAL: If property address is mentioned inline in content (e.g., "property located at {[M567]}"), that is NOT a Loan Number/RE table - skip it
-   - CRITICAL: Extract the EXACT label text from Document Content:
-     * If Document Content shows "Loan Number: [M594]" → Use EXACTLY "Loan Number:" as the label
-     * If Document Content shows "RE: [M567]" → Use EXACTLY "RE:" as the label
-     * If Document Content shows "Re: Loan Number: [M594]" → Use EXACTLY "Re: Loan Number:" as the label
-     * DO NOT combine or modify labels - extract them EXACTLY as they appear
-   - CRITICAL: Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">EXACT_LABEL:</td><td>{[TAG]}</td></tr><tr><td width="20%" valign="top">RE:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
-   - ONLY skip this table if Document Content does NOT show explicit "Loan Number:" or "RE:" labels as separate sections
-   - CRITICAL: The format is simpler than other tables - NO <b> tags on labels, plain text labels only
-   - EXAMPLE: If Document Content shows "RE: Loan Number: [M594]" as ONE label on first row, then "Property Address: ..." on second row, format as:
+     * The "last 4" instruction often appears as red/asterisked metadata after the tag, e.g.: 
+       "{[M594]} *METADATA ONLY PRINT LAST 4 DIGITS OF LOAN NUMBER*"
+   - LABEL EXTRACTION - Use the COMPLETE label as ONE cell:
+     * "Re: Loan Number:" → ONE cell: `<td width="20%" valign="top">Re: Loan Number:</td>`
+     * "Loan Number:" → ONE cell: `<td width="20%" valign="top">Loan Number:</td>`
+     * NEVER split a label into multiple columns (e.g., NEVER put "Re:" in one cell and "Loan Number:" in another)
+   - RE/PROPERTY ADDRESS ROW - ALWAYS use Compress with ALL address components:
+     * Even though M567, M583, and M568 appear on SEPARATE paragraphs in the source, they are ALL part of the property address
+     * ALWAYS combine them: `{Compress({[M567]}|{[M583]}|{[M568]})}`
+     * The paragraphs after "RE:" that contain M583 and M568 are continuations of the address, not separate content
+   - CRITICAL: This is always a 2-column table. Labels NOT bold. Format:
      <table width="100%"><tbody><tr>
-       <td width="20%" valign="top">Loan Number:</td>
-       <td>{[M594]}</td>
+       <td width="20%" valign="top">Re: Loan Number:</td>
+       <td>{[loanNumberLast4]}</td>
      </tr><tr>
        <td width="20%" valign="top">RE:</td>
        <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
      </tr></tbody></table>
+   - ONLY include this table if Document Content shows EXPLICIT labels like "Loan Number:", "RE:", "Property Address:" as separate labeled sections
+   - DO NOT create this table just because property address variables appear in regular content paragraphs
 
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
 <div>{[tagHeader]}</div>  <!-- DEFAULT: Use {[tagHeader]} unless H003 has conditional logic (then use {Insert(H003 TagHeader)}) or NMLS is mentioned (then use {Header(NMLSID)}) -->
@@ -1230,13 +1226,13 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 <!-- CRITICAL: Loan Number and RE: table - ONLY include if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections -->
 <!-- DO NOT create this table just because property address variables (M567, M583, M568) appear in content paragraphs -->
 <!-- ONLY create if you see explicit labels like "Loan Number: [M594]" or "RE: [M567]" as separate sections -->
-[Loan Number/RE table ONLY if explicit labels exist - format as:
+[Loan Number/RE table ONLY if explicit labels exist — ALWAYS 2-COLUMN format:
 <table width="100%"><tbody><tr>
-  <td width="20%" valign="top">EXACT_LABEL_FROM_DOC:</td>  <!-- Extract EXACT label from Document Content - DO NOT make bold -->
-  <td>{[M594]}</td>
+  <td width="20%" valign="top">EXACT_FULL_LABEL:</td>  <!-- e.g., "Re: Loan Number:" as ONE cell, NOT split -->
+  <td>{[loanNumberLast4]} or {[M594]}</td>  <!-- Based on metadata instruction -->
 </tr><tr>
-  <td width="20%" valign="top">RE:</td>  <!-- Extract EXACT label from Document Content - DO NOT make bold -->
-  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>  <!-- ALWAYS Compress ALL address parts -->
 </tr></tbody></table>
 <br>
 ]

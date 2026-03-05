@@ -1251,7 +1251,7 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
 1. Extract EVERY paragraph shown in Document Content - count them to verify
 2. Include content in THREE sections: Header → Body → Closing
 3. Header section (before salutation):
-   - {Insert(H003 TagHeader)} or {Header(NMLSID)}
+   - {[tagHeader]} (default) or {Insert(H003 TagHeader)} (only if H003 has conditional) or {Header(NMLSID)}
    - {[L001]} date
    - {[mailingAddress]}
    - Loan Number/RE table (if "Loan Number:" and "RE:" labels exist)
@@ -1520,7 +1520,7 @@ STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
 YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.
 
 Example of CORRECT formatting (showing different header layouts):
-<div>{Insert(H003 TagHeader)}</div>
+<div>{[tagHeader]}</div>
 <br>
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
@@ -1579,7 +1579,7 @@ Default Pattern: If "Loan Number:" and "RE:" are on SEPARATE lines, use 2-column
 <br>
 
 Example of WRONG formatting (DO NOT DO THIS):
-<div>{Insert(H003 TagHeader)}</div><br><div>{[L001]}</div><div>{[mailingAddress]}</div><br><br><br><br><br>...
+<div>{[tagHeader]}</div><br><div>{[L001]}</div><div>{[mailingAddress]}</div><br><br><br><br><br>...
 
 RULES:
 - Each <div> tag MUST be on its own line

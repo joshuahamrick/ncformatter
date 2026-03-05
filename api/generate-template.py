@@ -10,6 +10,15 @@ try:
 except ImportError:
 	ANTHROPIC_AVAILABLE = False
 
+try:
+	from api.pii_scanner import scan_ir_for_pii, build_error_response
+except ImportError:
+	try:
+		from pii_scanner import scan_ir_for_pii, build_error_response
+	except ImportError:
+		scan_ir_for_pii = None
+		build_error_response = None
+
 # Import normalization (we'll create a Python version)
 def normalize_html(html):
 	"""Minimal normalization - just clean up, let AI do the formatting"""
@@ -575,6 +584,56 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Lines contain a mix of static text and variables (e.g., "Phone number: {[CSPhoneNumber]}")
    - Lines are intentionally separate (e.g., email on one line, website on another, hours on another)
    
+   **COMPLETE FUNCTION REFERENCE** (use these when appropriate — do not invent syntax):
+
+   String / Display:
+   - `{Upper(value)}` — converts value to UPPERCASE
+   - `{Lower(value)}` — converts value to lowercase
+   - `{PadLeft(value|width|char)}` — left-pads value: `{PadLeft(123|6|0)}` → 000123
+   - `{Replace(source|"old"|"new")}` — replaces all occurrences of old with new in source
+   - `{Symbol(value)}` — outputs a symbol wrapped in an HTML label tag
+
+   Numeric / Formatting:
+   - `{Number(value|decimals)}` — formats number with rounding: `{Number(1234.567|2)}` → 1234.57; also use for numeric comparisons
+   - `{Money(value|abs|neg)}` — formats as currency: `{Money(-123.456)}` → ($123.46)
+   - `{IsNumber(value)}` — returns true/false; use in {If()} to check if a value is numeric
+   - `{Max(a|b|type|decimals)}` — returns the larger of two values: `{Max(100|250|int)}` → 250
+   - `{Min(a|b|type|decimals)}` — returns the smaller of two values
+   - `{MinNonZero(a|b|type)}` — returns the smallest non-zero value: `{MinNonZero(0|125|int)}` → 125
+
+   Conditional:
+   - `{If(expression)}...{Else If(...)}...{Else}...{End If}` — multi-branch conditional block
+   - `{IIf(expr|true_value|false_value)}` — inline conditional: `{IIf(BALANCE>0|Due|Paid)}`
+   - `{IsNotEmpty(value|output)}` — displays output only when value is not empty
+
+   Numbering:
+   - `{InitAutoNumber(N|start)}` — initializes auto-numbering with a starting value
+   - `{AutoNumber(expr)}` — outputs and increments auto number when condition is true
+
+   Layout / Fonts:
+   - `{Font(Font|Size)}` — sets default font/size for subsequent content: `{Font(Calibri|11pt)}`
+   - `{FixedFont(text|font|size|spaces)}` — displays text in fixed-width font
+   - `{MarginBottom(value)}` — sets page bottom margin: `{MarginBottom(3.5in)}`
+   - `{PageNumbers(True|False)}` — enables/disables page numbering
+
+   Content Insertion:
+   - `{Insert(Template_Description)}` — inserts stored template HTML by description
+   - `{InsertReport(ID)}` — embeds another documentation record by ID
+   - `{InsertComposition(Title|TypeId)}` — inserts documentation content by title and file type
+
+   Data / Tables:
+   - `{SqlLookup(fields|table|where)}...{End SqlLookup}` — executes SQL query; shows content if rows found
+   - `{SqlTable(fields|table|where|sort|type)}` — renders SQL query results as a formatted table
+   - `{Table(col1~col2|r1~r2)}` — creates a manual HTML table from delimited values
+
+   Address Stacking:
+   - `{Compress(a|b|c)}` — combines values with line breaks, suppressing empty lines (use for address stacks)
+   - `{CompressPdf(a|b|c)}` — same as Compress but optimized for PDF output
+
+   Regulatory:
+   - `{Q189V2({[PMT]}|headers...)}` — generates vertical Reg Z Q189 repayment table
+   - `{Q189V3()}` — generates compact two-column Reg Z Q189 repayment table
+
    **CRITICAL**: NEVER output empty `%` or `[]` - always convert formulas to proper syntax!
 
 1. SYSTEMATIC EXTRACTION - Read the ENTIRE Document Content from start to finish:
@@ -1522,6 +1581,22 @@ class handler(BaseHTTPRequestHandler):
 			
 			if not ir:
 				return self._send(400, {'success': False, 'error': 'No IR data provided'})
+			
+			# PII Policy Compliance Check - scan IR before sending to AI
+			if scan_ir_for_pii is not None:
+				pii_result = scan_ir_for_pii(ir)
+				if pii_result.has_pii or pii_result.severity == 'BLOCKED':
+					error_msg = build_error_response(pii_result)
+					print(f"PII SCAN BLOCKED: {pii_result.to_dict()}")
+					return self._send(403, {
+						'success': False,
+						'error': error_msg or 'Document blocked by PII policy scanner.',
+						'pii_scan': pii_result.to_dict()
+					})
+				elif pii_result.severity == 'WARNING':
+					print(f"PII SCAN WARNING (proceeding): {pii_result.to_dict()}")
+			else:
+				print("WARNING: PII scanner module not available - proceeding without scan")
 			
 			if not ANTHROPIC_AVAILABLE:
 				import_error = "Anthropic library not available. Install with: pip install anthropic. Make sure requirements.txt includes 'anthropic>=0.40.0'"

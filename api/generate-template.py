@@ -174,6 +174,7 @@ def format_ir_for_prompt(ir):
 	# - r'\(or if\s+\[' - could be in actual content
 	# - r'\(see\s+["\']' - could be actual content references
 	
+	para_counter = 0  # Sequential numbering - no gaps from skipped blanks
 	for idx, block in enumerate(blocks):
 		if block.get('type') == 'paragraph':
 			runs = block.get('runs', [])
@@ -377,7 +378,8 @@ def format_ir_for_prompt(ir):
 			
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
-			formatted.append(f"Paragraph {idx + 1}: {cleaned_text[:char_limit]}{formatting_note}")
+			para_counter += 1
+			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			# Extract table content - include more detail
@@ -439,7 +441,21 @@ def format_ir_for_prompt(ir):
 			result += f"\n\n[NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure.]"
 		return result
 	
-	return '\n'.join(formatted)
+	# Post-process: annotate RE address grouping
+	# When "RE:" paragraph contains M567 and is followed by M583/M568 paragraphs,
+	# annotate them so Claude knows they belong to the RE address group
+	result_lines = []
+	for i, line in enumerate(formatted):
+		if re.search(r'RE:\s+.*M567', line):
+			line += " [NOTE: The following M583/M568 paragraphs are part of THIS address — combine with Compress({[M567]}|{[M583]}|{[M568]})]"
+		# Also mark M583/M568-only lines that follow an RE line
+		if re.search(r'Paragraph \d+:\s*\{?\[?M583\]?\}?', line):
+			line += " [NOTE: Part of RE address above — do NOT output as separate paragraph]"
+		if re.search(r'Paragraph \d+:\s*\{?\[?M568\]?\}?', line):
+			line += " [NOTE: Part of RE address above — do NOT output as separate paragraph]"
+		result_lines.append(line)
+	
+	return '\n'.join(result_lines)
 
 def build_prompt(ir, few_shot_examples, user_instruction=None):
 	"""Build the complete prompt for Claude API"""
@@ -447,6 +463,35 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	
 	# Format IR content
 	ir_content = format_ir_for_prompt(ir)
+	
+	# Detect header type from IR blocks — inject explicit directive so Claude doesn't guess
+	import re as _re_header
+	blocks = ir.get('blocks', [])
+	has_h003_conditional = False
+	has_nmls = False
+	for b in blocks[:20]:  # Only check first 20 blocks (header area)
+		runs = b.get('runs', [])
+		text = ''.join(r.get('text', '') for r in runs)
+		if _re_header.search(r'NMLS|NMLSID', text, _re_header.IGNORECASE):
+			has_nmls = True
+			break
+		if _re_header.search(r'H003', text) and _re_header.search(r'suppress|IF\s+.*H003|null|hide|conditional', text, _re_header.IGNORECASE):
+			has_h003_conditional = True
+	
+	header_texts = ir.get('meta', {}).get('headerTexts', [])
+	for ht in header_texts:
+		if _re_header.search(r'NMLS|NMLSID', ht, _re_header.IGNORECASE):
+			has_nmls = True
+			break
+	
+	if has_nmls:
+		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{Header(NMLSID)}</div> — NMLS detected]\n"
+	elif has_h003_conditional:
+		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{Insert(H003 TagHeader)}</div> — H003 conditional logic detected]\n"
+	else:
+		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{[tagHeader]}</div> — no conditional logic around H003, use default]\n"
+	
+	ir_content = header_directive + ir_content
 	
 	# Append text box content if present (floating text boxes are not in body flow)
 	text_boxes = ir.get('meta', {}).get('textBoxes', [])

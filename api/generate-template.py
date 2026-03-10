@@ -951,6 +951,16 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 
 ❌ **WRONG**: Guessing spacing around Sincerely instead of reading the source
    - Rule: The `<br>` tags around "Sincerely," are determined by ACTUAL blank lines in the source document
+
+❌ **WRONG**: Inventing conditional logic ({If}...{End If}) that is NOT in the source document
+   - Bad: Wrapping a paragraph in `{If('{[M002]}' LIKE '6%')}...{End If}` when the Document Content shows NO conditional
+   - Good: Output the paragraph as a plain `<div>` exactly as it appears
+   - Rule: ONLY add {If()}...{End If} when the Document Content EXPLICITLY contains conditional instructions (e.g. "IF [TAG] = value then print:", "suppress if", etc.). NEVER invent conditionals based on your knowledge of mortgage documents. If the document doesn't show it, don't add it.
+
+❌ **WRONG**: Dropping variables that are present in the source
+   - Bad: `{[plsMatrix.CompanyLongName]} includes a request` when source has `<CompanyLongName> <CoShortNameParen> includes a request`
+   - Good: `{[plsMatrix.CompanyLongName]} {[plsMatrix.CoShortNameParen]} includes a request`
+   - Rule: Every variable/tag in the source document MUST appear in the output. Do NOT skip any.
    - Count the blank lines before and after "Sincerely," in the source — each blank line = one `<br>`
    - Do NOT assume a fixed pattern — read the spacing from the document
 
@@ -1179,7 +1189,7 @@ STEP 4 - VERIFY COMPLETENESS:
 
 8. PROPERTY ADDRESS COMPRESS: When a property address section has multiple address-line variables, combine them into a single Compress() call with ONLY the variables that actually appear in the document. Follow the IR annotations — they tell you exactly which variables to include and the correct Compress() expression. Do NOT add variables that aren't present in the source.
 
-9. LANGUAGE SERVICES / TRANSLATION BLOCKS: When the document has consecutive centered paragraphs that form a multi-language notice (e.g. English + Spanish translation text), wrap ALL of them in a SINGLE {Compress()} inside one centered div. Preserve the exact text and variables from each line, separated by | in the Compress(). Do NOT output them as separate divs.
+9. LANGUAGE SERVICES / TRANSLATION BLOCKS: When the document has consecutive centered paragraphs that form a multi-language notice (e.g. English + Spanish translation text), output them as individual centered divs preserving the exact text. A single Compress() is also acceptable but not required.
 
 10. ALIGNMENT: Apply ALL [FORMATTING: ALIGN_*] hints from the Document Content. If a paragraph has [FORMATTING: ALIGN_RIGHT], output it with style="text-align:right". If ALIGN_CENTER, use style="text-align: center". The formatting hints tell you exactly what the source document shows — follow them.
 
@@ -1382,9 +1392,11 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
 **UNIVERSAL COMPLETENESS RULES:**
 1. Extract EVERY paragraph shown in Document Content - count them to verify
 2. Output content in the SAME ORDER it appears in the Document Content
-3. Include ALL elements present in the document — do NOT skip any paragraphs, tables, or sections
-4. Do NOT add elements that are NOT in the document (no inventing tables, sections, or variables)
-5. Closing section: include everything after "Sincerely," — company info, legal notices, ALL remaining content
+3. Include ALL elements present in the document — do NOT skip any paragraphs, tables, sections, or VARIABLES
+4. Do NOT add elements that are NOT in the document — no inventing tables, sections, variables, or conditional logic
+5. NEVER add {If()}...{End If} unless the Document Content EXPLICITLY contains conditional instructions
+6. NEVER drop a variable/tag that appears in the source — every tag in the input must appear in the output
+7. Closing section: include everything after "Sincerely," — company info, legal notices, ALL remaining content
 
 **CRITICAL DETECTION RULES:**
 - If Document Content shows text AFTER "Sincerely," → Include ALL of it

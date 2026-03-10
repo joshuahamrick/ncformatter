@@ -202,12 +202,12 @@ def format_ir_for_prompt(ir):
 			# CRITICAL: Never skip if line contains template variables like [[M594]] or {{CompanyLongName}}
 			is_instruction = False
 			if not has_template_vars:  # Only check instruction patterns if no template vars
-			for pattern in instruction_patterns:
-				if re.match(pattern, text, re.IGNORECASE):
-					# Double-check: if it contains actual sentence content (periods, commas, etc.), it's probably content
-					if not re.search(r'[.!?]\s+[A-Z]', text):  # No sentence structure
-						is_instruction = True
-						break
+				for pattern in instruction_patterns:
+					if re.match(pattern, text, re.IGNORECASE):
+						# Double-check: if it contains actual sentence content (periods, commas, etc.), it's probably content
+						if not re.search(r'[.!?]\s+[A-Z]', text):  # No sentence structure
+							is_instruction = True
+							break
 			
 			if is_instruction:
 				continue
@@ -350,7 +350,7 @@ def format_ir_for_prompt(ir):
 					if bold_only_tags and len(cleaned_text.strip()) < 20:
 						formatting_hints.append("BOLD_TAGS_ONLY")
 					else:
-				formatting_hints.append("BOLD")
+						formatting_hints.append("BOLD")
 			if has_underline:
 				formatting_hints.append("UNDERLINE")
 			

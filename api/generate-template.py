@@ -179,8 +179,11 @@ def format_ir_for_prompt(ir):
 			runs = block.get('runs', [])
 			text = ''.join([r.get('text', '') for r in runs]).strip()
 			
-			# Skip empty or very short text (but keep important labels like "RE:" or "Loan Number:")
-			if not text or len(text) < 3:  # Only skip if VERY short (less than 3 chars)
+			# Preserve empty paragraphs as blank line markers (they represent <br> spacing in the output)
+			if not text:
+				formatted.append(f"[BLANK_LINE]")
+				continue
+			if len(text) < 3:  # Skip very short non-empty text (likely artifacts)
 				continue
 			
 			# Allow short text if it looks like a label or contains template markers
@@ -440,6 +443,21 @@ def format_ir_for_prompt(ir):
 			result += f"\n\n[NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure.]"
 		return result
 	
+	# Post-process step 0: Pre-convert source variable formats to standard {[...]} format
+	# This ensures Claude sees clean, consistent variable syntax rather than mixed formats.
+	def normalize_vars(text):
+		# <CSPhoneNumber> → {[plsMatrix.CSPhoneNumber]}
+		text = re.sub(r'<([A-Z][a-zA-Z]{2,})>', r'{[plsMatrix.\1]}', text)
+		# #M594# → {[M594]}, #L001E8# → {[L001]} (strip E-suffixes)
+		def hash_to_bracket(m):
+			tag = m.group(1)
+			# Strip E-suffixes (E6, E8, etc.)
+			tag = re.sub(r'E\d+$', '', tag)
+			return '{[' + tag + ']}'
+		text = re.sub(r'#([A-Z]\d{3}\w{0,3})#', hash_to_bracket, text)
+		return text
+	formatted = [normalize_vars(line) for line in formatted]
+
 	# Post-process step 1: Merge continuation lines
 	# Word sometimes splits a single sentence across multiple paragraphs (soft returns).
 	# Detect: a line that ends without terminal punctuation followed by a line that starts lowercase.
@@ -951,16 +969,6 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 
 ❌ **WRONG**: Guessing spacing around Sincerely instead of reading the source
    - Rule: The `<br>` tags around "Sincerely," are determined by ACTUAL blank lines in the source document
-
-❌ **WRONG**: Inventing conditional logic ({If}...{End If}) that is NOT in the source document
-   - Bad: Wrapping a paragraph in `{If('{[M002]}' LIKE '6%')}...{End If}` when the Document Content shows NO conditional
-   - Good: Output the paragraph as a plain `<div>` exactly as it appears
-   - Rule: ONLY add {If()}...{End If} when the Document Content EXPLICITLY contains conditional instructions (e.g. "IF [TAG] = value then print:", "suppress if", etc.). NEVER invent conditionals based on your knowledge of mortgage documents. If the document doesn't show it, don't add it.
-
-❌ **WRONG**: Dropping variables that are present in the source
-   - Bad: `{[plsMatrix.CompanyLongName]} includes a request` when source has `<CompanyLongName> <CoShortNameParen> includes a request`
-   - Good: `{[plsMatrix.CompanyLongName]} {[plsMatrix.CoShortNameParen]} includes a request`
-   - Rule: Every variable/tag in the source document MUST appear in the output. Do NOT skip any.
    - Count the blank lines before and after "Sincerely," in the source — each blank line = one `<br>`
    - Do NOT assume a fixed pattern — read the spacing from the document
 
@@ -1189,9 +1197,11 @@ STEP 4 - VERIFY COMPLETENESS:
 
 8. PROPERTY ADDRESS COMPRESS: When a property address section has multiple address-line variables, combine them into a single Compress() call with ONLY the variables that actually appear in the document. Follow the IR annotations — they tell you exactly which variables to include and the correct Compress() expression. Do NOT add variables that aren't present in the source.
 
-9. LANGUAGE SERVICES / TRANSLATION BLOCKS: When the document has consecutive centered paragraphs that form a multi-language notice (e.g. English + Spanish translation text), output them as individual centered divs preserving the exact text. A single Compress() is also acceptable but not required.
+9. LANGUAGE SERVICES / TRANSLATION BLOCKS: When the document has consecutive centered paragraphs that form a multi-language notice (e.g. English + Spanish translation text), wrap ALL of them in a SINGLE {Compress()} inside one centered div. Preserve the exact text and variables from each line, separated by | in the Compress(). Do NOT output them as separate divs.
 
 10. ALIGNMENT: Apply ALL [FORMATTING: ALIGN_*] hints from the Document Content. If a paragraph has [FORMATTING: ALIGN_RIGHT], output it with style="text-align:right". If ALIGN_CENTER, use style="text-align: center". The formatting hints tell you exactly what the source document shows — follow them.
+
+11. BLANK LINES: [BLANK_LINE] markers in the Document Content represent empty paragraphs in the source. Output each one as a <br> tag. This preserves the exact spacing from the original document.
 
 5. Convert math expressions properly - CRITICAL SYSTEMATIC CONVERSION:
    - STEP 1: Identify math expressions in Document Content - look for patterns like:
@@ -1392,11 +1402,9 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
 **UNIVERSAL COMPLETENESS RULES:**
 1. Extract EVERY paragraph shown in Document Content - count them to verify
 2. Output content in the SAME ORDER it appears in the Document Content
-3. Include ALL elements present in the document — do NOT skip any paragraphs, tables, sections, or VARIABLES
-4. Do NOT add elements that are NOT in the document — no inventing tables, sections, variables, or conditional logic
-5. NEVER add {If()}...{End If} unless the Document Content EXPLICITLY contains conditional instructions
-6. NEVER drop a variable/tag that appears in the source — every tag in the input must appear in the output
-7. Closing section: include everything after "Sincerely," — company info, legal notices, ALL remaining content
+3. Include ALL elements present in the document — do NOT skip any paragraphs, tables, or sections
+4. Do NOT add elements that are NOT in the document (no inventing tables, sections, or variables)
+5. Closing section: include everything after "Sincerely," — company info, legal notices, ALL remaining content
 
 **CRITICAL DETECTION RULES:**
 - If Document Content shows text AFTER "Sincerely," → Include ALL of it

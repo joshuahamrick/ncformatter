@@ -1,21 +1,17 @@
 <div>{Header(NMLSID)}</div>
 <br>
-<div>{[L001]}</div>
+<div style="text-align:right">{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
 <table width="100%"><tbody><tr>
-  <td width="3%" valign="top">RE:</td>
-  <td width="20%" valign="top">Loan Number:</td>
+  <td width="20%" valign="top">Re: Loan No:</td>
   <td>{[M594]}</td>
 </tr><tr>
-  <td width="3%" valign="top"></td>
   <td width="20%" valign="top">Property Address:</td>
-  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+  <td>{Compress({[M567]}|{[M568]})}</td>
 </tr></tbody></table>
 <br>
-<div>For homeowners who require any translation assistance or Language Access Services, please contact us at {[plsMatrix.CSPhoneNumber]}. A translation of this letter into a language other than English may be obtained.</div>
-<br>
-<div>Si necesita asistencia con la traduccion o servicios de acceso al idioma, llamenos al {[plsMatrix.CSPhoneNumber]}. Se puede obtener una traduccion de esta carta.</div>
+<div style="text-align: center">{Compress(For homeowners who require any translation assistance or Language Access Services, please contact us at|{[plsMatrix.CSPhoneNumber]}. A translation of this letter into a language other than English may be obtained.|Si necesita asistencia con la traduccion o servicios de acceso al idioma, llamenos al {[plsMatrix.CSPhoneNumber]}.|Se puede obtener una traduccion de esta carta)}</div>
 <br>
 <div>Dear {[Salutation]},</div>
 <br>
@@ -23,7 +19,7 @@
 <br>
 <div>{[plsMatrix.CompanyShortName]} has completed a review of the dispute and determined that all credit reporting on the loan has been accurate and timely.</div>
 <br>
-<div>Our determination is that no error occurred with the reporting of your Loan. You have the right to request the documents that we relied upon in reaching our determination.</div>
+<div>Our determination is that no error occurred with the reporting of your Loan. You have the right to request the documents that we relied upon in reaching our determination</div>
 <br>
 <div>Should you have any further questions or require assistance, please contact our Customer Service Department at {[plsMatrix.CSPhoneNumber]} during the following hours of operation: {[plsMatrix.HoursOfOperation]}.</div>
 <br>
@@ -34,4 +30,4 @@
 <br>
 <div>{[L003]} {[L004]} {[L005]}</div>
 <br>
-<div>{Insert(SeeReverse)}</div>
+<div>{[plsMatrix.SeeReverse]}</div>

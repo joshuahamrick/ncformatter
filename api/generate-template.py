@@ -69,7 +69,7 @@ def load_system_prompt():
 Generate HTML templates that match the exact formatting style shown in examples.
 Use {[TAG]} format for variables, {[plsMatrix.*]} for company variables.
 Remove last 2 characters from tag variables ending in digits/letters.
-Always use {Compress({[M567]}|{[M583]}|{[M568]})} for property addresses.
+Use Compress() for property addresses with only the variables present in the document.
 Use <div>Dear {[Salutation]},</div> for salutations.
 Return ONLY valid HTML, no explanations."""
 
@@ -441,9 +441,43 @@ def format_ir_for_prompt(ir):
 			result += f"\n\n[NOTE: Document has {total_blocks} total content blocks (sampled {len(sampled)}). You MUST include ALL conditional sections, ALL state-specific content, and ALL paragraphs from the ENTIRE document structure.]"
 		return result
 	
-	# Post-process: annotate RE address grouping
-	# When "RE:" paragraph contains M567 and is followed by M583/M568 paragraphs,
-	# annotate them so Claude knows they belong to the RE address group
+	# Post-process step 1: Merge continuation lines
+	# Word sometimes splits a single sentence across multiple paragraphs (soft returns).
+	# Detect: a line that ends without terminal punctuation followed by a line that starts lowercase.
+	merged = []
+	i = 0
+	while i < len(formatted):
+		line = formatted[i]
+		# Extract the text content (after "Paragraph N: ")
+		m_para = re.match(r'^(Paragraph \d+:\s*)(.*)', line)
+		if m_para:
+			prefix = m_para.group(1)
+			text = m_para.group(2)
+			# Look ahead: merge with next lines that look like continuations
+			while i + 1 < len(formatted):
+				next_line = formatted[i + 1]
+				m_next = re.match(r'^Paragraph \d+:\s*(.*)', next_line)
+				if m_next:
+					next_text = m_next.group(1)
+					# Strip formatting notes for analysis
+					text_clean = re.sub(r'\s*\[FORMATTING:.*?\]', '', text).rstrip()
+					next_clean = re.sub(r'\s*\[FORMATTING:.*?\]', '', next_text).rstrip()
+					# Continuation: current line ends mid-sentence AND next starts lowercase or with a preposition/article
+					if (text_clean and not text_clean[-1] in '.!?:,;' and
+						next_clean and (next_clean[0].islower() or next_clean.startswith('on ') or next_clean.startswith('of '))):
+						# Merge — preserve any formatting notes from the next line
+						fmt_notes = re.findall(r'\[FORMATTING:.*?\]', next_line)
+						text = text.rstrip() + ' ' + next_text
+						i += 1
+						continue
+				break
+			merged.append(prefix + text)
+		else:
+			merged.append(line)
+		i += 1
+	formatted = merged
+
+	# Post-process step 2: annotate RE address grouping and mailing address collapse
 	result_lines = []
 	mailing_addr_indices = set()
 	for i, line in enumerate(formatted):
@@ -451,21 +485,30 @@ def format_ir_for_prompt(ir):
 		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line):
 			mailing_addr_indices.add(i)
 
+	# Detect which address variables exist in the document
+	has_m567 = any(re.search(r'\bM567\b', l) for l in formatted)
+	has_m583 = any(re.search(r'\bM583\b', l) for l in formatted)
+	has_m568 = any(re.search(r'\bM568\b', l) for l in formatted)
+	compress_parts = []
+	if has_m567: compress_parts.append('{[M567]}')
+	if has_m583: compress_parts.append('{[M583]}')
+	if has_m568: compress_parts.append('{[M568]}')
+	compress_expr = '{Compress(' + '|'.join(compress_parts) + ')}' if len(compress_parts) > 1 else (compress_parts[0] if compress_parts else '{[M567]}')
+
 	for i, line in enumerate(formatted):
 		if i in mailing_addr_indices:
-			# Mark first occurrence as the collapse point, rest as suppressed
 			first = min(mailing_addr_indices)
 			if i == first:
-				line += " [NOTE: This and all consecutive M558–M566 lines are the borrower mailing address — output ONLY <div>{[mailingAddress]}</div> here, do NOT output individual M-code divs]"
+				line += " [NOTE: This and all consecutive M558-M566 lines are the borrower mailing address - output ONLY <div>{[mailingAddress]}</div> here, do NOT output individual M-code divs]"
 			else:
-				line += " [NOTE: Part of mailing address above — do NOT output as a separate paragraph]"
-		if re.search(r'RE:\s+.*M567', line):
-			line += " [NOTE: The following M583/M568 paragraphs are part of THIS address — combine with Compress({[M567]}|{[M583]}|{[M568]})]"
-		# Also mark M583/M568-only lines that follow an RE line
-		if re.search(r'Paragraph \d+:\s*\{?\[?M583\]?\}?', line):
-			line += " [NOTE: Part of RE address above — do NOT output as separate paragraph]"
-		if re.search(r'Paragraph \d+:\s*\{?\[?M568\]?\}?', line):
-			line += " [NOTE: Part of RE address above — do NOT output as separate paragraph]"
+				line += " [NOTE: Part of mailing address above - do NOT output as a separate paragraph]"
+		# Annotate RE/Property Address + subsequent address variable lines
+		if re.search(r'(?:RE:|Property Address:)\s+.*M567', line):
+			line += f" [NOTE: The following M583/M568 paragraphs are part of THIS address - combine with {compress_expr}]"
+		if re.search(r'Paragraph \d+:\s*(?:\{?\[?M583\]?\}?|#M583#)', line):
+			line += " [NOTE: Part of property address above - do NOT output as separate paragraph or table row]"
+		if re.search(r'Paragraph \d+:\s*(?:\{?\[?M568\]?\}?|#M568#)', line):
+			line += " [NOTE: Part of property address above - do NOT output as separate paragraph or table row]"
 		result_lines.append(line)
 	
 	return '\n'.join(result_lines)
@@ -859,7 +902,7 @@ Document Content:
 **BEFORE YOU START - MANDATORY PRE-SCAN:**
 Read the ENTIRE Document Content once before generating ANY HTML. Answer these questions:
 1. Is there a "Loan Number:" or "Re: Loan Number:" label? → Note the EXACT label text. Check for metadata instructions like "LAST 4 DIGITS" → determines variable ({[M594]} vs {[loanNumberLast4]})
-2. Is there a "RE:" or "Property Address:" label? → YES = create table row with {Compress({[M567]}|{[M583]}|{[M568]})}
+2. Is there a "RE:" or "Property Address:" label? → YES = create table row with Compress() using ONLY the address variables present in the document (M567, M583, M568 — include only those that appear)
 3. Check the [HEADER_DIRECTIVE] at the top of Document Content — it tells you EXACTLY which header to use. OBEY IT. Three cases:
    - [HEADER_DIRECTIVE: ... NMLS detected] → Use <div>{Header(NMLSID)}</div>
    - [HEADER_DIRECTIVE: ... H003 conditional logic detected] → Use <div>{Insert(H003 TagHeader)}</div>
@@ -1128,22 +1171,25 @@ STEP 4 - VERIFY COMPLETENESS:
 
 5. MAILING ADDRESS: Individual address M-code paragraphs (M558, M559, M560, M561, M562, M563, M564, M565, M566) MUST be collapsed into a SINGLE <div>{[mailingAddress]}</div>. Do NOT output them as individual divs.
 
-6. SEEVERSE TAG: When the source has <SeeReverse> or a similar "see reverse" tag, output it as <div>{Insert(SeeReverse)}</div> — NEVER as {[plsMatrix.SeeReverse]} or any other format.
+6. SEEVERSE TAG: When the source has <SeeReverse> or a similar "see reverse" tag, output it as <div>{[plsMatrix.SeeReverse]}</div>.
 
-7. RE TABLE LABEL NORMALIZATION: The Loan Number / RE table always uses standardized labels regardless of what the source document says:
-   - Loan number label → always "Loan Number:" (NOT "Re: Loan No:", "Loan No:", etc.)
-   - Property address label → always "RE:" or "Property Address:" depending on table pattern
-   - When the loan number and RE appear on the SAME line in source → use Pattern B (3-column):
-     <table width="100%"><tbody><tr>
-       <td width="3%" valign="top">RE:</td>
-       <td width="20%" valign="top">Loan Number:</td>
-       <td>{[M594]}</td>
-     </tr><tr>
-       <td width="3%" valign="top"></td>
-       <td width="20%" valign="top">Property Address:</td>
-       <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
-     </tr></tbody></table>
-   - When they appear on SEPARATE lines → use Pattern A (2-column)
+7. RE TABLE LABELS: Copy the EXACT label text from the source document — do NOT rename or normalize labels.
+   If the source says "Re: Loan No:" keep it as "Re: Loan No:". If it says "Loan Number:" keep that.
+   If the source says "Property Address:" keep that. If it says "RE:" keep that.
+
+8. PROPERTY ADDRESS COMPRESS: In the Loan Number / RE table, the property address value MUST use Compress() with ALL address variables present in the document. Only include variables that actually appear:
+   - If the document has M567 and M568 only → {Compress({[M567]}|{[M568]})}
+   - If the document has M567, M583, and M568 → {Compress({[M567]}|{[M583]}|{[M568]})}
+   - NEVER output address variables as separate table rows — always combine them in one Compress().
+   - If M568 appears on a separate line after the "Property Address:" line, it is STILL part of the address — include it in the same Compress().
+
+9. LANGUAGE SERVICES / TRANSLATION BLOCKS: When consecutive centered paragraphs form a multi-language translation notice (e.g. English + Spanish), wrap ALL of them in a SINGLE {Compress()} inside one centered div:
+   <div style="text-align: center">{Compress(English text|{[plsMatrix.CSPhoneNumber]}. remaining English.|Spanish text {[plsMatrix.CSPhoneNumber]}.|Se puede obtener una traduccion de esta carta)}</div>
+   Do NOT output them as separate divs.
+
+10. L001 DATE: If the source shows L001 with right alignment ([FORMATTING: ALIGN_RIGHT]), output it as:
+    <div style="text-align:right">{[L001]}</div>
+    NOT just <div>{[L001]}</div>
 
 5. Convert math expressions properly - CRITICAL SYSTEMATIC CONVERSION:
    - STEP 1: Identify math expressions in Document Content - look for patterns like:
@@ -1284,10 +1330,13 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
      * "Re: Loan Number:" → ONE cell: `<td width="20%" valign="top">Re: Loan Number:</td>`
      * "Loan Number:" → ONE cell: `<td width="20%" valign="top">Loan Number:</td>`
      * NEVER split a label into multiple columns (e.g., NEVER put "Re:" in one cell and "Loan Number:" in another)
-   - RE/PROPERTY ADDRESS ROW - ALWAYS use Compress with ALL address components:
-     * Even though M567, M583, and M568 appear on SEPARATE paragraphs in the source, they are ALL part of the property address
-     * ALWAYS combine them: `{Compress({[M567]}|{[M583]}|{[M568]})}`
-     * The paragraphs after "RE:" that contain M583 and M568 are continuations of the address, not separate content
+   - RE/PROPERTY ADDRESS ROW - ALWAYS use Compress with the address variables PRESENT IN THE DOCUMENT:
+     * Even though M567, M583, and M568 may appear on SEPARATE paragraphs in the source, they are ALL part of the property address
+     * Combine ONLY the variables that actually exist in the document:
+       - If document has M567 + M583 + M568: `{Compress({[M567]}|{[M583]}|{[M568]})}`
+       - If document has M567 + M568 only (no M583): `{Compress({[M567]}|{[M568]})}`
+     * The paragraphs after "RE:" or "Property Address:" that contain M583 and/or M568 are continuations of the address, not separate content
+     * NEVER output M567 and M568 as separate table rows — always combine in Compress()
    - CRITICAL: This is always a 2-column table. Labels NOT bold. Format:
      <table width="100%"><tbody><tr>
        <td width="20%" valign="top">Re: Loan Number:</td>
@@ -1302,7 +1351,7 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
 3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
 <div>{[tagHeader]}</div>  <!-- DEFAULT: Use {[tagHeader]} unless H003 has conditional logic (then use {Insert(H003 TagHeader)}) or NMLS is mentioned (then use {Header(NMLSID)}) -->
 <br>
-<div>{[L001]}</div>
+<div>{[L001]}</div>  <!-- If source has ALIGN_RIGHT, use: <div style="text-align:right">{[L001]}</div> -->
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
 <!-- CRITICAL: Loan Number and RE: table - ONLY include if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections -->

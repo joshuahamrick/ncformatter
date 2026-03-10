@@ -202,12 +202,12 @@ def format_ir_for_prompt(ir):
 			# CRITICAL: Never skip if line contains template variables like [[M594]] or {{CompanyLongName}}
 			is_instruction = False
 			if not has_template_vars:  # Only check instruction patterns if no template vars
-				for pattern in instruction_patterns:
-					if re.match(pattern, text, re.IGNORECASE):
-						# Double-check: if it contains actual sentence content (periods, commas, etc.), it's probably content
-						if not re.search(r'[.!?]\s+[A-Z]', text):  # No sentence structure
-							is_instruction = True
-							break
+			for pattern in instruction_patterns:
+				if re.match(pattern, text, re.IGNORECASE):
+					# Double-check: if it contains actual sentence content (periods, commas, etc.), it's probably content
+					if not re.search(r'[.!?]\s+[A-Z]', text):  # No sentence structure
+						is_instruction = True
+						break
 			
 			if is_instruction:
 				continue
@@ -350,7 +350,7 @@ def format_ir_for_prompt(ir):
 					if bold_only_tags and len(cleaned_text.strip()) < 20:
 						formatting_hints.append("BOLD_TAGS_ONLY")
 					else:
-						formatting_hints.append("BOLD")
+				formatting_hints.append("BOLD")
 			if has_underline:
 				formatting_hints.append("UNDERLINE")
 			
@@ -361,7 +361,7 @@ def format_ir_for_prompt(ir):
 				if hyperlink_texts:
 					formatting_hints.append(f"HYPERLINK({'; '.join(hyperlink_texts)})")
 			
-			if font_size and font_size != 11.0:  # 11pt is default, only note if different
+			if font_size and (font_size >= 13.0 or font_size <= 8.0):  # Only flag headings/footnotes; skip common body sizes (8–12pt)
 				formatting_hints.append(f"FONT_SIZE_{int(font_size)}pt")
 			if alignment and alignment != 'left':
 				formatting_hints.append(f"ALIGN_{alignment.upper()}")
@@ -445,7 +445,20 @@ def format_ir_for_prompt(ir):
 	# When "RE:" paragraph contains M567 and is followed by M583/M568 paragraphs,
 	# annotate them so Claude knows they belong to the RE address group
 	result_lines = []
+	mailing_addr_indices = set()
 	for i, line in enumerate(formatted):
+		# Detect mailing address M-code lines (M558–M566 are borrower mailing address fields)
+		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line):
+			mailing_addr_indices.add(i)
+
+	for i, line in enumerate(formatted):
+		if i in mailing_addr_indices:
+			# Mark first occurrence as the collapse point, rest as suppressed
+			first = min(mailing_addr_indices)
+			if i == first:
+				line += " [NOTE: This and all consecutive M558–M566 lines are the borrower mailing address — output ONLY <div>{[mailingAddress]}</div> here, do NOT output individual M-code divs]"
+			else:
+				line += " [NOTE: Part of mailing address above — do NOT output as a separate paragraph]"
 		if re.search(r'RE:\s+.*M567', line):
 			line += " [NOTE: The following M583/M568 paragraphs are part of THIS address — combine with Compress({[M567]}|{[M583]}|{[M568]})]"
 		# Also mark M583/M568-only lines that follow an RE line
@@ -472,7 +485,8 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	for b in blocks[:20]:  # Only check first 20 blocks (header area)
 		runs = b.get('runs', [])
 		text = ''.join(r.get('text', '') for r in runs)
-		if _re_header.search(r'NMLS|NMLSID', text, _re_header.IGNORECASE):
+		# Match NMLID (no S) and NMLSID — both are valid NMLS identifier tags
+		if _re_header.search(r'NMLS?ID', text, _re_header.IGNORECASE):
 			has_nmls = True
 			break
 		if _re_header.search(r'H003', text) and _re_header.search(r'suppress|IF\s+.*H003|null|hide|conditional', text, _re_header.IGNORECASE):
@@ -480,7 +494,8 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	
 	header_texts = ir.get('meta', {}).get('headerTexts', [])
 	for ht in header_texts:
-		if _re_header.search(r'NMLS|NMLSID', ht, _re_header.IGNORECASE):
+		# Match NMLID (no S) and NMLSID — both appear in different document templates
+		if _re_header.search(r'NMLS?ID', ht, _re_header.IGNORECASE):
 			has_nmls = True
 			break
 	
@@ -845,7 +860,10 @@ Document Content:
 Read the ENTIRE Document Content once before generating ANY HTML. Answer these questions:
 1. Is there a "Loan Number:" or "Re: Loan Number:" label? → Note the EXACT label text. Check for metadata instructions like "LAST 4 DIGITS" → determines variable ({[M594]} vs {[loanNumberLast4]})
 2. Is there a "RE:" or "Property Address:" label? → YES = create table row with {Compress({[M567]}|{[M583]}|{[M568]})}
-3. Is there conditional logic around H003 (suppress/hide language)? → YES = {Insert(H003 TagHeader)}, NO = {[tagHeader]}
+3. Check the [HEADER_DIRECTIVE] at the top of Document Content — it tells you EXACTLY which header to use. OBEY IT. Three cases:
+   - [HEADER_DIRECTIVE: ... NMLS detected] → Use <div>{Header(NMLSID)}</div>
+   - [HEADER_DIRECTIVE: ... H003 conditional logic detected] → Use <div>{Insert(H003 TagHeader)}</div>
+   - [HEADER_DIRECTIVE: ... use default] → Use <div>{[tagHeader]}</div>
 4. Where does "Sincerely," appear? → Note the paragraph number
 5. What comes AFTER "Sincerely,"? → List all remaining content
 6. How many total paragraphs are there? → You MUST extract this many
@@ -1106,7 +1124,26 @@ STEP 4 - VERIFY COMPLETENESS:
    - CORRECT: {[plsMatrix.LossPreventionPhoneNumberTollFree]}, {[plsMatrix.CSPhoneNumber]}, {[plsMatrix.CompanyLongName]}
    - WRONG: {[LossPreventionPhoneNumberTollFree]}, {[CSPhoneNumber]}, {[CompanyLongName]} ← Missing plsMatrix prefix
 
-4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations - NEVER include conditional salutation logic
+4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations — replace any literal borrower name or "Borrower(s)" with {[Salutation]}. NEVER include conditional salutation logic.
+
+5. MAILING ADDRESS: Individual address M-code paragraphs (M558, M559, M560, M561, M562, M563, M564, M565, M566) MUST be collapsed into a SINGLE <div>{[mailingAddress]}</div>. Do NOT output them as individual divs.
+
+6. SEEVERSE TAG: When the source has <SeeReverse> or a similar "see reverse" tag, output it as <div>{Insert(SeeReverse)}</div> — NEVER as {[plsMatrix.SeeReverse]} or any other format.
+
+7. RE TABLE LABEL NORMALIZATION: The Loan Number / RE table always uses standardized labels regardless of what the source document says:
+   - Loan number label → always "Loan Number:" (NOT "Re: Loan No:", "Loan No:", etc.)
+   - Property address label → always "RE:" or "Property Address:" depending on table pattern
+   - When the loan number and RE appear on the SAME line in source → use Pattern B (3-column):
+     <table width="100%"><tbody><tr>
+       <td width="3%" valign="top">RE:</td>
+       <td width="20%" valign="top">Loan Number:</td>
+       <td>{[M594]}</td>
+     </tr><tr>
+       <td width="3%" valign="top"></td>
+       <td width="20%" valign="top">Property Address:</td>
+       <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+     </tr></tbody></table>
+   - When they appear on SEPARATE lines → use Pattern A (2-column)
 
 5. Convert math expressions properly - CRITICAL SYSTEMATIC CONVERSION:
    - STEP 1: Identify math expressions in Document Content - look for patterns like:
@@ -1217,13 +1254,13 @@ STEP 4 - VERIFY COMPLETENESS:
 STEP 2 - STRUCTURE (MANDATORY - DETECT FROM DOCUMENT):
 CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header structure - different documents have different layouts!
 
-1. HEADER DETECTION - Look at the Document Content to determine the correct header type:
-   - CRITICAL HEADER LOGIC (in priority order):
-     a) If Document Content mentions NMLS or NMLSID → Use: <div>{Header(NMLSID)}</div>
-     b) If Document Content shows H003 with a CONDITIONAL (e.g., "IF {[H003]} = '*' or 'NULL'; then suppress print of line; else produce:", or similar conditional logic around H003) → Use: <div>{Insert(H003 TagHeader)}</div>
-     c) DEFAULT: If no conditional logic around H003, use: <div>{[tagHeader]}</div>
-   - The key distinction: {Insert(H003 TagHeader)} is ONLY for when the document has conditional suppression logic around H003. If H003 just appears as a plain tag (e.g., "{[H003]} (Company Address Line 2)"), use {[tagHeader]}.
-   - The conditional wording varies across documents — look for any language about suppressing, hiding, or conditionally printing H003.
+1. HEADER DETECTION — OBEY THE [HEADER_DIRECTIVE] INJECTED AT THE TOP OF DOCUMENT CONTENT:
+   - The system has already analysed the document and injected a [HEADER_DIRECTIVE] telling you exactly which header to use.
+   - [HEADER_DIRECTIVE: ... NMLS detected] → <div>{Header(NMLSID)}</div>
+   - [HEADER_DIRECTIVE: ... H003 conditional logic detected] → <div>{Insert(H003 TagHeader)}</div>
+   - [HEADER_DIRECTIVE: ... use default] → <div>{[tagHeader]}</div>
+   - DO NOT override the directive — do not second-guess it by looking for NMLS/H003 yourself.
+   - Key rule: {Insert(H003 TagHeader)} is ONLY correct when H003 has explicit conditional suppression logic in the source. A plain H003 tag appearance uses {[tagHeader]} (the default).
 
 2. LOAN NUMBER AND RE: TABLE - CRITICAL SYSTEMATIC DETECTION:
    - STEP 1: Scan Document Content for EXPLICIT labels like "Loan Number:" or "RE:" or "Re:" appearing as standalone text (not just variable tags)

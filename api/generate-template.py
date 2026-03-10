@@ -66,11 +66,10 @@ def load_system_prompt():
 	# Fallback prompt if file not found
 	print("WARNING: Using fallback system prompt - file not found")
 	return """You are an expert HTML template generator for mortgage servicing documents. 
-Generate HTML templates that match the exact formatting style shown in examples.
+Generate HTML templates that match the exact formatting and content of the source document.
 Use {[TAG]} format for variables, {[plsMatrix.*]} for company variables.
-Remove last 2 characters from tag variables ending in digits/letters.
-Use Compress() for property addresses with only the variables present in the document.
-Use <div>Dear {[Salutation]},</div> for salutations.
+Remove last 2 characters from tag variables ending in digits/letters (e.g. L001E8 → L001).
+Derive ALL structure, labels, and formatting from the source document — never assume or hardcode.
 Return ONLY valid HTML, no explanations."""
 
 def load_few_shot_examples():
@@ -570,9 +569,9 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	few_shot_text += "These examples show the EXACT formatting structure you must follow:\n"
 	few_shot_text += "- Each element on its own line (with newlines)\n"
 	few_shot_text += "- Proper <br> tags for spacing based on source document\n"
-	few_shot_text += "- Standard header structure: Header, Date, Mailing Address, Property Address Table, Salutation, Content\n"
+	few_shot_text += "- Structure derived from the actual document content (header, date, mailing address, tables, salutation, etc.)\n"
 	few_shot_text += "- Conditional logic wrapped in {If()}...{End If}\n"
-	few_shot_text += "- Property address ALWAYS in a table with Compress()\n\n"
+	few_shot_text += "- Property address variables combined with Compress() when multiple appear together\n\n"
 	few_shot_text += "IMPORTANT: Notice how each example has proper newlines - each <div>, <br>, <table> is on its own line!\n\n"
 	
 	for idx, ex in enumerate(few_shot_examples):  # Show ALL examples
@@ -585,9 +584,9 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 1. Extract the actual document content (ignore variable definitions and instructions)
 2. Format it as HTML following the EXACT structure and style shown in the examples
 3. Use proper newlines - each HTML element on its own line
-4. Include ALL required elements: header, date, mailing address, property address table, salutation, content
+4. Include ALL elements that are PRESENT in the document — do NOT add elements that aren't there, do NOT omit elements that are
 5. Wrap conditional content in {If()}...{End If} blocks
-6. Match spacing from the source document
+6. Match spacing and formatting from the source document exactly
 
 CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
 
@@ -763,11 +762,11 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Remove parenthesis descriptions like "(Property Line 1)", "(Due Date)", "(Balance)" after variables
    - Keep: "(the Property)" - actual content, not metadata
 
-3. STRUCTURE DETECTION - Scan for these patterns BEFORE salutation:
-   - If you see "Loan Number:" label AND [M594] variable → Create Loan Number/RE table
-   - If you see "RE:" label AND property variables → Include in table
-   - Format as: <table width="100%"><tbody><tr><td width="20%" valign="top">Loan Number:</td><td>{[M594]}</td></tr><tr><td width="20%" valign="top">RE:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
-   - Place AFTER mailing address, BEFORE salutation
+3. STRUCTURE DETECTION - Scan the document for labeled sections (loan number, property address, RE, etc.):
+   - If you see a loan number label (e.g. "Loan Number:", "Re: Loan No:", etc.) with a variable → Create a table row using the EXACT label from the source
+   - If you see a property address label (e.g. "RE:", "Property Address:", etc.) with address variables → Create a table row using Compress() with ONLY the address variables present
+   - Use the EXACT labels from the document — do NOT rename them
+   - Place the table where it appears in the document relative to other content
 
 4. FORMATTING RULES:
    
@@ -1167,29 +1166,22 @@ STEP 4 - VERIFY COMPLETENESS:
    - CORRECT: {[plsMatrix.LossPreventionPhoneNumberTollFree]}, {[plsMatrix.CSPhoneNumber]}, {[plsMatrix.CompanyLongName]}
    - WRONG: {[LossPreventionPhoneNumberTollFree]}, {[CSPhoneNumber]}, {[CompanyLongName]} ← Missing plsMatrix prefix
 
-4. ALWAYS use <div>Dear {[Salutation]},</div> for salutations — replace any literal borrower name or "Borrower(s)" with {[Salutation]}. NEVER include conditional salutation logic.
+4. SALUTATIONS: If the source document has a "Dear" line with a placeholder or generic name (e.g. "Dear Borrower(s),"), convert it to <div>Dear {[Salutation]},</div>. If the document uses a different greeting format, match what the document shows.
 
-5. MAILING ADDRESS: Individual address M-code paragraphs (M558, M559, M560, M561, M562, M563, M564, M565, M566) MUST be collapsed into a SINGLE <div>{[mailingAddress]}</div>. Do NOT output them as individual divs.
+5. MAILING ADDRESS: When the document has consecutive individual address-line variables (e.g. M558, M559, M560, etc.), these represent the borrower mailing address — collapse them into a SINGLE <div>{[mailingAddress]}</div>. The IR annotations will tell you which lines to collapse.
 
-6. SEEVERSE TAG: When the source has <SeeReverse> or a similar "see reverse" tag, output it as <div>{[plsMatrix.SeeReverse]}</div>.
+6. ANGLE-BRACKET TAGS: When the source has tags like <SeeReverse>, <CompanyLongName>, <CSPhoneNumber>, etc., convert them to {[plsMatrix.TagName]} format (e.g. <SeeReverse> → {[plsMatrix.SeeReverse]}, <CSPhoneNumber> → {[plsMatrix.CSPhoneNumber]}). Match the exact tag name from the source.
 
-7. RE TABLE LABELS: Copy the EXACT label text from the source document — do NOT rename or normalize labels.
+7. LABELS: Copy the EXACT label text from the source document — do NOT rename or normalize any labels.
    If the source says "Re: Loan No:" keep it as "Re: Loan No:". If it says "Loan Number:" keep that.
    If the source says "Property Address:" keep that. If it says "RE:" keep that.
+   This applies to ALL labels in the document, not just the RE/Loan Number table.
 
-8. PROPERTY ADDRESS COMPRESS: In the Loan Number / RE table, the property address value MUST use Compress() with ALL address variables present in the document. Only include variables that actually appear:
-   - If the document has M567 and M568 only → {Compress({[M567]}|{[M568]})}
-   - If the document has M567, M583, and M568 → {Compress({[M567]}|{[M583]}|{[M568]})}
-   - NEVER output address variables as separate table rows — always combine them in one Compress().
-   - If M568 appears on a separate line after the "Property Address:" line, it is STILL part of the address — include it in the same Compress().
+8. PROPERTY ADDRESS COMPRESS: When a property address section has multiple address-line variables, combine them into a single Compress() call with ONLY the variables that actually appear in the document. Follow the IR annotations — they tell you exactly which variables to include and the correct Compress() expression. Do NOT add variables that aren't present in the source.
 
-9. LANGUAGE SERVICES / TRANSLATION BLOCKS: When consecutive centered paragraphs form a multi-language translation notice (e.g. English + Spanish), wrap ALL of them in a SINGLE {Compress()} inside one centered div:
-   <div style="text-align: center">{Compress(English text|{[plsMatrix.CSPhoneNumber]}. remaining English.|Spanish text {[plsMatrix.CSPhoneNumber]}.|Se puede obtener una traduccion de esta carta)}</div>
-   Do NOT output them as separate divs.
+9. LANGUAGE SERVICES / TRANSLATION BLOCKS: When the document has consecutive centered paragraphs that form a multi-language notice (e.g. English + Spanish translation text), wrap ALL of them in a SINGLE {Compress()} inside one centered div. Preserve the exact text and variables from each line, separated by | in the Compress(). Do NOT output them as separate divs.
 
-10. L001 DATE: If the source shows L001 with right alignment ([FORMATTING: ALIGN_RIGHT]), output it as:
-    <div style="text-align:right">{[L001]}</div>
-    NOT just <div>{[L001]}</div>
+10. ALIGNMENT: Apply ALL [FORMATTING: ALIGN_*] hints from the Document Content. If a paragraph has [FORMATTING: ALIGN_RIGHT], output it with style="text-align:right". If ALIGN_CENTER, use style="text-align: center". The formatting hints tell you exactly what the source document shows — follow them.
 
 5. Convert math expressions properly - CRITICAL SYSTEMATIC CONVERSION:
    - STEP 1: Identify math expressions in Document Content - look for patterns like:
@@ -1318,9 +1310,9 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
      * WRONG: If you see "property located at {[M567]}, {[M583]}, {[M568]}" in a paragraph → This is NOT a Loan Number/RE table
      * CORRECT: If you see a separate paragraph/line like "Loan Number: [M594]" or "RE: [M567]" → This IS a Loan Number/RE table
    - STEP 4: Only create the table if you find EXPLICIT labels ("Loan Number:", "RE:", "Re:") appearing as separate labeled sections
-   - STEP 5: If labels exist, create a **2-COLUMN** table (label | value). NEVER 3 columns.
+   - STEP 5: If labels exist, create a **2-COLUMN** table (label | value).
      * First row: The FULL loan number label as ONE cell → loan number variable
-     * Second row: RE/Property label → {Compress({[M567]}|{[M583]}|{[M568]})}
+     * Second row: Property address label → Compress() with ONLY the address variables present in the document
    - LOAN NUMBER VARIABLE DETECTION:
      * If metadata says "LAST 4 DIGITS" or "last four" or similar → use `{[loanNumberLast4]}`
      * Otherwise → use `{[M594]}`
@@ -1330,13 +1322,10 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
      * "Re: Loan Number:" → ONE cell: `<td width="20%" valign="top">Re: Loan Number:</td>`
      * "Loan Number:" → ONE cell: `<td width="20%" valign="top">Loan Number:</td>`
      * NEVER split a label into multiple columns (e.g., NEVER put "Re:" in one cell and "Loan Number:" in another)
-   - RE/PROPERTY ADDRESS ROW - ALWAYS use Compress with the address variables PRESENT IN THE DOCUMENT:
-     * Even though M567, M583, and M568 may appear on SEPARATE paragraphs in the source, they are ALL part of the property address
-     * Combine ONLY the variables that actually exist in the document:
-       - If document has M567 + M583 + M568: `{Compress({[M567]}|{[M583]}|{[M568]})}`
-       - If document has M567 + M568 only (no M583): `{Compress({[M567]}|{[M568]})}`
-     * The paragraphs after "RE:" or "Property Address:" that contain M583 and/or M568 are continuations of the address, not separate content
-     * NEVER output M567 and M568 as separate table rows — always combine in Compress()
+   - RE/PROPERTY ADDRESS ROW - Combine address variables using Compress() with ONLY the variables PRESENT IN THE DOCUMENT:
+     * The IR annotations tell you exactly which variables to combine and the correct Compress() expression — follow them
+     * Address continuation lines (annotated with "[NOTE: Part of property address above]") are NOT separate rows — they belong in the same Compress()
+     * NEVER output address variables as separate table rows
    - CRITICAL: This is always a 2-column table. Labels NOT bold. Format:
      <table width="100%"><tbody><tr>
        <td width="20%" valign="top">Re: Loan Number:</td>
@@ -1348,10 +1337,22 @@ CRITICAL: You MUST analyze the Document Content to determine the ACTUAL header s
    - ONLY include this table if Document Content shows EXPLICIT labels like "Loan Number:", "RE:", "Property Address:" as separate labeled sections
    - DO NOT create this table just because property address variables appear in regular content paragraphs
 
-3. STANDARD STRUCTURE (use as base, but ADAPT based on Document Content):
-<div>{[tagHeader]}</div>  <!-- DEFAULT: Use {[tagHeader]} unless H003 has conditional logic (then use {Insert(H003 TagHeader)}) or NMLS is mentioned (then use {Header(NMLSID)}) -->
+3. STRUCTURE — DERIVE FROM THE DOCUMENT (do NOT assume a fixed layout):
+   The document content tells you what elements exist and in what order. Output them in the same order.
+   Common elements (include ONLY if present in the document):
+   - Header tag (use the [HEADER_DIRECTIVE] to determine format)
+   - Date line (apply alignment from [FORMATTING: ALIGN_*] hints)
+   - Mailing address (collapse individual address M-codes into {[mailingAddress]} per IR annotations)
+   - Loan Number / Property Address table (use EXACT labels from source, Compress() per IR annotations)
+   - Translation / language services block (if present)
+   - Salutation
+   - Body paragraphs
+   - Closing (Sincerely, company info, legal notices)
+
+   Example base structure (adapt to match your document):
+<div>{[tagHeader]}</div>
 <br>
-<div>{[L001]}</div>  <!-- If source has ALIGN_RIGHT, use: <div style="text-align:right">{[L001]}</div> -->
+<div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
 <!-- CRITICAL: Loan Number and RE: table - ONLY include if Document Content shows EXPLICIT labels like "Loan Number:" or "RE:" as separate labeled sections -->
@@ -1380,23 +1381,10 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
 
 **UNIVERSAL COMPLETENESS RULES:**
 1. Extract EVERY paragraph shown in Document Content - count them to verify
-2. Include content in THREE sections: Header → Body → Closing
-3. Header section (before salutation):
-   - {[tagHeader]} (default) or {Insert(H003 TagHeader)} (only if H003 has conditional) or {Header(NMLSID)}
-   - {[L001]} date
-   - {[mailingAddress]}
-   - Loan Number/RE table (if "Loan Number:" and "RE:" labels exist)
-4. Body section (after salutation, before "Sincerely,"):
-   - ALL content paragraphs
-   - ALL bullet point sections (formatted as tables)
-   - ALL conditionals
-5. Closing section (after "Sincerely,"):
-   - "Sincerely," line
-   - Company name and/or department
-   - Company address lines (if present)
-   - Phone numbers (if present)  
-   - ALL legal notices/disclaimers (often in ALL-CAPS)
-   - Wisconsin notice conditionals (if present)
+2. Output content in the SAME ORDER it appears in the Document Content
+3. Include ALL elements present in the document — do NOT skip any paragraphs, tables, or sections
+4. Do NOT add elements that are NOT in the document (no inventing tables, sections, or variables)
+5. Closing section: include everything after "Sincerely," — company info, legal notices, ALL remaining content
 
 **CRITICAL DETECTION RULES:**
 - If Document Content shows text AFTER "Sincerely," → Include ALL of it
@@ -1640,12 +1628,11 @@ BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
 - CRITICAL: Scan the ENTIRE Document Content from start to finish, checking for ALL bullet point sets - do not stop after finding the first set
 
 CRITICAL NOTES:
-- Most letters MUST include a Loan Number and RE: table after mailing address and before salutation
-- The table structure VARIES by document - extract the EXACT structure from Document Content (labels may be "Loan Number:", "Re: Loan Number:", "RE: Loan Number:", etc.)
-- Header type detection: NMLS (if mentioned) > {Insert(H003 TagHeader)} (only if H003 has conditional logic) > {[tagHeader]} (default)
-- DEFAULT header format is {[tagHeader]} — only use {Insert(H003 TagHeader)} when H003 has conditional suppression logic
+- ONLY include a Loan Number / RE / Property Address table if the Document Content shows explicit labels for it — do NOT add one if none exists
+- Use the EXACT labels from the document — do NOT rename "Re: Loan No:" to "Loan Number:" or any other normalization
+- OBEY the [HEADER_DIRECTIVE] at the top of Document Content — it tells you the correct header format
 - Conditional syntax - STRING comparisons need quotes: '{[TAG]}', NUMERIC comparisons don't: {[TAG]}, always use &gt; not >
-- CRITICAL: After section headers (especially those ending with ":"), always check for bullet points that follow - format them as tables
+- After section headers ending with ":", check if bullet points follow — if so, format them as tables
 
 STEP 3 - FORMATTING (MANDATORY - THIS IS CRITICAL):
 YOU MUST FORMAT WITH NEWLINES. LOOK AT THE EXAMPLES - THEY ALL HAVE EACH ELEMENT ON ITS OWN LINE.
@@ -1656,13 +1643,13 @@ Example of CORRECT formatting (showing different header layouts):
 <div>{[L001]}</div>
 <div>{[mailingAddress]}</div>
 <br><br><br><br><br>
-[Example 1 - MI008 style header with "Loan Number:" and "RE:" in separate rows:]
+[Example 1 - 2-column table with labels copied from source document:]
 <table width="100%"><tbody><tr>
-  <td width="20%" valign="top">Loan Number:</td>
-  <td>{[M594]}</td>
+  <td width="20%" valign="top">EXACT_LABEL_FROM_SOURCE:</td>
+  <td>{[loan_number_variable]}</td>
 </tr><tr>
-  <td width="20%" valign="top">RE:</td>
-  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+  <td width="20%" valign="top">EXACT_LABEL_FROM_SOURCE:</td>
+  <td>{Compress(address variables from document)}</td>
 </tr></tbody></table>
 <br>
 <div>Dear {[Salutation]},</div>

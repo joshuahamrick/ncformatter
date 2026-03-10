@@ -179,11 +179,8 @@ def format_ir_for_prompt(ir):
 			runs = block.get('runs', [])
 			text = ''.join([r.get('text', '') for r in runs]).strip()
 			
-			# Preserve empty paragraphs as blank line markers (they represent <br> spacing in the output)
-			if not text:
-				formatted.append(f"[BLANK_LINE]")
-				continue
-			if len(text) < 3:  # Skip very short non-empty text (likely artifacts)
+			# Skip empty paragraphs — spacing is handled by template conventions, not blank lines
+			if not text or len(text) < 3:
 				continue
 			
 			# Allow short text if it looks like a label or contains template markers
@@ -1201,7 +1198,15 @@ STEP 4 - VERIFY COMPLETENESS:
 
 10. ALIGNMENT: Apply ALL [FORMATTING: ALIGN_*] hints from the Document Content. If a paragraph has [FORMATTING: ALIGN_RIGHT], output it with style="text-align:right". If ALIGN_CENTER, use style="text-align: center". The formatting hints tell you exactly what the source document shows — follow them.
 
-11. BLANK LINES: [BLANK_LINE] markers in the Document Content represent empty paragraphs in the source. Output each one as a <br> tag. This preserves the exact spacing from the original document.
+11. SPACING: Use <br> tags for spacing between sections. Standard pattern:
+    - 1 <br> after header tag
+    - NO <br> between date and mailing address (they are adjacent)
+    - <br><br><br><br><br> after mailing address (standard 5-br gap before next section)
+    - 1 <br> after Loan Number/Property Address table (if present)
+    - 1 <br> before and after salutation line
+    - 1 <br> between body paragraphs
+    - 1 <br> before and after "Sincerely,"
+    - In the closing section, use 1 <br> to separate logical groups (e.g. between company name and legal notice lines)
 
 5. Convert math expressions properly - CRITICAL SYSTEMATIC CONVERSION:
    - STEP 1: Identify math expressions in Document Content - look for patterns like:

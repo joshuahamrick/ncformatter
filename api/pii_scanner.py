@@ -47,6 +47,9 @@ TEMPLATE_PATTERNS = [
     r'\[Salutation\]',        # [Salutation]
     r'\[mailingAddress\]',    # [mailingAddress]
     r'\[tagHeader\]',         # [tagHeader]
+    # Legacy/alternate template variable formats used in some source documents
+    r'#[A-Z]\d{3}\w{0,3}#',  # #M594#, #L001E8#, #U072#, #L003#
+    r'<[A-Z][a-zA-Z]{2,}>',  # <CSPhoneNumber>, <CompanyLongName>, <SeeReverse>
 ]
 
 COMPILED_TEMPLATE_PATTERNS = [re.compile(p) for p in TEMPLATE_PATTERNS]

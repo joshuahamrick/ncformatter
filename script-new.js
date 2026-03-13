@@ -119,7 +119,7 @@ class WordFormatter {
     _clientSidePIICheck(ir) {
         if (!ir || !ir.blocks) return null;
 
-        const templateVarPattern = /\{\[[\w.]+\]\}|\[\[[A-Z]\w+\]\]|\{\{[A-Z]\w+\}\}|#[A-Z]\d{3}\w{0,3}#|<[A-Z][a-zA-Z]{2,}>/;
+        const templateVarPattern = /\{\[[\w.]+\]\}|\[\[[A-Z]\w+\]\]|\{\{[A-Z]\w+\}\}|#[A-Z]\d{3}\w{0,3}#|<[A-Z][a-zA-Z]{2,}>|\[M\d{3}\w?\]|\[L\d{3}\]|\[H\d{3}\]|\[C\d{3}\]|\[T\d{3}\]|\[Q\d{3}\]|\[U\d{3}\]|\[Salutation\]|\[mailingAddress\]|\[tagHeader\]|plsMatrix\.\w+|\{Compress\(|\{Math\(|\{Money\(|\{If\(|\{DateAdd\(|\{Date\(|\{Insert\(|\{Header\(|\{Number\(|\{Else|\{End If\}/;
         const ssnPattern = /\b\d{3}[-\s]\d{2}[-\s]\d{4}\b/;
         const addressPattern = /\b\d{1,6}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3}\s+(?:St|Street|Ave|Avenue|Blvd|Dr|Drive|Ln|Lane|Rd|Road|Ct|Way|Pl|Cir|Pkwy)\b/i;
         const cityStateZip = /[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?,?\s+(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\s+\d{5}/i;

@@ -35,6 +35,12 @@ Generate HTML templates that:
 - CRITICAL: The RE/Property Address cell MUST ALWAYS use: {Compress({[M567]}|{[M583]}|{[M568]})}
 - NEVER use {[M567]} alone — this omits the unit number and city/state/zip. ALWAYS use Compress with all three parts.
 - Format in RE table cell: <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+- The IR will show the RE row as already containing the Compress expression — use it exactly as shown.
+
+### Compress() Usage Rules
+- Compress() is ONLY for property address fields: {Compress({[M567]}|{[M583]}|{[M568]})}
+- NEVER use Compress() on mortgagee clause lines, company address lines, or any other multi-line content block
+- Multiple consecutive ALIGN_CENTER plsMatrix variable paragraphs (like MortgageeClauseLine1–5) must each be output as their OWN separate <div style="text-align: center">...</div> line — NOT combined with Compress()
 
 ### Salutation
 - ALWAYS use: <div>Dear {[Salutation]},</div>
@@ -75,10 +81,11 @@ Generate HTML templates that:
 - Bold headers: <td><b>Header</b></td> or <td style="text-align: center"><b>Header</b></td>
 
 ### Subject Heading Before Loan Number Table
-- When a bold subject line appears directly before the Loan Number/RE table (e.g. "Wind, Hurricane or Earthquake Insurance Requirement"), format it as:
+- When a bold paragraph appears directly before the Loan Number/RE table (marked [FORMATTING: BOLD] with no ALIGN_CENTER), format it as:
   <b><div style="font-size: 11pt">Subject Heading Text</div></b>
-- Do NOT use text-align: center for this heading — use font-size: 11pt
-- The <b> tag wraps the <div>, not the other way around
+- CRITICAL: Do NOT use text-align: center — use font-size: 11pt
+- CRITICAL: The <b> tag wraps the <div>, NOT the other way around: <b><div>text</div></b> NOT <div><b>text</b></div>
+- Do NOT add <br> after this heading before the Loan Number table
 
 ### Paragraphs and Spacing
 - Wrap each paragraph in <div>...</div>
@@ -110,7 +117,7 @@ CRITICAL FORMATTING RULES:
 ### Closing Signature Section
 - ONLY include elements that actually appear in the source document's closing — do NOT invent or add standard elements
 - Common closing elements (include ONLY if present in source):
-  - <div>Sincerely,</div> followed by <br>
+  - <div>Sincerely,</div> followed by <br> — ALWAYS add a <br> after Sincerely, before the signer/department line
   - Department or signer name: <div>Tax and Insurance Department</div> or <div>{[plsMatrix.CompanyLongName]}</div>
   - Company return address: <div>{[plsMatrix.CompanyReturnAddr1]}</div>, <div>{[plsMatrix.CompanyReturnAddr2]}</div>
   - Phone: <div>{[plsMatrix.SPOCContactPhone]}</div> or similar

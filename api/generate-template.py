@@ -42,6 +42,17 @@ def normalize_html(html):
 	# Normalize <br> tags
 	normalized = re.sub(r'<br\s*/?>', '<br>', normalized, flags=re.IGNORECASE)
 	
+	# Collapse double <br> that appear across separate lines (but NOT the 5-br mailing address block)
+	# e.g. "<br>\n<br>\n<div>Sincerely" → "<br>\n<div>Sincerely"
+	normalized = re.sub(r'<br>\n(<br>\n)+(?!<br>)', '<br>\n', normalized)
+	
+	# Ensure <br> after <div>Sincerely,</div> before the signer/department line
+	normalized = re.sub(
+		r'(<div>Sincerely,</div>)\n(<div>(?!<br>))',
+		r'\1\n<br>\n\2',
+		normalized
+	)
+	
 	return normalized.strip()
 
 def load_system_prompt():
@@ -90,6 +101,7 @@ def load_few_shot_examples():
 		'CA030/CA030-formatted.html',  # Initial contact with RE/Loan Number table and bullet points
 		'LM401/LM401-formatted.html',  # Complex table + conditionals
 		'WL009/WL009-formatted.html',  # HELOC Welcome with centered title, FAQ bold headers, contact block, partial bold closing
+		'FL103/FL103-formatted.html',  # Insurance notice: bold font-size heading, Compress RE address, date variable (no DateAdd), mortgagee clause as separate centered lines
 	]
 	
 	examples = []
@@ -234,6 +246,10 @@ def format_ir_for_prompt(ir):
 			if re.search(r'\(or if\s+\[.*\]\s+(and/or|present)\)', text, re.IGNORECASE):
 				continue
 			
+			# Skip production conditional lines like "({[M838]} PLS-CLIENT-ID = <PLSID> Produce)"
+			if re.match(r'^\(', text) and re.search(r'PLS-CLIENT-ID|PLS-CLIENT|Produce\s*\)\s*$', text, re.IGNORECASE):
+				continue
+			
 			# Skip business rule references
 			if re.search(r'\(see\s+["\'].*Business Rules', text, re.IGNORECASE):
 				continue
@@ -302,6 +318,29 @@ def format_ir_for_prompt(ir):
 			# Pattern: (Capitalized Description) after a variable tag or in a calculation
 			cleaned_text = re.sub(r'\s*\([A-Z][^)]*(?:Balance|Date|Address|Number|Line|Code|Indicator|Name)[^)]*\)', '', cleaned_text)
 			
+			# Strip known date offset annotations inline: "[L010E8] Today Plus 15 Days" → "[L010E8]"
+			cleaned_text = re.sub(
+				r'(\[(?:[A-Z]\d{3}[A-Za-z0-9]*)\])\s+(?:Today|System\s+Date|Current\s+Date)\s+(?:Plus|Minus|Less|More)\s+\d+\s+(?:Days?|Months?|Years?)',
+				r'\1',
+				cleaned_text,
+				flags=re.IGNORECASE
+			)
+			# Strip other short annotation phrases after bracket variables: "[M594] Loan Number" etc.
+			# Only strip if the phrase ends at a word boundary (space, period, or end of string)
+			cleaned_text = re.sub(
+				r'(\[(?:[A-Z]\d{3}[A-Za-z0-9]*)\])\s+(?:[A-Z][A-Za-z\-–]+(?:\s+[A-Z][A-Za-z\-–]+){0,4})(?=\s|,|\.|$)',
+				r'\1',
+				cleaned_text
+			)
+			# Convert METADATA annotations to clear directives instead of stripping
+			# e.g. "*METADATA -ONLY PRODUCE LAST 4 DIGITS OF LOAN NUMBER*" → "[USE: {[loanNumberLast4]}]"
+			def _convert_metadata(m):
+				content = m.group(0).upper()
+				if 'LAST 4 DIGITS' in content or 'LAST FOUR DIGITS' in content:
+					return ' [USE: {[loanNumberLast4]}]'
+				return ''  # strip unknown METADATA annotations
+			cleaned_text = re.sub(r'\*METADATA[^*]*\*', _convert_metadata, cleaned_text)
+
 			# Clean up extra spaces
 			cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
 			
@@ -492,6 +531,21 @@ def format_ir_for_prompt(ir):
 	formatted = merged
 
 	# Post-process step 2: annotate RE address grouping and mailing address collapse
+	# Pre-pass: detect mortgagee clause line indices, loan number line index, and subject heading index
+	mortgagee_indices = set()
+	loan_number_idx = None
+	subject_heading_idx = None
+	for idx, line in enumerate(formatted):
+		if re.search(r'MortgageeClauseLine', line, re.IGNORECASE):
+			mortgagee_indices.add(idx)
+		if re.search(r'Loan Number:', line, re.IGNORECASE) and loan_number_idx is None:
+			loan_number_idx = idx
+	# Subject heading = bold paragraph immediately before the Loan Number line
+	if loan_number_idx and loan_number_idx > 0:
+		candidate = formatted[loan_number_idx - 1]
+		if re.search(r'\[FORMATTING:.*\bBOLD\b', candidate) and 'BOLD_TAGS_ONLY' not in candidate:
+			subject_heading_idx = loan_number_idx - 1
+
 	result_lines = []
 	mailing_addr_indices = set()
 	for i, line in enumerate(formatted):
@@ -509,6 +563,9 @@ def format_ir_for_prompt(ir):
 	if has_m568: compress_parts.append('{[M568]}')
 	compress_expr = '{Compress(' + '|'.join(compress_parts) + ')}' if len(compress_parts) > 1 else (compress_parts[0] if compress_parts else '{[M567]}')
 
+	# Index of paragraph just before first mortgagee clause (to suppress <br> between them)
+	pre_mortgagee_idx = min(mortgagee_indices) - 1 if mortgagee_indices else None
+
 	for i, line in enumerate(formatted):
 		if i in mailing_addr_indices:
 			first = min(mailing_addr_indices)
@@ -516,13 +573,35 @@ def format_ir_for_prompt(ir):
 				line += " [NOTE: This and all consecutive M558-M566 lines are the borrower mailing address - output ONLY <div>{[mailingAddress]}</div> here, do NOT output individual M-code divs]"
 			else:
 				line += " [NOTE: Part of mailing address above - do NOT output as a separate paragraph]"
-		# Annotate RE/Property Address + subsequent address variable lines
+		# Subject heading before Loan Number table: force correct style
+		if i == subject_heading_idx:
+			line += ' [NOTE: This is the SUBJECT HEADING — format as: <b><div style="font-size: 11pt">text</div></b> — do NOT add <br> after this before the Loan Number table]'
+		# Paragraph immediately before first mortgagee clause: suppress trailing <br>
+		if i == pre_mortgagee_idx:
+			line += " [NOTE: Mortgagee clause lines follow IMMEDIATELY after this paragraph — do NOT add <br> between this paragraph and the mortgagee lines]"
+		# RE/Property Address row: directly replace content with the full Compress form.
+		# Always use all three parts — M583/M568 may have been filtered from formatted list
+		# but they are ALWAYS part of the property address in NcConnect templates.
 		if re.search(r'(?:RE:|Property Address:)\s+.*M567', line):
-			line += f" [NOTE: The following M583/M568 paragraphs are part of THIS address - combine with {compress_expr}]"
-		if re.search(r'Paragraph \d+:\s*(?:\{?\[?M583\]?\}?|#M583#)', line):
-			line += " [NOTE: Part of property address above - do NOT output as separate paragraph or table row]"
-		if re.search(r'Paragraph \d+:\s*(?:\{?\[?M568\]?\}?|#M568#)', line):
-			line += " [NOTE: Part of property address above - do NOT output as separate paragraph or table row]"
+			para_num = re.match(r'Paragraph (\d+):', line)
+			num = para_num.group(1) if para_num else '?'
+			fmt_match = re.search(r'\[FORMATTING:[^\]]*\]', line)
+			fmt_note = f' {fmt_match.group()}' if fmt_match else ''
+			full_compress = '{Compress({[M567]}|{[M583]}|{[M568]})}'
+			line = f"Paragraph {num}: RE: {full_compress}{fmt_note}"
+		# Skip M583/M568 standalone lines — already baked into the RE Compress above
+		if re.search(r'^Paragraph \d+:\s*(?:\{?\[?M583\]?\}?|#M583#)\s*(?:\[|$)', line):
+			continue
+		if re.search(r'^Paragraph \d+:\s*(?:\{?\[?M568\]?\}?|#M568#)\s*(?:\[|$)', line):
+			continue
+		# Mortgagee clause lines: annotate to prevent Compress wrapping and enforce no leading <br>
+		if i in mortgagee_indices:
+			if not '[NOTE:' in line:
+				first_mortgagee = min(mortgagee_indices)
+				if i == first_mortgagee:
+					line += " [NOTE: Output as individual <div style=\"text-align: center\">...</div> — do NOT combine with Compress() — do NOT add <br> before this element]"
+				else:
+					line += " [NOTE: Output as individual <div style=\"text-align: center\">...</div> — do NOT combine with Compress()]"
 		result_lines.append(line)
 	
 	return '\n'.join(result_lines)

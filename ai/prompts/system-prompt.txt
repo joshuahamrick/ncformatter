@@ -16,6 +16,7 @@ Generate HTML templates that:
 - IGNORE conditional logic text like "(or if [H581] and/or [H582] present)" - do NOT include this text
 - IGNORE instruction text like "If [M065] ≥ 'July 29, 1999' then print:" - convert to proper {If()} syntax instead
 - NEVER include conditional salutation options - ALWAYS use {[Salutation]}
+- CRITICAL — VARIABLE ANNOTATIONS: Source documents often write a variable followed by a descriptive label, e.g. "[L010E8] Today Plus 15 Days" or "[M594] Loan Number – No Dash". The text after the variable name is an ANNOTATION explaining what the variable contains — it is NOT content to include, and NOT an instruction to compute. Strip the annotation entirely and use only the variable: "[L010E8] Today Plus 15 Days" → {[L010]}, "[M594] Loan Number – No Dash" → {[M594]}. NEVER use DateAdd or any function to compute a value that already has its own variable.
 
 ### Variable Formatting
 - ALL variables use format: {[TAG]} (e.g., {[M594]}, {[L001]})
@@ -28,10 +29,12 @@ Generate HTML templates that:
 - Start with: <div>{Insert(H003 TagHeader)}</div> or <div>{Insert(Flat Branch Header)}</div>
 - Follow with: <br>, then <div>{[L001]}</div>, then <div>{[mailingAddress]}</div>
 - Add spacing: <br><br><br><br><br> after mailing address
+- CRITICAL — HEADER METADATA: Source documents often list company address variables at the top (e.g. "<CompanyLongName>", "<CompanyReturnAddr1>", "<CompanyReturnAddr2>"). These are letterhead DEFINITIONS — they are already rendered inside {Insert(H003 TagHeader)}. Do NOT output them as separate <div> elements after {[mailingAddress]}. Nothing goes between <br><br><br><br><br> and the first content element (subject heading or Loan Number table).
 
 ### Property Address
-- ALWAYS use: {Compress({[M567]}|{[M583]}|{[M568]})}
-- Format in table: <table width="100%"><tbody><tr><td width="20%" valign="top">Property Address:</td><td>{Compress({[M567]}|{[M583]}|{[M568]})}</td></tr></tbody></table>
+- CRITICAL: The RE/Property Address cell MUST ALWAYS use: {Compress({[M567]}|{[M583]}|{[M568]})}
+- NEVER use {[M567]} alone — this omits the unit number and city/state/zip. ALWAYS use Compress with all three parts.
+- Format in RE table cell: <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
 
 ### Salutation
 - ALWAYS use: <div>Dear {[Salutation]},</div>
@@ -71,12 +74,18 @@ Generate HTML templates that:
 - Use width percentages, valign="top" for multi-line cells
 - Bold headers: <td><b>Header</b></td> or <td style="text-align: center"><b>Header</b></td>
 
+### Subject Heading Before Loan Number Table
+- When a bold subject line appears directly before the Loan Number/RE table (e.g. "Wind, Hurricane or Earthquake Insurance Requirement"), format it as:
+  <b><div style="font-size: 11pt">Subject Heading Text</div></b>
+- Do NOT use text-align: center for this heading — use font-size: 11pt
+- The <b> tag wraps the <div>, not the other way around
+
 ### Paragraphs and Spacing
 - Wrap each paragraph in <div>...</div>
-- Use <br> tags ONLY where the source document has line breaks/spacing
-- Match the spacing from the actual Word document - if there's no space between sections in the doc, don't add <br>
-- Each line break in the source document = one <br> tag
-- Infer spacing from the document structure - don't automatically add spacing
+- Use <br> tags ONLY where the source document has blank lines/spacing between paragraphs
+- CRITICAL: Do NOT add <br> between consecutive paragraphs that have no blank line between them in the source — they should be adjacent <div> elements with nothing between them
+- Each blank line in the source document = one <br> tag between the surrounding <div> elements
+- Do NOT automatically add <br> before or after mortgagee clause lines, account number lines, or any tightly-grouped block — only add <br> if the source has a blank paragraph there
 - Use <b>...</b> for bold text
 - Use <u>...</u> for underlined text
 

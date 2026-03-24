@@ -107,6 +107,14 @@ SALUTATION_NAME_PATTERN = re.compile(
     re.MULTILINE
 )
 
+# Known template placeholder words that appear in salutations but are NOT real names.
+# e.g. "Dear Mortgagor Name," or "Dear Borrower," after stripping a [M558] variable.
+SALUTATION_PLACEHOLDER_WORDS = {
+    'Mortgagor', 'Borrower', 'Coborrower', 'Customer', 'Homeowner',
+    'Occupant', 'Resident', 'Owner', 'Property', 'Name', 'Second',
+    'Third', 'Additional', 'Non', 'Primary', 'Co',
+}
+
 TITLE_NAME_PATTERN = re.compile(
     r'\b(?:Mr|Mrs|Ms|Miss|Dr|Prof)\.?\s+[A-Z][a-z]+\s+[A-Z][a-z]+',
 )
@@ -211,11 +219,16 @@ def scan_text_for_pii(text):
     # 4. Person name heuristics (BLOCKED — "Dear John Smith,")
     sal_match = SALUTATION_NAME_PATTERN.search(cleaned)
     if sal_match:
-        result.add_finding(
-            'PERSON_NAME',
-            f'Real person name in salutation: "{sal_match.group()[:20]}..."',
-            severity='BLOCKED'
-        )
+        # Check if all capitalised words after "Dear" are known template placeholders
+        # e.g. "Dear Mortgagor Name" after stripping [M558] is a false positive
+        match_words = sal_match.group().split()[1:]  # skip "Dear"
+        is_placeholder = all(w.rstrip(',&') in SALUTATION_PLACEHOLDER_WORDS for w in match_words if w)
+        if not is_placeholder:
+            result.add_finding(
+                'PERSON_NAME',
+                f'Real person name in salutation: "{sal_match.group()[:20]}..."',
+                severity='BLOCKED'
+            )
     title_match = TITLE_NAME_PATTERN.search(cleaned)
     if title_match:
         result.add_finding(

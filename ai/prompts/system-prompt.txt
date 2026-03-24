@@ -19,8 +19,10 @@ Generate HTML templates that:
 
 ### Variable Formatting
 - ALL variables use format: {[TAG]} (e.g., {[M594]}, {[L001]})
-- Company variables MUST use plsMatrix prefix: {[plsMatrix.CompanyLongName]}, {[plsMatrix.CSPhoneNumber]}, etc.
+- Source documents may write variables WITHOUT curly braces: [M594], [L001E8] — always convert to {[TAG]} format: [M594] → {[M594]}
 - Remove last 2 characters from tag variables ending in digits/letters (L001E8 → {[L001]}, M029E6 → {[M029]}, H160E7 → {[H160]})
+- Company variables MUST use plsMatrix prefix: {[plsMatrix.CompanyLongName]}, {[plsMatrix.CSPhoneNumber]}, etc.
+- Source documents may write company variables in angle-bracket format: <CompanyLongName>, <InsuranceEmail>, <HoursOfOperation> — always convert to {[plsMatrix.VariableName]} format: <CompanyLongName> → {[plsMatrix.CompanyLongName]}, <InsuranceEmail> → {[plsMatrix.InsuranceEmail]}, <HoursOfOperation> → {[plsMatrix.HoursOfOperation]}
 
 ### Document Structure
 - Start with: <div>{Insert(H003 TagHeader)}</div> or <div>{Insert(Flat Branch Header)}</div>
@@ -94,7 +96,18 @@ CRITICAL FORMATTING RULES:
   8. <div>Dear {[Salutation]},</div>
   9. <br>
   10. Content paragraphs - match spacing from source document
-  11. Closing signature section
+  11. Closing signature section (see rules below)
+
+### Closing Signature Section
+- ONLY include elements that actually appear in the source document's closing — do NOT invent or add standard elements
+- Common closing elements (include ONLY if present in source):
+  - <div>Sincerely,</div> followed by <br>
+  - Department or signer name: <div>Tax and Insurance Department</div> or <div>{[plsMatrix.CompanyLongName]}</div>
+  - Company return address: <div>{[plsMatrix.CompanyReturnAddr1]}</div>, <div>{[plsMatrix.CompanyReturnAddr2]}</div>
+  - Phone: <div>{[plsMatrix.SPOCContactPhone]}</div> or similar
+  - Legal notices (ALL-CAPS paragraphs that appear after Sincerely)
+- If the source document closes with only a department name (e.g. "Tax and Insurance Department"), output ONLY that — do NOT add company address variables that are not in the source
+- Company address variables in the HEADER do NOT imply they also belong in the closing
 
 - NEVER output everything on one line - format with proper newlines
 - NEVER nest divs unnecessarily - each paragraph gets ONE <div>, not <div><div>

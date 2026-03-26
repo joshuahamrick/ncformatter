@@ -1,0 +1,59 @@
+<div>{[tagHeader]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{[M567]}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div style="text-align: center; font-size: 14pt"><b>Notice of Termination of Private Mortgage Insurance (PMI)</b></div>
+<br>
+<div>We received your request for information on how to remove Private Mortgage Insurance ("PMI"). Your mortgage loan requires Private Mortgage Insurance ("PMI"). PMI protects lender and others against financial loss when borrowers default. Charges for the insurance are added to your loan payments.</div>
+<br>
+<div>Currently, your Loan to Value is at {If('{[M467]}' IN ('', '0', NULL))}{If('{[M962]}' IN ('', '0', NULL))}0{Else}{Math((({[M010]}+{[T054]})/{[M962]})*100)}{End If}{Else If('{[M962]}' IN ('', '0', NULL))}{Math((({[M010]}+{[T054]})/{[M467]})*100)}{Else If({Number({[M467]})} < {Number({[M962]})}})}{Math((({[M010]}+{[T054]})/{[M467]})*100)}{Else}{Math((({[M010]}+{[T054]})/{[M962]})*100)}{End If}%. Your Loan to Value must be 80% or less to be eligible for PMI removal via paying down your loan and your loan is less than two years old. The LTV is determined by taking the current principal balance of a loan and dividing by the lesser value of the purchase price and the original appraised value. In the case of a refinance the appraised value will be used and in the event there was no appraisal completed, the value given by the lender at closing will be used.</div>
+<br>
+<div>Please see the following PMI Removal Requirements as they pertain to your loan:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="5%" valign="top">1.</td>
+  <td>You cannot have an appraisal performed to pursue PMI removal based on Current value until your loan is two years seasoned from the date of the 1st payment. Following your {DateAdd({[M486]}|+2|MMM yyyy|Year)} payment you will be eligible for an appraisal based on Current value. Please note that if you have completed a refinance of your original loan the two-year requirement resets to the 1st payment date of your refinanced loan. Loans seasoned greater than 5 years must show a new LTV under 80% or 20% equity from an appraisal. Loans that are seasoned under 5 years but greater than 2 years will need to show a LTV of 75.0% or 25% equity from an appraisal.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>Please note that all appraisals must be ordered through our offices</b> and are at the expense of the property owner. Due to your loan's investor requirements, appraisals for PMI removal purposes must be ordered through an unbiased third-party appraisal company approved by the servicer. In order to make certain that we are in compliance with investor requirements, only appraisals ordered through our offices will be acceptable for PMI removal purposes. Please do not send us an appraisal report that was ordered outside of our offices as we will not be able to accept it for PMI removal purposes. We cannot take into account local market trends, tax assessments or home value websites as evidence to order an appraisal or to change the LTV.</div>
+<br>
+<div>If you have completed substantial STRUCTURAL improvements (e.g. an addition put on the property or other combined substantial improvements), please send specifics including what improvements were made, materials used, and costs excluding labor. We are requesting this information, so we can determine if you are eligible to receive the pre-2-year appraisal information. Loans that are under 5 years will need to show an LTV of 75.0% or 25% equity from an appraisal. If the improvements do not meet the requirements, then you must wait two years to have an appraisal done.</div>
+<br>
+<div>With any appraisal, it is possible that the value of the property in question may show an increase in value, but also may in fact show a decrease in value.</div>
+<br>
+<div><b><u>If you believe that you may be eligible for a pre-2-year appraisal, please email or mail proof of the cost of improvements (i.e. receipts or work orders) in order for us to determine your eligibility.</u></b></div>
+<br>
+<div><u>What are structural improvements?</u></div>
+<br>
+<div>A structural improvement is an addition to your property that was not previously there. For example, additional living space, a deck, garage, in-ground pool, fence, in-ground sprinklers, finishing a basement, or remodeling a living space.</div>
+<br>
+<div><u>What are not structural improvements?</u></div>
+<br>
+<div>Cosmetic improvements are not considered structural improvements and will not affect the property value as much as structural improvements. Cosmetic improvements include: new paint, new siding, a new roof, new carpeting, new flooring, landscaping, new windows, new light fixtures, new appliances or a new heating/air conditioning unit.</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="5%" valign="top">2.</td>
+  <td>You can pay down your principal balance to the required 80.0% LTV and request for PMI to be removed. Once your loan reaches the 80.0% LTV, an <b>Exterior BPO</b> must be completed through our offices at the expense of the property owner to certify your ORIGINAL property value. The validation is mandatory and is used to verify that your property value has not decreased. If you wish to proceed with Option #2, please send an email to {[plsMatrix.EscrowEmail]} requesting the pay down amount needed.</td>
+</tr></tbody></table></div>
+<br>
+<div>**Pay downs do not require seasoning of the loan. **</div>
+<br>
+<div>In addition to the requirements stated above, you must also maintain a good payment history. A good payment history is defined as no payments made 30 or more days late in the last 12 months and no payments made 60 or more days late in the last 24 months.</div>
+<br>
+<div>If you have any questions or concerns, please contact our Escrow Department at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<br>
+<div>Sincerely,</div>
+<div>Escrow Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

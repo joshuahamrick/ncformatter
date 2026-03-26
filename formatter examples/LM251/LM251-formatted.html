@@ -1,0 +1,81 @@
+{Font(Calibri|11pt)}
+<div>{[H002]}</div>
+<div>{[H003]}</div>
+<div>{[H004]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top"><b>Loan Number:</b></td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top"><b>RE:</b></td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Upon review of the loan, we noticed that you are experiencing difficulty maintaining the mortgage loan payments. As of {[L001]}, the total past due amount on the mortgage is {Math({[C001]}+{[M585]}+{[M012]}-{[M013]}|Money)}. This includes all past due amounts of unpaid interest, principal and escrow (if applicable), as well as late charges and amounts that we paid on your behalf (Servicer Advances*).</div>
+<br>
+<div>We are here to help. We would like to offer you a repayment plan. A repayment plan is an agreement that provides you with an opportunity to repay past due amounts on the mortgage by making additional monthly payments along with the regular monthly mortgage payments.</div>
+<br>
+<div>The monthly payment amounts listed in the payment schedule below, includes the regular mortgage payment plus an additional amount. The total past due will be paid in full if you pay the required monthly amounts as indicated below:</div>
+<br>
+<div>{Q189V2()}</div>
+<br>
+<div>If you are interested in accepting the proposed payment plan, {If('{[M006]}' = 'VA')}please sign and return this agreement, or {End If}if you would prefer an alternative workout plan, please contact {If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else If('{[O294]}' NOT IN ('', '0', NULL))}{[O294]}{Else}{[plsMatrix.SPOCContact]}{End If} at {If('{[O276]}' NOT IN ('', '0', NULL))}{[O276]}{Else If('{[O296]}' NOT IN ('', '0', NULL))}{[O296]}{Else}{[plsMatrix.SPOCContactPhone]}{End If} so we may further discuss other options to help you bring the loan current.</div>
+<br>
+<div><b>Additional Repayment Plan Information and Legal Notices</b></div>
+<div><b>We will not refer the mortgage to foreclosure or proceed to foreclosure sale during this repayment plan, provided you are complying with the terms of the repayment plan:</b></div>
+<br>
+<table width="100%"><tbody>
+<tr valign="top">
+  <td width="3%" style="text-align: center">•</td>
+  <td>Any pending foreclosure action or proceeding that has been suspended may resume if you do not follow the terms of this plan.</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">•</td>
+  <td>We reserve the right to revoke this offer or terminate the repayment plan following your acceptance if we learn of information that would make you ineligible.</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">•</td>
+  <td>We will hold the additional monthly payment in an account until it contains sufficient funds to pay your oldest past due monthly payment. Unless required by applicable law, there will be no interest paid on the funds held in the account and any funds left in this account at the end of the repayment plan will be posted to your account to reduce your principal balance. It is encouraged to pay off the delinquency as additional funds become available.</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">•</td>
+  <td>Our acceptance of your payment during the repayment plan does not waive our right to require immediate payment in full of all amounts you owe on the mortgage, including the right to resume or continue foreclosure action, if you fail to comply with the terms of the plan. Entering a repayment plan does not mean that the mortgage will be considered current, unless and until the payments under the plan completely resolve all past due amounts.</td>
+</tr>
+</tbody></table>
+<br>
+<div><b>The current mortgage documents remain in effect; however, we will not pursue foreclosure if you make the total monthly payment amounts provided above instead of the payments required under the mortgage documents.</b></div>
+<br>
+<table width="100%"><tbody>
+<tr valign="top">
+  <td width="3%" style="text-align: center">•</td>
+  <td>All terms and provisions of the current mortgage documents remain in effect during the repayment plan. Nothing in the repayment plan shall be understood to be a satisfaction or release in whole or in part of your obligations contained in the mortgage documents.</td>
+</tr>
+</tbody></table>
+<br>
+{If('{[M006]}' = 'VA')}
+<div><b>AGREED AND ACCEPTED:</b></div>
+<br>
+<table width="100%"><tbody>
+<tr>
+  <td width="50%"><u>Borrower(s) Signature: ___________________________</u></td>
+  <td><u>Date: ________________</u></td>
+</tr>
+</tbody></table>
+<br>
+<table width="100%"><tbody>
+<tr>
+  <td width="50%"><u>Borrower(s) Signature: ___________________________</u></td>
+  <td><u>Date: ________________</u></td>
+</tr>
+</tbody></table>
+<br>
+{End If}
+<div>Sincerely,</div>
+<br><br>
+<div>Loss Mitigation Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

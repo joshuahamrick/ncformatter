@@ -1,0 +1,5784 @@
+{
+  "blocks": [
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "({[M838]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (PLS-CLIENT-ID) = {[PLSID]} Produce)",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[H002]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": "(Company Address Line 1)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": "IF {[H003]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": "= ‘*",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": "’ or ‘NULL'; then suppress print of line; else produce:)",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[H003]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": " (Company Address Line 2)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[H004]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": "(Company Address Line 3)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[L001E7]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (System Date)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "           ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Send via First Class and Certified Mail to the ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "Mailing ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "address",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": "",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M558]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "New Bill Line 1/ Mortgagor Name)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M559]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (New Bill Line 2/Second Mortgagor)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M560]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (New Bill Line 3/Third Mortgagor)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M561]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Additional Mailing Address)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M562]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Mailing Street Address)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M563]} {[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M564]} {",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M565]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M566]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "(Mailing City), (State), (5-Digit Zip)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", (4-Digit Zip)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "“OR”",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " If ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[M956]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Foreign Address Indicator = 1))",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M928]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Foreign Country Code)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M929]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Foreign Postal ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "Code",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": "",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        },
+        {
+          "text": ")",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(see “S",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "II Confirmed",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "” on Letter Library Business Rules for Additional Addresses in BKFS)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-borrower Name",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-borrower Address Line 1",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-borrower Address Line 2",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-borrower Address Line 3",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-borrower Street",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(see “Additional Borrowers/Co-Borrowers” on Letter Library Business Rules for Additional Addresses in BKFS) ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Name 1",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Name 2",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Address Line 1",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Address Line 2",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Street",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower City, Co-borrower State, Co-borrower Zip Code, Co-borrower Zip Code Suffix",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(see “Non-Obligors” on Letter Library Business Rules for Additional Addresses in BKFS)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-obligor Name",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-obligor Address 1",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-obligor Address 2",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-obligor Street",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Non-obligor City, Non-obligor State, Non-obligor Zip Code, Non-obligor Zip Code Suffix",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Subject: Notice of Delinquency and EMAP Disclosure",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M558]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Mortgagor Name)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " & {",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[M559]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Second",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "Mortgagor),",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H202]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H202]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H223]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H223]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H244]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H244]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H265]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H265]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H372]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H372]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H393]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H393]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H503]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H503]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H524]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H524]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ",",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal (Web)",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal (Web)",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H567]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H568]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H567]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H568]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ",",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H581]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H582]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H581]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H582]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H595]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H596]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H595]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H596]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H609]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H610]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H609]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H610]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H623]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H624]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H623]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H624]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H637]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H638]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H637]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H638]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H651]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H652]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H651]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H652]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H665]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H666]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H665]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H666]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H679]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " and/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[H680]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H679]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[H680]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if {[G189]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear {",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[G189]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "if {[G201]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear {",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[G201]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ",",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Our records indicate that your mortgage loan for the property ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "located",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "at",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " {[M567]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Property Line 1/Street Address",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ")",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ",",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " {",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M583]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "New Property Unit Number",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "),",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M568]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "New Property Line 2/City State and Zip Code)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (the Property)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " is",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " currently delinquent. As of ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M026E7]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Due Date)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", you are past due in the amount of ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "$",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M591E6]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Delinquent Balance)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " + ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M015E6]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "(Accrued Late Charge Balance) + ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M497E6]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (NSF Balance)+ ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M585E6]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Mortgagor Recoverable Corporate Advance Balance)  + ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "C004E6]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Other Fees)) - ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "M013E6]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " (Suspense Balance))",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ".",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Connecticut law (Conn. Gen. Stat. § 8-265cc et seq.) requires us to notify you of your rights under the ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "Emergency Mortgage Assistance Program (EMAP)",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ", administered by the Connecticut Housing Finance Authority (CHFA). This program may help you bring your mortgage current and avoid foreclosure.",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "You may be eligible for EMAP assistance if:",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "You occupy the property as your principal residence.",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": true,
+      "listLevel": 0,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "You are experiencing ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "a financial",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " hardship beyond your control.",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": true,
+      "listLevel": 0,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "You are committed to resolving your delinquency.",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": true,
+      "listLevel": 0,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "If you wish to apply for EMAP assistance, you must do so ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "within 60 days",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "from",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " the date of this notice. You have the right ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "to",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " a face-to-face meeting, telephone or other conference ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "with ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "CompanyLongName",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " or a face-to-face meeting with a consumer credit counseling agency to attempt to resolve the delinquency or default by restructuring the loan payment schedule.",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "To apply, contact:",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Connecticut Housing Finance Authority (CHFA)",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "\n999 West Street, Rocky Hill, CT 06067",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "\nPhone: 1-877-571-2432",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "\nWebsite: ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Please be aware that we may initiate foreclosure proceedings if you do not cure the delinquency, ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "enter into",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " a repayment plan, or apply for assistance through EMAP within the 60-day period, as allowed by applicable law and regulations.",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "We encourage you to act promptly. If you have any questions or would like to discuss your options, please contact us at",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "CSPhoneNumber",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ".",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "Our office is ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "open ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "HoursofOperation",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": ".",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": " To discuss all foreclosure prevention options available, please contact the nearest CHFA Participating - HUD approved housing counseling agency (see enclosed list).",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Sincerely,",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "\n",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "Loan Servicing",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "CompanyLongName",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "]}                                      ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[L003]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "/",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "{[L005",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "]}   ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "                                                                            ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        },
+        {
+          "text": "\n",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Enclosures:",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "EMAP Program Information Sheet",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": true,
+      "listLevel": 0,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Counseling Information Sheet",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 11.0,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": true,
+      "listLevel": 0,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri"
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": 1,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null
+    }
+  ],
+  "source": "docx",
+  "confidence": 1.0,
+  "images": [],
+  "meta": {
+    "headerTexts": []
+  }
+}

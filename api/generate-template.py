@@ -42,9 +42,9 @@ def normalize_html(html):
 	# Normalize <br> tags
 	normalized = re.sub(r'<br\s*/?>', '<br>', normalized, flags=re.IGNORECASE)
 	
-	# Collapse double <br> that appear across separate lines (but NOT the 5-br mailing address block)
-	# e.g. "<br>\n<br>\n<div>Sincerely" → "<br>\n<div>Sincerely"
-	normalized = re.sub(r'<br>\n(<br>\n)+(?!<br>)', '<br>\n', normalized)
+	# NOTE: We do NOT collapse consecutive <br> tags here because intentional multi-break
+	# spacing (e.g. <br><br> after language sections, <br><br><br><br> for signature gaps)
+	# must be preserved. Claude is instructed to put multiple <br> on one line when intentional.
 	
 	# Ensure <br> after <div>Sincerely,</div> before the signer/department line
 	normalized = re.sub(
@@ -102,6 +102,8 @@ def load_few_shot_examples():
 		'LM401/LM401-formatted.html',  # Complex table + conditionals
 		'WL009/WL009-formatted.html',  # HELOC Welcome with centered title, FAQ bold headers, contact block, partial bold closing
 		'FL103/FL103-formatted.html',  # Insurance notice: bold font-size heading, Compress RE address, date variable (no DateAdd), mortgagee clause as separate centered lines
+		'CL008/CL008-formatted.html',  # Loss mit: 3-col RE table, numbered+bullet lists with margin-left, bold-heading+body separation, partial bold Subject, Compress static text, &amp; encoding, soft-return splitting
+		'IA004/IA004-formatted.html',  # FHA coverage term: colspan=2 loan number row, bordered payment comparison table (border-collapse, right-aligned values, borderless top-left cell), FHA contact info as table with colspan=2 header
 	]
 	
 	examples = []
@@ -246,9 +248,15 @@ def format_ir_for_prompt(ir):
 			if re.search(r'\(or if\s+\[.*\]\s+(and/or|present)\)', text, re.IGNORECASE):
 				continue
 			
-			# Skip production conditional lines like "({[M838]} PLS-CLIENT-ID = <PLSID> Produce)"
-			if re.match(r'^\(', text) and re.search(r'PLS-CLIENT-ID|PLS-CLIENT|Produce\s*\)\s*$', text, re.IGNORECASE):
-				continue
+		# Skip production conditional lines like "({[M838]} PLS-CLIENT-ID = <PLSID> Produce)"
+		if re.match(r'^\(', text) and re.search(r'PLS-CLIENT-ID|PLS-CLIENT|Produce\s*\)\s*$', text, re.IGNORECASE):
+			continue
+		
+		# Skip mailing/production instruction lines like "Letter to be sent via Certified Mail to the Mailing Address."
+		if re.match(r'^Letter to be sent via\b', text, re.IGNORECASE):
+			continue
+		if re.match(r'^(This letter|Notice) (to be|is) sent via\b', text, re.IGNORECASE):
+			continue
 			
 			# Skip business rule references
 			if re.search(r'\(see\s+["\'].*Business Rules', text, re.IGNORECASE):
@@ -414,8 +422,28 @@ def format_ir_for_prompt(ir):
 				list_level = block.get('listLevel', 0)
 				formatting_hints.append(f"LIST_ITEM_LEVEL_{list_level}")
 			
-			# Include formatting information in the output
-			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
+		# Include formatting information in the output
+		formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
+		
+		# Handle soft returns (\n within a paragraph = Shift+Enter in Word).
+		# Split on \n and emit each part as a separate paragraph entry so Claude
+		# knows to produce separate <div> elements rather than combining them.
+		# The first segment keeps the original formatting hints; subsequent ones
+		# inherit formatting but drop BOLD if the split point is the bold heading.
+		if '\n' in cleaned_text:
+			parts = [p.strip() for p in cleaned_text.split('\n') if p.strip()]
+			for p_idx, part in enumerate(parts):
+				para_counter += 1
+				# First part: keep all formatting hints
+				# Subsequent parts: strip BOLD so the body text isn't marked bold
+				if p_idx == 0:
+					formatted.append(f"Paragraph {para_counter}: {part[:char_limit]}{formatting_note}")
+				else:
+					# Non-bold hints for the body portion
+					body_hints = [h for h in formatting_hints if 'BOLD' not in h]
+					body_note = f" [FORMATTING: {', '.join(body_hints)}]" if body_hints else ""
+					formatted.append(f"Paragraph {para_counter}: {part[:char_limit]}{body_note}")
+		else:
 			para_counter += 1
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':

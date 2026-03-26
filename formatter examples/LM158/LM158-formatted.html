@@ -1,0 +1,81 @@
+<div>{[tagHeader]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>{[plsMatrix.CompanyLongName]} would like to express our concern for your safety and well-being because of the recent disaster that may have affected you. Our goal is to assist you in recovering from the impact as quickly as possible. Based on a careful review, you have been approved for a Forbearance Plan. This Forbearance Plan is a temporary suspension of the mortgage payments and is intended to allow you the time and flexibility to manage the challenges affecting your ability to pay the mortgage. It is important that you read all the information in this letter so that you understand the actions you must take to complete this forbearance plan and any additional steps you must take to resolve the delinquency.</div>
+<br>
+<div><b><u>Forbearance Plan Terms:</u></b></div>
+<br>
+<div>The mortgage is due for the payments for {[M026]} through {DateAdd({[L011]}|-1|MM/dd/yyyy|Month)} and the total amount due to cure the delinquency is {Math({[C001]} + {[M585]} + {[M012]} - {[M013]}|Money)}. This amount includes all past due payments of interest, principal and escrow (if applicable), as well as late charges and amounts that we paid on your behalf ("Servicer Advances"). As part of the Forbearance Plan, we will temporarily suspend the monthly mortgage payment amount of {Money({[M029]})} for {[Q177]} months. During this time, you do not need to make any mortgage payments ("Suspended Payments"). The amount of the Suspended Payments will be added to the total amount past due. Unless earlier revised or terminated due to a change in your financial circumstances, at the end of the Forbearance Plan period, we will review you for loss mitigation modification which may change the terms of the loan and bring the loan current, or you can pay the total past due amount and reinstate the loan. The Forbearance Plan only applies to the loan payment and, as such, you must continue to pay the non-escrowed real estate taxes and insurance. You may pre-pay the delinquency at any time.</div>
+<br>
+<div><b><u>Plan Terms:</u></b></div>
+<br>
+<div>Under the terms of the Plan, you must make the initial remaining plan payments in the amount shown below by the date required:</div>
+<br>
+<div>{[Q189]}</div>
+<br>
+<div>Please note that the amount of the Plan Payments may change during the term of the Plan based on changes in the monthly escrow deposits or changes in the interest rate if the mortgage has an adjustable rate.</div>
+<br>
+<div><b><u>Next Steps:</u></b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>If there is a change to your financial situation during the term of the Forbearance Plan, please contact us immediately to reassess your situation and discuss potential alternatives. Monthly payment or suspension of payments may be adjusted based on an evaluation of your new financial information.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Prior to the end of the Forbearance Plan, we will contact you to discuss possible solutions that may be available to you at the end of the Forbearance Plan term, such as a reinstatement or other alternatives to foreclosure, such as a permanent loan modification. Your financial circumstances will be evaluated to determine eligibility for any solution.</td>
+</tr></tbody></table></div>
+<br>
+<div><b><u>Additional Forbearance Plan Information and Legal Notices:</u></b></div>
+<br>
+<div>We will not refer the loan to foreclosure, or proceed with foreclosure during the Forbearance Plan period, provided you are complying with its terms:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>This Forbearance Plan offer is contingent on your having provided accurate and complete information. We reserve the right to revoke this offer or terminate the plan following your acceptance if we learn of information that would make you ineligible for forbearance.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You agree that, in the event you make any partial payments during the Forbearance Plan period, we will hold those payments in an account until sufficient funds are in the account to pay the oldest delinquent monthly payment. You also agree that we will not owe you interest on the amounts held in the account. If any money is left in this account at the end of the Forbearance Plan and you qualify for a loan modification, those funds will be credited to the loan in accordance with the terms of the note.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Our acceptance and posting of any payment you make during the Forbearance Plan period will not be deemed a waiver of the acceleration of the loan and related activities, including the right to resume or continue foreclosure if you fail to comply with the terms of the plan, and shall not constitute a cure of the mortgage default unless such payments are sufficient to completely cure the default.</td>
+</tr></tbody></table></div>
+<br>
+<div>The current loan documents remain in effect; however, you are not required to make any payments during the term of the Forbearance Plan:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You agree that all terms and provisions of the current mortgage note, and mortgage security instrument remain in full force and effect and you will comply with those terms; and that nothing in the Forbearance Plan shall be understood or construed to be a satisfaction or release in whole or in part of the obligations contained in the loan documents.</td>
+</tr></tbody></table></div>
+<br>
+{If('{[M009]}' &lt;&gt; ',')}
+<div><b><u>Credit Reporting:</u></b></div>
+<br>
+<div>Please note that we will continue to report the delinquency status of the loan to credit reporting agencies as well as your entry into a Forbearance Plan in accordance with the requirements of the Fair Credit Reporting Act and the Consumer Data Industry Association requirements. <b>CREDIT SCORING COMPANIES MAY CONSIDER THE ENTRY INTO A FORBEARANCE PLAN AS AN INCREASED CREDIT RISK. AS A RESULT, ENTERING INTO A FORBEARANCE PLAN MAY ADVERSELY AFFECT YOUR CREDIT SCORE, PARTICULARLY IF YOU ARE CURRENT ON YOUR MORTGAGE OR OTHERWISE HAVE A GOOD CREDIT SCORE.</b></div>
+{Else If('{[M009]}' = ',')}
+<div><b><u>Credit Reporting:</u></b></div>
+<br>
+<div>Please note that we will not be reporting the delinquency status or the entry into a forbearance plan to credit reporting agencies during the term of the forbearance plan.</div>
+<br>
+<div><b>CREDIT REPORTING AGENCIES MAY CONSIDER WHETHER THERE IS AN INCREASED CREDIT RISK DUE TO THE LACK OF REPORTING. WE ARE UNCERTAIN AS TO THE IMPACT ON YOUR CREDIT SCORE, PARTICULARLY IF YOU ARE CURRENT ON YOUR MORTGAGE OR OTHERWISE HAVE A GOOD CREDIT SCORE.</b></div>
+{End If}
+<br>
+<div>If you have any questions or concerns, please contact Loss Mitigation Department at {[plsMatrix.LossPreventionPhoneNumberTollFree]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>{If('{[O274]}' NOT IN ('', '0', NULL))}{[O294]}{Else If('{[O294]}' NOT IN ('', '0', NULL))}{[O294]}{Else}{[SPOCContact]}{End If}</div>
+<div>Relationship Manager</div>
+<div>Loss Mitigation Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

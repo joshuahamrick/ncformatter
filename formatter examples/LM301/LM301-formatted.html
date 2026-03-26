@@ -1,0 +1,87 @@
+{Font(Calibri|11pt)}
+<div>{[tagHeader]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top"><b>Loan Number:</b></td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top"><b>RE:</b></td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>During the Trial Period of the Loan Modification, we identified a title issue that involves the lien position of the mortgage and may require subordination. If the title issue is not resolved prior to the end of the trial period, we will not be able to proceed with the modification process. Please be advised that your subordination request must be in writing. We require a non-refundable service fee by money order or cashier's check in the amount of {Money({[U055]})}.</div>
+<br>
+<div>We will need the following information in order to process the subordination:</div>
+<br>
+<table width="100%" style="border-collapse: collapse"><tbody>
+<tr valign="top">
+  <td width="3%" style="text-align: center">1.</td>
+  <td>The original first lien amount, interest rate, and HUD-1 Settlement Statement;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">2.</td>
+  <td>Copy of the Lender's Approval Letter;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">3.</td>
+  <td>Copy of Good Faith Estimate;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">4.</td>
+  <td>Copy of the Loan Underwriting and Transmittal Summary (Form 1008);</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">5.</td>
+  <td>Copy of HUD1;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">6.</td>
+  <td>Copy of most recent payoff statement;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">7.</td>
+  <td>Copies of current verifications of employment and income;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">8.</td>
+  <td>Copy of the current appraisal or BPO within last four months;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">9.</td>
+  <td>Copy of the Title Commitment;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">10.</td>
+  <td>Copy of the loan application (Form 1003);</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">11.</td>
+  <td>Copy of full credit report and scores;</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">12.</td>
+  <td>Copy of your first lien note and any addendum; and</td>
+</tr>
+<tr valign="top">
+  <td width="3%" style="text-align: center">13.</td>
+  <td>3rd Party Authorization Form from the borrower to provide information to the lien holder.</td>
+</tr>
+</tbody></table>
+<br>
+<div>Please keep in mind that specific investor guidelines may require additional documentation and all investor requirements must be satisfied.</div>
+<br>
+<div style="text-align: center"><b>***** Requests can be received via email, fax or mail. *****</b></div>
+<br>
+<div>If you have any questions or concerns, please contact our Loss Mitigation Department at {[plsMatrix.LossPreventionPhoneNumberTollFree]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br><br>
+<div><b><u>{If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else If('{[O294]}' NOT IN ('', '0', NULL))}{[O294]}{Else}{[plsMatrix.SPOCContact]}{End If}</u></b></div>
+<div>Relationship Manager</div>
+<div>Loss Mitigation Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

@@ -1,0 +1,134 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Thank you for contacting us about your mortgage. Based on careful review of the information you provided, we are offering you an opportunity to enter into a temporary repayment plan. It is important that you read all the information in this letter so that you understand the actions you must take to complete this repayment plan and bring your mortgage current.</div>
+<br>
+<div><b>What is a Repayment Plan?</b></div>
+<br>
+<div>A repayment plan is an agreement that provides you the ability to repay past due amounts on your mortgage by making additional monthly payments along with your regular monthly mortgage payments.</div>
+<br>
+<div><b>Repayment Plan Terms</b></div>
+<br>
+<div>As of {Date({[L001]}|MM/dd/yyyy)}, the total past due amount on your mortgage is {Math({[C001]} + {[M585]} + {[M012]} - {[M013]}|Money)}. This includes all past due amounts of unpaid interest, principal and escrow (if applicable), as well as late charges and amounts that we paid on your behalf (Servicer Advances*). Your total past due amount will be paid in full if you make the required total monthly payment amounts listed in the payment schedule below, which includes your regular monthly mortgage payment plus an additional monthly payment amount.</div>
+<br>
+<div>{[Q189]}</div>
+<br>
+<div>*This amount may include allowable attorney fees and costs, property preservation expenses, inspection fees, and/or other expenses authorized by your mortgage documents.</div>
+<br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: center; margin: auto; padding: 8pt; background-color: rgba(217, 235, 247, 1)">
+  <div><b>QUESTIONS? CONTACT US</b></div>
+  <br>
+  <div>{[plsMatrix.CompanyLongName]}</div>
+  <div>{[plsMatrix.LossPreventionAddress1]}</div>
+  <div>{[plsMatrix.LossPreventionAddress2]}</div>
+  <div>{[plsMatrix.LossPreventionAddress3]}</div>
+  <div>Phone: {[plsMatrix.LossPreventionPhoneNumberTollFree]}</div>
+  <div>Email Address: {[plsMatrix.LossMitEmail]}</div>
+  <div>Website: {[plsMatrix.Website]}</div>
+</div>
+<br><br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: center; margin: auto; padding: 8pt; background-color: rgba(46, 116, 181, 1); color: rgba(255, 255, 255, 1)">
+  <div style="font-size: 14pt"><b>ACT NOW!</b></div>
+</div>
+<br>
+<div><b>To Prevent Foreclosure Action</b></div>
+<div>You must do one of the following by {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}:</div>
+<br>
+<div style="margin-left: 20px"><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top">{Symbol(ü)}</td>
+  <td>Contact us by phone or in writing to let us know if you intend to accept this offer, <b>OR</b></td>
+</tr><tr>
+  <td width="3%" valign="top">{Symbol(ü)}</td>
+  <td>Accept this offer by sending us your first Total Monthly Payment Amount of {Math({[Q178]} / {[Q177]}|Money)}.</td>
+</tr></tbody></table></div>
+<div>If you do not contact us or send a payment by the above deadline, we may refer your mortgage to foreclosure.</div>
+<br>
+<div><b>To Accept This Offer</b></div>
+<div>You must send your first Total Monthly Payment Amount noted above on or before {Date({[Q179]}|MM/dd/yyyy)}.</div>
+<br>
+<div>If you do not send your first Total Monthly Payment Amount by {Date({[Q179]}|MM/dd/yyyy)}, this offer is revoked at that time and we may refer your mortgage to foreclosure or, if applicable, continue foreclosure proceedings, and a foreclosure sale may occur.</div>
+<br>
+<div>If you have questions about your mortgage payment, please contact us. In addition, there are options available to you for housing counseling. We encourage you to review the Additional Resources for more details.</div>
+<br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: left; margin: auto; padding: 8pt; background-color: rgba(217, 226, 243, 1)">
+  <div><b>Additional Resources</b></div>
+  <div>For a list of HUD-approved housing counseling agencies that can provide free foreclosure prevention and debt management information, as well as translation or other language assistance, contact one of the following federal government agencies.</div>
+  <div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+    <td width="3%" valign="top" style="text-align: center; font-size: 8pt">■</td>
+    <td>The U.S. Department of Housing and Urban Development (HUD) at (800) 569-4287 or <u>www.hud.gov/counseling</u></td>
+    </tr><tr>
+    <td width="3%" valign="top" style="text-align: center; font-size: 8pt">■</td>
+    <td>The Consumer Financial Protection Bureau (CFPB) at (855) 411-2372 or <u>www.consumerfinance.gov/mortgagehelp</u></td>
+  </tr></tbody></table></div>
+  {If('{[M944]}' = 'F')}
+  <div><b>For additional information on how to avoid foreclosure, including help for military servicemembers, you may also visit Fannie Mae's <u>www.KnowYourOptions.com</u>.</b></div>
+  {End If}
+  {If('{[M944]}' = 'H')}
+  <div><b>For additional information on how to avoid foreclosure, including help for military servicemembers, you may also visit Freddie Mac's My Home web site at <u>http://myhome.freddiemac.com</u>.</b></div>
+  {End If}
+</div>
+<br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: center; margin: auto; padding: 8pt; background-color: rgba(46, 116, 181, 1); color: rgba(255, 255, 255, 1)">
+  <div style="font-size: 14pt"><b>Additional Repayment Plan Information and Legal Notices</b></div>
+</div>
+<br>
+<div><b>We will not refer your mortgage to foreclosure or proceed to foreclosure sale during this repayment plan, provided you are complying with the terms of the repayment plan:</b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center; font-size: 8pt">■</td>
+  <td>Any pending foreclosure action or proceeding that has been suspended may resume if you do not follow the terms of this plan.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center; font-size: 8pt">■</td>
+  <td>This repayment plan offer is contingent on your having provided us with accurate and complete information. We reserve the right to revoke this offer or terminate the repayment plan following your acceptance if we learn of information that would make you ineligible.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center; font-size: 8pt">■</td>
+  <td>We will hold the additional monthly payment in an account until it contains sufficient funds to pay your oldest past due monthly payment. Unless required by applicable law, there will be no interest paid on the funds held in the account and any funds left in this account at the end of the repayment plan will be posted to your account to reduce your principal balance.</td>
+  </tr><tr>
+  <td width="3%" valign="top" style="text-align: center; font-size: 8pt">■</td>
+  <td>Our acceptance of your payment during the repayment plan does not waive our right to require immediate payment in full of all amounts you owe on your mortgage, including the right to resume or continue foreclosure action, if you fail to comply with the terms of the plan. Entering a repayment plan does not mean that your mortgage will be considered current, unless and until your payments under the plan completely resolve all past due amounts.</td>
+</tr></tbody></table></div>
+<div><b>Your current mortgage documents remain in effect; however, we will not pursue foreclosure if you make the total monthly payment amounts provided above instead of the payments required under your mortgage documents.</b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center; font-size: 8pt">■</td>
+  <td>All terms and provisions of your current mortgage documents remain in effect during the repayment plan. Nothing in the repayment plan shall be understood to be a satisfaction or release in whole or in part of your obligations contained in the mortgage documents.</td>
+</tr></tbody></table></div>
+<br>
+{If('{[M657]}' = '1')}
+<div><b>You were not approved for a loan modification trial period plan</b></div>
+<div><b>You were evaluated for a loan modification trial period plan based on the eligibility requirements of {If('{[M944]}' = 'H')}Freddie Mac{Else If('{[M944]}' = 'F')}Fannie Mae{End If}, the owner of your mortgage.</b></div>
+<br>
+<div>Based on our review of the information you provided, we are unable to offer you a loan modification trial period plan for the reasons described below:</div>
+<br>
+<div><b>(INSERT Denial Logic; see "Programming Logic for LM250 Modification Program Den Reasons")</b></div>
+<br>
+<div><b>Right to Appeal</b></div>
+<div><b>You have the right to appeal our decision not to offer you the loan modification trial period plan(s) described above. If you would like to appeal, you must contact us in writing at the address provided below, no later than {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}, and state that you are requesting an appeal of our decision. You must include in the appeal your name, property address, and mortgage loan number. You may also specify the reasons for your appeal and provide any supporting documentation. Your right to appeal</b> expires {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}. Any appeal requests or documentation received after {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)} may not be considered.</div>
+<br>
+<div>If you elect to appeal, we will provide you a written notice of our appeal decision within 30 calendar days of receiving your appeal. Our appeal decision is final, and not subject to further appeal.</div>
+<br>
+<div>If you elect to appeal, you do not have to accept this Forbearance Plan until resolution of the appeal. If we determine on appeal that you are eligible for a loan modification Trial Period Plan, we will send you an offer for that Trial Period Plan. In that case, you may choose to accept the current Forbearance Plan offer or you may notify us of your intent to accept the new Trial Period Plan offer by contacting us at {[plsMatrix.LossPreventionPhoneNumberTollFree]} or in writing at {Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.LossPreventionAddress1]}|{[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]})} no later than 14 calendar days from the date of the appeal decision.</div>
+<br>
+<div>Any unpaid interest, and other unpaid amounts, such as escrows for taxes and insurance, will continue to accrue on the mortgage loan during the appeal.</div>
+<br>
+{End If}
+<div>If you have any questions or concerns, please contact Loss Mitigation Department at {[plsMatrix.LossPreventionPhoneNumberTollFree]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div><b><u>{If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else If('{[O294]}' NOT IN ('', '0', NULL))}{[O294]}{Else}{[plsMatrix.SPOCContact]}{End If}</u></b></div>
+<div>Relationship Manager</div>
+<div>Loss Mitigation Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

@@ -1,0 +1,79 @@
+{Font(Calibri|11pt)}
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<div style="text-align: center; font-size: 20pt"><b>WELCOME!</b></div>
+<div><b>First Payment Due Date: {Date({[M026]}|MMMM dd, yyyy)}</b></div>
+<br>
+<table width="100%"><tbody><tr>
+  <td width="17%" valign="top"><b>Loan Number:</b></td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="17%" valign="top"><b>Property Address:</b></td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Congratulations! Welcome to Commerce Bank Mortgage. We are excited to have this opportunity to service your Home Equity Line of Credit. You can access your account 24 hours a day through our online portal at {[plsMatrix.WebSite]} or you can call us at {[plsMatrix.CSPhoneNumber]}. Our dedicated mortgage loan servicing specialists are ready to assist you. If you call outside of business hours, this number will access our automated system to provide current loan information, such as principal balance, last payment received and year to date tax and interest figures.</div>
+<br>
+<div>Once you take a draw on your Home Equity Line of Credit, you will receive a paper statement that includes a payment coupon. If you prefer to go paperless, you can choose to receive an electronic version of your statement on our digital platform. To change your statement version, visit our website at {[plsMatrix.WebSite]} and select Online Banking. Other payment options include:</div>
+<br>
+<table width="100%"><tbody>
+  <tr valign="top">
+    <td width="3%" style="text-align: center">•</td>
+    <td><b>Automatic Payments</b><br>You can automatically debit the payment from your designated checking or savings account each month and apply the payment directly to your loan on your due date. Sign up through our website: {[plsMatrix.WebSite]}.</td>
+  </tr>
+</tbody></table>
+<br>
+<table width="100%"><tbody>
+  <tr valign="top">
+    <td width="3%" style="text-align: center">•</td>
+    <td><b>Make a Payment Online</b><br>You can make a One-Time payment or setup automatic payments online through our website: {[plsMatrix.WebSite]}. Payments made on any business day during regular business hours ({[plsMatrix.HoursOfOperation]}) will be credited to your account as of the date received. Payments made outside of business hours will be credited on the next business day.</td>
+  </tr>
+</tbody></table>
+<br>
+<table width="100%"><tbody>
+  <tr valign="top">
+    <td width="3%" style="text-align: center">•</td>
+    <td><b>Phone Payments</b><br>You may request a One-Time debit from your designated checking or savings account by contacting one of our customer service representatives at {[plsMatrix.CSPhoneNumber]}.</td>
+  </tr>
+</tbody></table>
+<br>
+<table width="100%"><tbody>
+  <tr valign="top">
+    <td width="3%" style="text-align: center">•</td>
+    <td><b>{[plsMatrix.CompanyShortName]} Locations</b><br>You may make a payment in person before the close of business to a Personal Banker at a Commerce branch and it will be credited to your account as of the date received.<br>Payments must be accompanied by the payment form or account number, and in the form of a check or money order in U.S. Dollars drawn on a U.S. financial institution.</td>
+  </tr>
+</tbody></table>
+<br>
+<table width="100%"><tbody>
+  <tr valign="top">
+    <td width="3%" style="text-align: center">•</td>
+    <td><b>Mail</b><br>You can send payments to {[plsMatrix.CompanyShortName]}, {[plsMatrix.ConsumerLockBoxAddr1]}, {[plsMatrix.ConsumerLockBoxAddr2]}. Payments received before 5 p.m. CT on a Business Day will be credited to your account as of the date received. Payments received at 5 p.m. CT or after will be credited to your account no later than the next Business Day. Payments must be accompanied by the payment form or account number, and in the form of a check or money order in U.S. Dollars drawn on a U.S. financial institution.</td>
+  </tr>
+</tbody></table>
+<br>
+<table width="100%"><tbody>
+  <tr valign="top">
+    <td width="3%" style="text-align: center">•</td>
+    <td><b>Make Additional Principal Payment</b><br>You can make an extra payment toward your principal balance by mailing your additional payment to: {[plsMatrix.CompanyShortName]}, Payment Processing, {[plsMatrix.ConsumerLockBoxAddr1]}, {[plsMatrix.ConsumerLockBoxAddr2]}. You must clearly note on your payment that it should be applied to principal only so it is credited the way you intend. If instruction isn't included, the payment will be applied to your next month's payment.</td>
+  </tr>
+</tbody></table>
+<br>
+<div><b>Business Days are Monday through Friday, excluding Federal Holidays.</b></div>
+<br>
+<div>When the due date falls on a weekend or a Federal Holiday, payments by mail, consistent with the payment requirements, received on the next business day will not be considered late. Electronic or telephone payments received after the due date will be considered late. Do not send cash through the mail.</div>
+<br>
+<div>Crediting of mail and in person payments that do not meet the payment requirements may be delayed for a period of not more than 5 days from receipt of the payment.</div>
+<br>
+<div>We understand the importance of making timely payments but recognize that difficulties may arise. Please make sure you contact our Collections team at {[plsMatrix.CSPhoneNumber]} if you need to make any payment arrangements. We will make every effort to assist you if you are experiencing any financial difficulties. We do report information about your account to the credit repositories every 30 days. Late payments, missed payments, or other defaults may be reflected in your credit report.</div>
+<br>
+<div>If you have questions or concerns, please contact us at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}. Please have your loan number available when you call and always include it with correspondence.</div>
+<br><br>
+<div>Thank you!</div>
+<br>
+<div>Customer Service Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

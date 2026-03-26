@@ -1,0 +1,141 @@
+<div>{[tagHeader]}</div>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br>
+<b><div style="text-align: center">VERIFICATION OF MORTGAGE</div></b>
+<div style="font-size: 7pt"><br></div>
+<div style="border: 1px solid"><table><tbody>
+<tr><td valign="top" width="45%">
+<table width="100%"><tbody>
+<tr>
+<td colspan="2" style="text-align: center"><b>Loan Number</b></td>
+</tr><tr>
+<td>{[M594]}</td>
+<td></td>
+</tr><tr>
+<td colspan="2" style="text-align: center"><b>Property Address</b></td>
+</tr><tr>
+<td colspan="2" style="text-align: center"><b>Borrower Information</b></td>
+</tr><tr>
+<td>{[M558]}</td>
+<td></td>
+</tr><tr>
+<td>{Compress({[M559]}|{[M560]})}</td>
+<td></td>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+<td colspan="2" style="text-align: center"><b>General Information</b></td>
+</tr><tr>
+<td>Note Date:</td>
+<td>{[M941]}</td>
+</tr><tr>
+<td>First Payment Date:</td>
+<td>{[M486]}</td>
+</tr><tr>
+<td>Maturity Date:</td>
+<td>{[M035]}</td>
+</tr><tr>
+<td>Loan Type:</td>
+<td>{[M006]}</td>
+</tr></tbody></table>
+</td>
+<td width="150" style="border-right: 1px solid"></td>
+<td width="50%">
+<table width="100%"><tbody>
+<tr>
+<td colspan="2" style="text-align: center"><b>Account Information</b></td>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+<td>Original Loan Amount:</td>
+<td>{Money({[M034]})}</td>
+</tr><tr>
+<td>Original Term:</td>
+<td>{[M038]}</td>
+</tr><tr>
+<td>Due Date of Next Payment:</td>
+<td>{[M026]}</td>
+</tr><tr>
+<td>Current Principal Balance:</td>
+<td>{Money({[M010]})}</td>
+</tr><tr>
+<td>Current Interest Rate:</td>
+<td>{[M022]}%</td>
+</tr><tr>
+<td>Interest Paid to Date:</td>
+<td>{Money({[U018]})}</td>
+</tr><tr>
+<td>P &amp; I Payment:</td>
+<td>{Money({[M023]})}</td>
+</tr><tr>
+<td>T &amp; I Payment:</td>
+<td>{Money({[M053]})}</td>
+</tr><tr>
+<td></td>
+<td></td>
+</tr><tr>
+<td><b>Total Payment:</b></td>
+<td>{Money({[M029]})}</td>
+</tr><tr>
+<td></td>
+<td></td></tr>
+<tr><td colspan="2" style="text-align: center"><b>Current Balance</b></td>
+</tr><tr>
+<td>Principal:</td>
+<td>{Money({[M010]})}</td>
+</tr><tr>
+<td>Tax &amp; Insurance:</td>
+<td>{Money({[M011]})}</td>
+</tr><tr>
+<td>Unapplied:</td>
+<td>{Money({[M013]})}</td>
+</tr><tr>
+<td>Late Charge(s):</td>
+<td>{Money({[M015]})}</td>
+</tr><tr>
+<td>NSF Fee:</td>
+<td>{Money({[M593]})}</td>
+</tr><tr>
+<td>Other Fees:</td>
+<td>{Money({[C004]})}</td>
+</tr><tr>
+<td>Loss Draft:</td>
+<td>{Money({[M017]})}</td>
+</tr></tbody></table></td>
+</tr></tbody></table></div>
+<div style="font-size: 7pt"><br></div>
+<div>Times Delinquent This Year:</div>
+<div style="margin-left: 25px">• {[U019]} (Delinquent 30 days last 12 months)</div>
+<div style="margin-left: 25px">• {[U020]} (Delinquent 60 days last 12 months)</div>
+<div style="margin-left: 25px">• {[U021]} (Delinquent 90 days last 12 months)</div>
+<div style="font-size: 7pt"><br></div>
+<div>If you have any questions or concerns, please contact our Mortgage Customer Service Department at {[plsMatrix.CSPhoneNumber]}. We are happy to help and are available to visit {[plsMatrix.HoursOfOperation]}.</div>
+<div style="font-size: 7pt"><br></div>
+<div>Sincerely,</div>
+<br>
+<div>{[plsMatrix.LetterSignersFirstName]} {[plsMatrix.LetterSignersLastName]}</div>
+<div>{[plsMatrix.LetterSignersDept]}</div>

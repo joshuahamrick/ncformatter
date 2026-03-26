@@ -1,0 +1,169 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="5%" valign="top">RE:</td>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="5%" valign="top"></td>
+  <td width="20%" valign="top">Property Address:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Thank you for contacting us about your mortgage. Based on careful review of the information you provided, we are offering you an opportunity to enter into a forbearance plan. It is important that you read all the information in this letter so that you understand the actions you must take to complete this forbearance plan and any additional steps you must take to resolve your delinquency.</div>
+<br>
+<div><b>What is a Forbearance Plan?</b></div>
+<div><b>A forbearance plan is an agreement that allows borrowers experiencing a temporary hardship to make a reduced mortgage payment or no mortgage payment at all during the plan's term. During the {[Q177]} month term of this forbearance plan, you may make the reduced payments in the table below in lieu of your regular mortgage payment.</b></div>
+<br>
+<div><b>{Q189V2()}</b></div>
+<br>
+<div><b>We will not pursue foreclosure during the forbearance plan term. However, the terms of your mortgage remain unchanged. By making reduced payments during the plan's term, you will become more delinquent, and your credit score may be impacted. For more information refer to the Additional Forbearance Plan Information and Legal Notices.</b></div>
+<br>
+<div>We hope this will provide you with the time and flexibility you need to address your hardship and improve your financial position.</div>
+<br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: center; margin: auto; padding: 8pt; background-color: rgba(217, 226, 243, 1)">
+  <div><b style="font-size: 14pt">QUESTIONS? CONTACT US</b></div>
+  <br>
+  <div><b>Commerce Bank</b></div>
+  <div><b>Attn:  Real Estate Lending Servicing Specialist</b></div>
+  <div><b>922 Walnut</b></div>
+  <div><b>Suite 1100</b></div>
+  <div><b>Mail-Stop: TB11-CM3</b></div>
+  <div><b>Kansas City, MO 64106</b></div>
+  <div><b>Phone: 800-821-0083 EXT 27150</b></div>
+  <div><b>Fax: 816-234-2479</b></div>
+  <div><b>Email:</b></div>
+</div>
+<br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: center; margin: auto; padding: 8pt; background-color: rgba(46, 116, 181, 1); color: rgba(255, 255, 255, 1)">
+  <div style="font-size: 16pt"><b>ACT NOW!</b></div>
+</div>
+<br>
+<div><b>To Prevent Foreclosure Action</b></div>
+<div><b>You must do one of the following by {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}:</b></div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">{Symbol(ü)}</td>
+  <td><b>Contact us by phone or in writing to let us know that you intend accept this offer, OR</b></td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">{Symbol(ü)}</td>
+  <td>Accept this offer by sending us your first reduced payment amount.</td>
+</tr></tbody></table></div>
+<br>
+<div>If you do not contact us or send a payment by the above deadline, we may refer your loan to foreclosure.</div>
+<br>
+<div><b>To Accept This Offer</b></div>
+<div><b>You must send your first reduced payment amount noted above on or before {[Q179]}.</b></div>
+<br>
+<div>If you do not send your first temporarily reduced mortgage payment by the last day of the month in which it is due this offer is revoked at that time and we may refer your mortgage to foreclosure, or, if applicable, continue foreclosure proceedings and a foreclosure sale may occur.</div>
+<br>
+<div><b>Next Steps If You Accept This Offer</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">{Symbol(ü)}</td>
+  <td>Continue making your temporarily reduced mortgage payment on time.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">{Symbol(ü)}</td>
+  <td>Contact us immediately if your financial circumstances change during the term of your forbearance plan so that we may discuss potential options to resolve your delinquency.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">{Symbol(ü)}</td>
+  <td>Prior to the end of the forbearance plan, we will contact you to discuss your situation and provide information on options that may be available to you. Options to resolve your delinquency may include a reinstatement, repayment plan, or loan modification. If you are unable to resolve your delinquency, there may be options that allow you to leave your home while avoiding foreclosure.</td>
+</tr></tbody></table></div>
+<br>
+<div><b>If you have questions about this forbearance plan offer, please contact us.  In addition, there are options available to you for housing counseling.  We encourage you to review the Additional Resources for more details.</b></div>
+<br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: left; margin: auto; padding: 8pt; background-color: rgba(217, 226, 243, 1)">
+  <div><b>Additional Resources</b></div>
+  <div>If you are experiencing a financial hardship you may be eligible for mortgage assistance from your state's housing finance agency or other state or local government agency.</div>
+  <div>For a list of HUD-approved housing counseling agencies that can provide free foreclosure prevention and debt management information, information on state or local government mortgage assistance programs, and other foreclosure alternatives, please contact:</div>
+  <div style="margin-left: 20px"><table width="100%" style="border-collapse: collapse"><tbody><tr>
+    <td width="3%" valign="top">•</td>
+    <td>The U.S. Department of Housing and Urban Development (HUD) at (800) 569-4287, (202) 708-1455 (TTY) or</td>
+  </tr><tr>
+    <td width="3%" valign="top">•</td>
+    <td>The Consumer Financial Protection Bureau (CFPB) at (855) 411-2372 or</td>
+  </tr></tbody></table></div>
+  {If('{[M960]}' = 'NY')}
+  <div><b>The Department of Financial Services website () for a list of government approved not-for-profit housing counselors in your geographic area. You may also visit the Division of Homes and Community Renewal's website at  for additional assistance and housing counselors in your area or call New York State Department of Financial Services Consumer Assistance Unit at 1(800) 342-3736.</b></div>
+  {End If}
+  <div>For additional information on how to avoid foreclosure, including help for military servicemembers, you may also visit {If('{[M944]}' LIKE 'F%')}<b><u>Fannie Mae's consumer website at  . Fannie Mae also offers a toll-free Homeowner Help line at 1-800-732-6643.</u></b>{Else If('{[M944]}' LIKE 'H%')}<b><u>Freddie Mac's consumer website at . Freddie Mac also offers a toll-free number at 1-800-FREDDIE (1-800-373-3343).</u></b>{End If}</div>
+</div>
+<br>
+<div style="width: 95%; border: 1pt solid rgba(68, 114, 196, 1); text-align: center; margin: auto; padding: 8pt; background-color: rgba(46, 116, 181, 1); color: rgba(255, 255, 255, 1)">
+  <div style="font-size: 16pt"><b>Additional Forbearance Plan Information and Legal Notices</b></div>
+</div>
+<br>
+<div><b>Credit Reporting:</b></div>
+<div>We will continue to report the delinquency status of your mortgage as well as your entry into a forbearance plan to credit reporting agencies in accordance with applicable law.</div>
+<div><b>CREDIT REPORTING AGENCIES GENERALLY CONSIDER THE ENTRY INTO A PLAN WITH REDUCED PAYMENTS AS AN INCREASED CREDIT RISK. HOWEVER, A FORECLOSURE WOULD HAVE A MORE NEGATIVE IMPACT TO YOUR CREDIT SCORE.</b></div>
+<div><b>We will not refer your mortgage to foreclosure or proceed to foreclosure sale during this forbearance plan, provided you are complying with its terms:</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Any pending foreclosure action or proceeding that has been suspended may be resumed if you do not follow the terms of the forbearance plan.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>This forbearance plan offer is contingent on your having provided us with accurate and complete information. We reserve the right to revoke this offer or terminate the forbearance plan following your acceptance if we learn of information that would make you ineligible.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>We will hold the forbearance plan payments in an account until it contains sufficient funds to pay your oldest past due monthly payment. Unless required by applicable law, there will be no interest paid on the funds in the account. If any funds are in the account at the end of the forbearance plan, those funds will be applied to your mortgage in accordance with your mortgage documents.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Our acceptance of any payment you make during the forbearance plan does not waive our right to require immediate payment in full of all amounts you owe on your mortgage, including the right to resume or continue foreclosure action if you fail to comply with the terms of the plan. Entering a forbearance plan does not mean that your mortgage will be considered current.</td>
+</tr></tbody></table></div>
+<div><b>Your current mortgage documents remain in effect; however, we will not pursue foreclosure if you make the temporarily reduced payments under the forbearance plan.</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>All the terms of your current mortgage documents remain in effect during the term of the forbearance plan. Nothing in the forbearance plan shall be understood to be a satisfaction or release in whole or in part of your obligations contained in the mortgage documents.</td>
+</tr></tbody></table></div>
+<br>
+{If('{[M657]}' = '1' AND '{[U344]}' NOT IN ('', '0', NULL))}
+<div><b>You were not approved for a loan modification trial period plan</b></div>
+<div><b>You were evaluated for a loan modification trial period plan based on the eligibility requirements of {If('{[M944]}' LIKE 'F%')}Fannie Mae, the owner of your mortgage.{Else If('{[M944]}' LIKE 'H%')}Freddie Mac, the owner of your mortgage.{End If}</b></div>
+<br>
+<div>Based on our review of the information you provided, we are unable to offer you a loan modification trial period plan for the reasons described below:</div>
+<br>
+<div><b>{[U153]}</b></div>
+<br>
+<div><b>Right to Appeal</b></div>
+<div><b>You have the right to appeal our decision not to offer you the loan modification trial period plan(s) described above. If you would like to appeal, you must contact us in writing no later than {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)} and let us know that you are requesting an appeal of our decision. You must include the following in the appeal:</b></div>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>your name,</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>property address, and</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>mortgage loan number</td>
+</tr></tbody></table></div>
+<br>
+<div><b>You may also specify the reasons for your appeal, and provide any supporting documentation. Your right to appeal expires than {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)}. Appeal requests or documentation received after this date may not be considered.</b></div>
+<br>
+<div>If you elect to appeal:</div>
+<br>
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>We will provide you with a written notice of our appeal decision within 30 calendar days of receiving your appeal. Our appeal decision is final, and not subject to further appeal.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>You do not have to accept this offer until resolution of the appeal. If we determine on appeal that you are eligible for a loan modification trial period plan described above, we will send you an offer for that trial period plan. In that case, you will be given 14 calendar days from the date of the appeal decision to let us know that you intend to accept the current forbearance plan offer (which may be revised to reflect new due dates if you have not already accepted the offer) or the new trial period plan offer.</td>
+</tr><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>Any unpaid interest, and other unpaid amounts, such as escrows for taxes and insurance, will continue to accrue on your mortgage.</td>
+</tr></tbody></table></div>
+<br>
+{End If}
+<div>If you have any questions or concerns, please contact the Loss Mitigation Department at 800-821-0083 EXT 27150. Our office is open {[HoursOfOperation]}.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Commerce Bank</div>
+<div>Real Estate Lending Servicing Specialist</div>
+<br>
+{If('{[M007]}' = '48')}
+<div><u>Wisconsin Property Owners – Notice: See Reverse Side (or attached) for Important Information.</u></div>
+{End If}

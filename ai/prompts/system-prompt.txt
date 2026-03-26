@@ -87,7 +87,9 @@ Generate HTML templates that:
 ### RE / Loan Number Table Layouts
 Three patterns based on source structure:
 1. Two-column aligned (label | value, e.g. FL103): labels and values are tab-aligned in source → use <table width="100%"> with 15% label column
-2. Three-column with RE: parent (e.g. CL008): source has "RE: Loan Number:   {[M594]}" where RE: prefixes both rows → use 3-column layout:
+2. Three-column with RE: parent (e.g. CL008): source has "RE: Loan Number:   {[M594]}" where RE: prefixes both rows → use 3-column layout.
+   CRITICAL: The IR shows the second paragraph starting with "RE:" (e.g. "RE: {Compress(...)}") — this "RE:" is just the paragraph's text prefix, NOT a separate cell label. The second row's first cell MUST be EMPTY. The standard label for the second row is ALWAYS "Property Address:".
+   Output exactly:
    <table width="100%"><tbody><tr>
      <td width="3%">RE:</td>
      <td width="20%" valign="top">Loan Number:</td>
@@ -135,10 +137,19 @@ Three patterns based on source structure:
 - If source list items are auto-numbered (Word ListNumber style, marked LIST_ITEM with consecutive items), use explicit numbers: 1., 2., 3., etc. in the table cell
 - If source list items are bulleted, use •
 - Always use the table format for lists: <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr><td width="3%" valign="top">1.</td><td>...</td></tr></tbody></table></div>
+- IMPORTANT: If the IR contains [EMPTY_LIST_ITEM_LEVEL_X], this is an empty bullet placeholder — output it as a bullet row with an empty content cell wrapped in a div table:
+  <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
+    <td width="3%" valign="top">•</td>
+    <td></td>
+  </tr></tbody></table></div>
 
-### Ampersand Encoding
-- ALWAYS encode ampersands as &amp; in HTML content: "P&I" → "P&amp;I", "& Partial Claim" → "&amp; Partial Claim"
-- Exception: template variable syntax like {If('{[M007]}' = '48')} uses & not &amp;
+### Ampersand Encoding — MANDATORY
+- CRITICAL: ALWAYS encode ALL ampersands as &amp; in HTML text content — NO EXCEPTIONS for text
+- Examples: "P&I" → "P&amp;I", "& Partial Claim" → "&amp; Partial Claim", "Notice & Loss-Mitigation" → "Notice &amp; Loss-Mitigation", "Loan-Modification & Partial Claim" → "Loan-Modification &amp; Partial Claim"
+- This applies EVERYWHERE in the HTML output where & appears in letter text, subject lines, body paragraphs, bullet items, underlined text — anywhere
+- Exception ONLY: the HTML comparison operators &gt;, &lt;, &gt;=, &lt;=, &lt;&gt; inside {If()} conditions stay as-is (they are already encoded)
+- Exception ONLY: template control syntax like {If(...)}, {End If}, {Compress(...)}, {Money(...)}, {[TAG]} — the curly-brace template tags themselves do not use & in their syntax
+- NOT an exception: regular English text like "P&I" or "A & B" MUST become "P&amp;I" or "A &amp; B"
 
 ### Paragraphs and Spacing
 - Wrap each paragraph in <div>...</div>
@@ -160,7 +171,7 @@ CRITICAL FORMATTING RULES:
   2. <br>
   3. <div>{[L001]}</div>
   4. <div>{[mailingAddress]}</div>
-  5. <br><br><br><br><br> (standard spacing after mailing address)
+  5. <br><br><br><br> (standard spacing after mailing address — 4 <br> tags unless source clearly has more blank lines)
   6. Property address table (if needed)
   7. <br> (only if there's spacing in the doc)
   8. <div>Dear {[Salutation]},</div>

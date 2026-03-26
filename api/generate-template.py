@@ -53,6 +53,38 @@ def normalize_html(html):
 		normalized
 	)
 	
+	# Fix bare ampersands in HTML text content (outside template variables)
+	# Process in segments: split on {template} blocks and fix & in non-template parts
+	fixed_parts = []
+	# Split on template variable/function blocks (including nested braces)
+	i = 0
+	while i < len(normalized):
+		if normalized[i] == '{':
+			# Find matching closing brace (handle nested braces)
+			depth = 0
+			j = i
+			while j < len(normalized):
+				if normalized[j] == '{':
+					depth += 1
+				elif normalized[j] == '}':
+					depth -= 1
+					if depth == 0:
+						break
+				j += 1
+			fixed_parts.append(normalized[i:j+1])  # template block, unchanged
+			i = j + 1
+		else:
+			# Find next { or end
+			j = normalized.find('{', i)
+			if j == -1:
+				j = len(normalized)
+			text_chunk = normalized[i:j]
+			# Fix bare & that's not already an HTML entity (&amp; &lt; &gt; &quot; &#...)
+			text_chunk = re.sub(r'&(?!amp;|lt;|gt;|quot;|apos;|#)', '&amp;', text_chunk)
+			fixed_parts.append(text_chunk)
+			i = j
+	normalized = ''.join(fixed_parts)
+	
 	return normalized.strip()
 
 def load_system_prompt():
@@ -194,7 +226,13 @@ def format_ir_for_prompt(ir):
 			text = ''.join([r.get('text', '') for r in runs]).strip()
 			
 			# Skip empty paragraphs — spacing is handled by template conventions, not blank lines
+			# Exception: preserve empty list items (empty bullet/numbered items are intentional placeholders)
 			if not text or len(text) < 3:
+				if block.get('isListItem') and (not text or len(text) < 3):
+					# Empty list item — include it as an explicit empty placeholder
+					list_level = block.get('listLevel', 0) or 0
+					para_counter += 1
+					formatted.append(f"Paragraph {para_counter}: [EMPTY_LIST_ITEM_LEVEL_{list_level}]")
 				continue
 			
 			# Allow short text if it looks like a label or contains template markers
@@ -248,15 +286,15 @@ def format_ir_for_prompt(ir):
 			if re.search(r'\(or if\s+\[.*\]\s+(and/or|present)\)', text, re.IGNORECASE):
 				continue
 			
-		# Skip production conditional lines like "({[M838]} PLS-CLIENT-ID = <PLSID> Produce)"
-		if re.match(r'^\(', text) and re.search(r'PLS-CLIENT-ID|PLS-CLIENT|Produce\s*\)\s*$', text, re.IGNORECASE):
-			continue
-		
-		# Skip mailing/production instruction lines like "Letter to be sent via Certified Mail to the Mailing Address."
-		if re.match(r'^Letter to be sent via\b', text, re.IGNORECASE):
-			continue
-		if re.match(r'^(This letter|Notice) (to be|is) sent via\b', text, re.IGNORECASE):
-			continue
+			# Skip production conditional lines like "({[M838]} PLS-CLIENT-ID = <PLSID> Produce)"
+			if re.match(r'^\(', text) and re.search(r'PLS-CLIENT-ID|PLS-CLIENT|Produce\s*\)\s*$', text, re.IGNORECASE):
+				continue
+			
+			# Skip mailing/production instruction lines like "Letter to be sent via Certified Mail to the Mailing Address."
+			if re.match(r'^Letter to be sent via\b', text, re.IGNORECASE):
+				continue
+			if re.match(r'^(This letter|Notice) (to be|is) sent via\b', text, re.IGNORECASE):
+				continue
 			
 			# Skip business rule references
 			if re.search(r'\(see\s+["\'].*Business Rules', text, re.IGNORECASE):
@@ -422,28 +460,13 @@ def format_ir_for_prompt(ir):
 				list_level = block.get('listLevel', 0)
 				formatting_hints.append(f"LIST_ITEM_LEVEL_{list_level}")
 			
-		# Include formatting information in the output
-		formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
-		
-		# Handle soft returns (\n within a paragraph = Shift+Enter in Word).
-		# Split on \n and emit each part as a separate paragraph entry so Claude
-		# knows to produce separate <div> elements rather than combining them.
-		# The first segment keeps the original formatting hints; subsequent ones
-		# inherit formatting but drop BOLD if the split point is the bold heading.
-		if '\n' in cleaned_text:
-			parts = [p.strip() for p in cleaned_text.split('\n') if p.strip()]
-			for p_idx, part in enumerate(parts):
-				para_counter += 1
-				# First part: keep all formatting hints
-				# Subsequent parts: strip BOLD so the body text isn't marked bold
-				if p_idx == 0:
-					formatted.append(f"Paragraph {para_counter}: {part[:char_limit]}{formatting_note}")
-				else:
-					# Non-bold hints for the body portion
-					body_hints = [h for h in formatting_hints if 'BOLD' not in h]
-					body_note = f" [FORMATTING: {', '.join(body_hints)}]" if body_hints else ""
-					formatted.append(f"Paragraph {para_counter}: {part[:char_limit]}{body_note}")
-		else:
+			# Include formatting information in the output
+			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
+			
+			# Handle soft returns (\n within a paragraph = Shift+Enter in Word).
+			# Mark the split point so Claude knows to produce TWO separate <div> elements.
+			if '\n' in cleaned_text:
+				cleaned_text = cleaned_text.replace('\n', ' [SOFT_RETURN: output EACH PART as a SEPARATE <div>] ')
 			para_counter += 1
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':

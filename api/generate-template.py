@@ -125,18 +125,29 @@ def load_few_shot_examples():
 		os.path.join(os.getcwd(), 'formatter examples')
 	]
 	
-	# Load minimal examples to reduce token usage - only most critical ones
-	curated = [
-		'MI001/MI001-formatted.html',  # PMI with numbered lists, partial bold, calculations
-		'MI008/MI008-formatted.html',  # PMI Auto Term with bullet points and different header layout
-		'CA003/CA003-formatted.html',  # ACH with conditionals
-		'CA030/CA030-formatted.html',  # Initial contact with RE/Loan Number table and bullet points
-		'LM401/LM401-formatted.html',  # Complex table + conditionals
-		'WL009/WL009-formatted.html',  # HELOC Welcome with centered title, FAQ bold headers, contact block, partial bold closing
-		'FL103/FL103-formatted.html',  # Insurance notice: bold font-size heading, Compress RE address, date variable (no DateAdd), mortgagee clause as separate centered lines
-		'CL008/CL008-formatted.html',  # Loss mit: 3-col RE table, numbered+bullet lists with margin-left, bold-heading+body separation, partial bold Subject, Compress static text, &amp; encoding, soft-return splitting
-		'IA004/IA004-formatted.html',  # FHA coverage term: colspan=2 loan number row, bordered payment comparison table (border-collapse, right-aligned values, borderless top-left cell), FHA contact info as table with colspan=2 header
+	# Few-shot training examples — curated to cover the widest range of formatting patterns.
+	# ─────────────────────────────────────────────────────────────────────────────────────
+	# FOUNDATIONAL EXAMPLES
+	# These cover core patterns: conditionals, tables, lists, RE/loan number layouts,
+	# centered headers, partial bold, Compress(), Math(), date functions, etc.
+	foundational = [
+		'MI001/MI001-formatted.html',       # PMI: numbered lists, partial bold, Money/Math calculations
+		'CA003/CA003-formatted.html',        # ACH: conditionals, simple table layout
+		'CA030/CA030-formatted.html',        # Initial contact: RE/Loan Number table, bullet list
+		'LM401/LM401-formatted.html',        # Complex bordered table, conditional logic
+		'WL009/WL009-formatted.html',        # HELOC Welcome: centered title, FAQ bold headers, contact block
+		'FL103/FL103-formatted.html',        # Insurance notice: bold heading, Compress RE, mortgagee clause
 	]
+
+	# RECENTLY TRAINED EXAMPLES
+	# These reflect the latest refinements to formatting rules.
+	# Add new approved examples here as documents are trained and validated.
+	recently_trained = [
+		'CL008/CL008-formatted.html',       # Loss mit: 3-col RE table, numbered+bullet lists, soft-return splitting, &amp; encoding
+		'IA004/IA004-formatted.html',        # FHA coverage term: colspan=2 loan row, bordered comparison table, Math() addition
+	]
+
+	curated = foundational + recently_trained
 	
 	examples = []
 	examples_dir = None

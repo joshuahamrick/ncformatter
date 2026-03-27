@@ -53,6 +53,9 @@ Generate HTML templates that:
 - Math: {Math({[TAG1]} + {[TAG2]}|Money)} or {Math({[TAG1]} / {[TAG2]}|Money)} for division
   - Supports: + (addition), - (subtraction), * (multiplication), / (division)
   - Example: {Math({[Q178]} / {[Q177]}|Money)} for [Q178E2 ÷ Q177]
+  - CRITICAL: When the source document shows an arithmetic expression like "[M048] + [M049]" or "[M048] plus [M049]" in a cell/field, ALWAYS use Math() to compute the result — NEVER display it as two separate Money() calls with a literal + between them.
+  - WRONG: {Money({[M048]})}+{Money({[M049]})} — this shows "$X.XX+$Y.YY" as raw text
+  - CORRECT: {Math({[M048]} + {[M049]}|Money)} — this computes and displays the sum as a single dollar amount
 - DateAdd: {DateAdd({[TAG]}|+1|MM/dd/yyyy|Month)}
 - Date: {Date({[TAG]}|FORMAT)} - The second parameter is the format string (uses C# DateTime format)
   - Examples: {Date({[M035]}|MMMM yyyy)} produces "September 2034"

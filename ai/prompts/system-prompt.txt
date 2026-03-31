@@ -90,15 +90,16 @@ Generate HTML templates that:
 ### RE / Loan Number Table Layouts
 Three patterns based on source structure:
 1. Two-column aligned (label | value, e.g. FL103): labels and values are tab-aligned in source → use <table width="100%"> with 15% label column
-2. Three-column with RE: parent (e.g. CL008): source has "RE: Loan Number:   {[M594]}" where RE: prefixes both rows → use 3-column layout.
-   CRITICAL: The IR shows the second paragraph starting with "RE:" (e.g. "RE: {Compress(...)}") — this "RE:" is just the paragraph's text prefix, NOT a separate cell label. The second row's first cell MUST be EMPTY. The standard label for the second row is ALWAYS "Property Address:".
-   Output exactly:
+2. Three-column with RE: parent (e.g. CL008, FC001): source has "RE: Loan Number: {[M594]}" where "RE:" prefixes the first row. Use 3-column layout.
+   CRITICAL DETECTION: If the IR shows a paragraph starting with "RE: Loan Number:" followed by a separate paragraph starting with "RE:" or "Property Address:", this IS the 3-column pattern. NEVER merge "RE:" and "Loan Number:" into one cell.
+   The second row's first cell MUST be EMPTY (not "RE:"). The standard label for the second row is ALWAYS "Property Address:".
+   Output EXACTLY this structure — DO NOT deviate:
    <table width="100%"><tbody><tr>
-     <td width="3%">RE:</td>
+     <td width="3%" valign="top">RE:</td>
      <td width="20%" valign="top">Loan Number:</td>
      <td>{[M594]}</td>
    </tr><tr>
-     <td width="3%"></td>
+     <td width="3%" valign="top"></td>
      <td width="20%" valign="top">Property Address:</td>
      <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
    </tr></tbody></table>
@@ -145,6 +146,41 @@ Three patterns based on source structure:
     <td width="3%" valign="top">•</td>
     <td></td>
   </tr></tbody></table></div>
+
+### Separate List Groups (LIST_SEPARATOR)
+- CRITICAL: When the IR contains [LIST_SEPARATOR: ...], the list items above and below it MUST be output as SEPARATE <div><table> blocks, NOT combined into one table.
+- Place a <br> between the separate tables.
+- Example: If you see list item A, then [LIST_SEPARATOR], then list item B — output:
+  <div><table ...><tbody><tr><td>•</td><td>A content</td></tr></tbody></table></div>
+  <br>
+  <div><table ...><tbody><tr><td>•</td><td>B content</td></tr></tbody></table></div>
+
+### Line Breaks Within List Items ([BR] markers)
+- CRITICAL: When a list item's text contains [BR] markers, these represent VISUAL line breaks within the cell content.
+- Output each [BR] as an HTML <br> tag inside the <td> cell.
+- This commonly occurs when a list item has a description line followed by phone/toll-free numbers and URLs:
+  <td>Statewide foreclosure hotline recommended by the Housing Finance Commission:<br>
+  <b>Toll-free: (877) 894-HOME <u>(877-894-4663)</u></b><br>
+  <u><b>http://www.example.com/path</b></u></td>
+- The formatting (bold, underline) of each segment after a [BR] should match the IR's formatting hints.
+
+### Partial Underline (PARTIAL_UNDERLINE)
+- When the IR shows PARTIAL_UNDERLINE with specific run texts, ONLY the indicated text segments should be wrapped in <u>...</u>, NOT the entire paragraph.
+- Example: If IR says PARTIAL_UNDERLINE(within; 30; days of; the; date; of; the; Notice; of; Pre; -; Foreclosure; Options), then only the indicated runs get <u>:
+  <div>Your request may be sent... The request must be made <u>within 30 days of the date of the "Notice of Pre-Foreclosure Options"</u> or you will lose this right...</div>
+- NEVER wrap the entire paragraph in <u> when only a portion is underlined.
+
+### Standalone Separators (OR, AND)
+- When "OR" or "AND" appears as a standalone paragraph with underline and indent, format it as an indented underlined div:
+  <div style="margin-left: 30px"><u>OR</u></div>
+
+### Address Blocks After List Items (Compress Pattern)
+- When indented paragraphs containing company address variables appear after a list item like "Responding in writing to:" or "Calling:", these should be placed inside a table cell using Compress() to stack the lines:
+  <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
+    <td width="3%" valign="top"></td>
+    <td>{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|{[plsMatrix.CompanyReturnAddr3]})}</td>
+  </tr></tbody></table></div>
+- Similarly for phone/department blocks: {Compress(Customer Service Department|{[plsMatrix.CSPhoneNumber]})}
 
 ### Ampersand Encoding — MANDATORY
 - CRITICAL: ALWAYS encode ALL ampersands as &amp; in HTML text content — NO EXCEPTIONS for text

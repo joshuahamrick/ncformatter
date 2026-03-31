@@ -145,6 +145,7 @@ def load_few_shot_examples():
 	recently_trained = [
 		'CL008/CL008-formatted.html',       # Loss mit: 3-col RE table, numbered+bullet lists, soft-return splitting, &amp; encoding
 		'IA004/IA004-formatted.html',        # FHA coverage term: colspan=2 loan row, bordered comparison table, Math() addition
+		'FC001/FC001-formatted.html',        # Foreclosure notice: separate bullet tables, <br> within bullets, numbered lists, Compress address, OR separator, partial underline
 	]
 
 	curated = foundational + recently_trained
@@ -238,12 +239,35 @@ def format_ir_for_prompt(ir):
 			
 			# Skip empty paragraphs — spacing is handled by template conventions, not blank lines
 			# Exception: preserve empty list items (empty bullet/numbered items are intentional placeholders)
+			# Exception: preserve blank paragraphs between list items (they indicate separate list groups)
 			if not text or len(text) < 3:
 				if block.get('isListItem') and (not text or len(text) < 3):
 					# Empty list item — include it as an explicit empty placeholder
 					list_level = block.get('listLevel', 0) or 0
 					para_counter += 1
 					formatted.append(f"Paragraph {para_counter}: [EMPTY_LIST_ITEM_LEVEL_{list_level}]")
+				else:
+					# Check if this blank paragraph falls between two list items
+					# If so, it signals they should be in SEPARATE list tables
+					prev_is_list = False
+					next_is_list = False
+					for prev_idx in range(idx - 1, max(0, idx - 3), -1):
+						if blocks[prev_idx].get('type') == 'paragraph':
+							prev_runs = blocks[prev_idx].get('runs', [])
+							prev_text = ''.join([r.get('text', '') for r in prev_runs]).strip()
+							if prev_text:
+								prev_is_list = blocks[prev_idx].get('isListItem', False)
+								break
+					for next_idx in range(idx + 1, min(len(blocks), idx + 3)):
+						if blocks[next_idx].get('type') == 'paragraph':
+							next_runs = blocks[next_idx].get('runs', [])
+							next_text = ''.join([r.get('text', '') for r in next_runs]).strip()
+							if next_text:
+								next_is_list = blocks[next_idx].get('isListItem', False)
+								break
+					if prev_is_list and next_is_list:
+						para_counter += 1
+						formatted.append(f"Paragraph {para_counter}: [LIST_SEPARATOR: blank line between list items — these are SEPARATE list groups, output as SEPARATE <div><table> blocks with <br> between them]")
 				continue
 			
 			# Allow short text if it looks like a label or contains template markers
@@ -317,6 +341,43 @@ def format_ir_for_prompt(ir):
 			if re.match(r'^(\[M\d+\]\s*)+', text) and len(text) < 150:
 				continue
 			
+			# Detect line breaks within list items / paragraphs based on formatting transitions
+			# In Word, soft returns within a single paragraph show as runs with distinct formatting shifts
+			# (e.g., non-bold description → bold phone number → bold+underline URL)
+			# We detect these transitions and insert [BR] markers for the AI
+			if block.get('isListItem') and len(runs) > 1:
+				content_runs = [r for r in runs if r.get('text', '').strip()]
+				if len(content_runs) > 1:
+					segments = []
+					current_segment = []
+					prev_bold = content_runs[0].get('bold', False)
+					prev_underline = content_runs[0].get('underline', False)
+					for r in content_runs:
+						r_bold = r.get('bold', False)
+						r_underline = r.get('underline', False)
+						# Detect formatting transition that likely indicates a new visual line
+						# Only trigger on bold change or underline appearing (not every minor run split)
+						if (r_bold != prev_bold or (r_underline and not prev_underline)) and current_segment:
+							seg_text = ''.join(s.get('text', '') for s in current_segment).strip()
+							if seg_text:
+								# Check if previous segment ends with ':' — common intro line before phone/URL
+								if seg_text.endswith(':') or seg_text.endswith('Commission:'):
+									segments.append(seg_text)
+								else:
+									segments.append(seg_text)
+							current_segment = []
+						current_segment.append(r)
+						prev_bold = r_bold
+						prev_underline = r_underline
+					if current_segment:
+						seg_text = ''.join(s.get('text', '') for s in current_segment).strip()
+						if seg_text:
+							segments.append(seg_text)
+					# If we found multiple segments, mark them
+					if len(segments) > 1:
+						# Rebuild text with [BR] markers between segments
+						text = ' [BR] '.join(segments)
+
 			# This looks like actual content - include it
 			# CRITICAL: Remove metadata descriptions in parentheses BEFORE including in prompt
 			# These are variable descriptions like "(Property Line 1/Street Address)", "(Due Date)", "(Delinquent Balance)", etc.
@@ -447,7 +508,15 @@ def format_ir_for_prompt(ir):
 					else:
 						formatting_hints.append("BOLD")
 			if has_underline:
-				formatting_hints.append("UNDERLINE")
+				# Check if PARTIAL underline (some runs underlined, some not)
+				underline_runs = [r for r in runs if r.get('underline', False) and r.get('text', '').strip()]
+				non_underline_runs = [r for r in runs if not r.get('underline', False) and r.get('text', '').strip()]
+				is_partial_underline = len(underline_runs) > 0 and len(non_underline_runs) > 0
+				if is_partial_underline:
+					underline_texts = [r.get('text', '').strip()[:50] for r in underline_runs[:5]]
+					formatting_hints.append(f"PARTIAL_UNDERLINE({'; '.join(underline_texts)})")
+				else:
+					formatting_hints.append("UNDERLINE")
 			
 			# Check for hyperlinks - these are dynamic variables (plsMatrix)
 			has_hyperlink = any(r.get('isHyperlink', False) for r in runs)
@@ -478,6 +547,18 @@ def format_ir_for_prompt(ir):
 			# Mark the split point so Claude knows to produce TWO separate <div> elements.
 			if '\n' in cleaned_text:
 				cleaned_text = cleaned_text.replace('\n', ' [SOFT_RETURN: output EACH PART as a SEPARATE <div>] ')
+			
+			# Transform "RE: Loan Number: {[M594]}" into explicit 3-column table instruction
+			re_loan_match = re.match(r'^RE:\s*Loan Number:\s*(\{?\[.*?\]\}?)(.*)$', cleaned_text)
+			if re_loan_match:
+				loan_var = re_loan_match.group(1).strip()
+				cleaned_text = f"[RE_TABLE_ROW_1: RE: | Loan Number: | {loan_var}] — USE 3-COLUMN TABLE: <td width=\"3%\" valign=\"top\">RE:</td><td width=\"20%\" valign=\"top\">Loan Number:</td><td>{loan_var}</td>"
+			# Transform "RE: {Compress(...)}" or "Property Address: ..." into 3-column second row
+			re_prop_match = re.match(r'^(?:RE:\s*)?(?:Property Address:\s*)?(\{Compress\([^)]+\)\})', cleaned_text)
+			if re_prop_match and not re_loan_match:
+				prop_var = re_prop_match.group(1).strip()
+				cleaned_text = f"[RE_TABLE_ROW_2: (empty) | Property Address: | {prop_var}] — 3-COLUMN TABLE second row: <td width=\"3%\" valign=\"top\"></td><td width=\"20%\" valign=\"top\">Property Address:</td><td>{prop_var}</td>"
+			
 			para_counter += 1
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NcConnect &mdash; Software Friction &amp; Bug Report</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181a22;
+    --surface2: #21242f;
+    --border: #2a2d3a;
+    --text: #e2e4ea;
+    --text-muted: #8b8fa3;
+    --accent: #6c8cff;
+    --accent-dim: #3a4a8a;
+    --red: #ff6b6b;
+    --orange: #ffaa5c;
+    --green: #5ce0a0;
+    --yellow: #ffd96b;
+    --purple: #c8a0ff;
+    --enhance-bg: #1a1d2e;
+    --enhance-border: #3a4a8a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px 36px;
+    min-height: 100vh;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-left h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .header-left p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+  .stats-bar { display: flex; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 22px; min-width: 130px;
+  }
+  .stat-card .label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px;
+  }
+  .stat-card .value {
+    font-size: 26px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-card .value.critical { color: var(--red); }
+  .stat-card .value.high { color: var(--orange); }
+  .stat-card .value.medium { color: var(--yellow); }
+  .stat-card .value.low { color: var(--green); }
+  .stat-card .value.total { color: var(--accent); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    background: var(--surface); border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--surface2); color: var(--text-muted);
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.6px; padding: 14px 12px;
+    border-bottom: 2px solid var(--accent-dim);
+    border-right: 1px solid var(--border);
+    text-align: left; position: sticky; top: 0; z-index: 10;
+  }
+  thead th:first-child { text-align: center; width: 50px; }
+  thead th:nth-child(3),
+  thead th:nth-child(4),
+  thead th:nth-child(5) { text-align: center; }
+
+  tbody td {
+    padding: 12px 12px; border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    vertical-align: top; font-size: 13px; line-height: 1.5;
+  }
+  tbody td:first-child {
+    text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-weight: 600; color: var(--accent); width: 50px;
+  }
+  tbody td:nth-child(2) { font-weight: 600; min-width: 260px; }
+  tbody td:nth-child(3),
+  tbody td:nth-child(4),
+  tbody td:nth-child(5) { text-align: center; }
+  tbody td:nth-child(6) { min-width: 380px; }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  .tag {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .tag-critical { background: rgba(255,107,107,0.15); color: var(--red); border: 1px solid rgba(255,107,107,0.3); }
+  .tag-high { background: rgba(255,170,92,0.15); color: var(--orange); border: 1px solid rgba(255,170,92,0.3); }
+  .tag-medium { background: rgba(255,217,107,0.15); color: var(--yellow); border: 1px solid rgba(255,217,107,0.3); }
+  .tag-low { background: rgba(92,224,160,0.15); color: var(--green); border: 1px solid rgba(92,224,160,0.3); }
+  .tag-bug { background: rgba(255,107,107,0.12); color: #ff8888; border: 1px solid rgba(255,107,107,0.25); }
+  .tag-ux { background: rgba(108,140,255,0.12); color: #8aa8ff; border: 1px solid rgba(108,140,255,0.25); }
+  .tag-enhancement { background: rgba(92,224,160,0.12); color: #7aeebc; border: 1px solid rgba(92,224,160,0.25); }
+  .tag-infra { background: rgba(200,160,255,0.12); color: var(--purple); border: 1px solid rgba(200,160,255,0.25); }
+  .tag-arch { background: rgba(255,200,100,0.12); color: #ffc864; border: 1px solid rgba(255,200,100,0.25); }
+
+  .section-divider td {
+    background: var(--enhance-bg) !important;
+    border-bottom: 2px solid var(--enhance-border) !important;
+    border-top: 2px solid var(--enhance-border) !important;
+    padding: 14px 16px !important;
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    letter-spacing: 0.3px;
+  }
+  .enhancement-row td {
+    background: rgba(108,140,255,0.04);
+  }
+  .enhancement-row:hover td {
+    background: rgba(108,140,255,0.09) !important;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>NcConnect &mdash; Software Friction &amp; Bug Report</h1>
+    <p>Compiled from daily usage observations &amp; the Efficiency Initiatives Proposal &mdash; for review and prioritization</p>
+    <p style="margin-top: 8px;"><a href="https://github.com/joshuahamrick/ncformatter/raw/main/NcConnect_Bug_Tracker.xlsx" style="color: var(--accent); text-decoration: none; font-size: 13px; border: 1px solid var(--border); padding: 5px 14px; border-radius: 6px; display: inline-block;">&#11015; Download as Excel (.xlsx)</a></p>
+  </div>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Issue</th>
+      <th>Type</th>
+      <th>Priority</th>
+      <th>Impact</th>
+      <th>Description</th>
+      <th>Area</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Tab Resets / Gray Out &amp; Performance Degradation</td>
+      <td><span class="tag tag-bug">Bug</span></td>
+      <td><span class="tag tag-critical">Critical</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td>The site&rsquo;s tab frequently grays out and becomes unresponsive, triggered by: navigating too quickly between pages, or resizing panes (which can break/remove panes entirely). Additionally, tabs open for extended periods degrade in performance, becoming progressively slower. Each gray-out forces a full restart: new tab &rarr; sign in &rarr; navigate to area &rarr; search company &rarr; find product &rarr; reach target detail. During slow server periods this can repeat 6+ times in a row for a single field change. A task that should take seconds becomes minutes. This is the #1 productivity drain &mdash; it breaks focus, causes context loss (which client, which product, what was being adjusted), and the lengthy re-navigation path itself risks further gray-outs.</td>
+      <td>Core Navigation</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Page Refresh / Back-Forward Breaks Page Content</td>
+      <td><span class="tag tag-bug">Bug</span></td>
+      <td><span class="tag tag-critical">Critical</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td>Refreshing the page or using the browser&rsquo;s back/forward buttons causes the page to break &mdash; only the blue title/header bar remains visible, with no content rendered below it and no buttons functional. This is distinct from the gray-out issue; the tab is still technically alive but completely unusable. Forces the user to open a new tab and re-navigate the full deep path, with the same context loss and productivity drain.</td>
+      <td>Core Navigation</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Summernote Save Workflow (Data Loss Risk)</td>
+      <td><span class="tag tag-ux">Bug / UX</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td>Saving in the Summernote editor while in code view silently discards all changes. The user must remember to exit code view first &mdash; there is no warning or safeguard. Results in lost work and rework.</td>
+      <td>Code Editor</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Product Save Workflow &mdash; Close &amp; Reopen Per Tab</td>
+      <td><span class="tag tag-ux">Bug / UX</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td>Editing product details requires closing and reopening the product each time a different tab is modified. There is no way to save changes across multiple tabs in one session. Multi-field updates that should take a minute become a repetitive open-edit-close-reopen cycle.</td>
+      <td>Product Details</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>FTP Definition Preview in Product Edit</td>
+      <td><span class="tag tag-enhancement">Enhancement</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td>No inline preview of the selected FTP definition when editing a product. To check the definition&rsquo;s structure (and determine whether additional FTP tab fields need to be filled in), the user must leave the product, navigate to the FTP definitions area, locate the definition, review it, then deep-path navigate back. An inline preview on selection would eliminate this detour entirely.</td>
+      <td>Product Details / FTP</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>PDF Preview Missing in Composition</td>
+      <td><span class="tag tag-enhancement">Enhancement</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td>The composition PDF view shows no preview, no filename, and no version info &mdash; just a download link with no context. Users must download the file to determine what version it is, making version comparison unnecessarily slow. Should display a preview (or at minimum filename + version label) and a clear download button.</td>
+      <td>Composition</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>Code Editor Improvements</td>
+      <td><span class="tag tag-enhancement">Enhancement</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td>The embedded editor is missing standard features expected in any code editing environment: no multi-cursor (Ctrl/Cmd-D), no reliable in-place save (must click out of the editor to trigger save), and no basic code formatting or linting. These gaps slow daily work across every template edit.</td>
+      <td>Code Editor</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>Server Capacity / Sample Creation Timing</td>
+      <td><span class="tag tag-infra">Infrastructure</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td>Sample creation runs on a fixed 5-minute interval rather than on-demand. Even a quick change requires waiting for the next cycle. This bottleneck may be a data server limitation. On-demand or near-immediate processing would tighten the edit-review loop significantly.</td>
+      <td>Server / Data</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>Symbol / Special Character Limitations (Wingdings)</td>
+      <td><span class="tag tag-ux">Bug / UX</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td>Special characters and symbols are restricted to the Wingdings font &mdash; likely due to Summernote, the print pipeline, or printer font constraints. Symbols that are clearly visible in the source Word document cannot be copy-pasted into the editor; instead, programmers must manually look up the corresponding Wingdings character code. A copy-paste workaround or a visual symbol picker mapping common symbols to their Wingdings equivalents would save significant time.</td>
+      <td>Code Editor / Summernote</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>Error Transparency &amp; Observability</td>
+      <td><span class="tag tag-enhancement">Enhancement</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td>Errors and failures across the platform are often silent or opaque. Suppressed files show no explanation, and error codes (when present) are not actionable. Users resort to manual investigation or guesswork. Clear, contextual error messages and accessible logs would reduce debugging time.</td>
+      <td>Job Processing Screen</td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>Dropdown Menus Overlap / Don&rsquo;t Auto-Close</td>
+      <td><span class="tag tag-bug">Bug</span></td>
+      <td><span class="tag tag-low">Low</span></td>
+      <td><span class="tag tag-low">Low</span></td>
+      <td>Opening a new dropdown does not close the previously opened one, causing menus to overlap. Requires extra clicks to dismiss. Minor but persistent annoyance.</td>
+      <td>Core UI</td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>&lsquo;X&rsquo; Button Misalignment on Company Filter</td>
+      <td><span class="tag tag-bug">Bug</span></td>
+      <td><span class="tag tag-low">Low</span></td>
+      <td><span class="tag tag-low">Low</span></td>
+      <td>The close (&lsquo;X&rsquo;) button on the company filter in the composition filter menu does not align with the mouse click target. Hitbox is offset from the visible button.</td>
+      <td>Composition Filter</td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td>Shift+Tab Navigation Broken on Dropdowns</td>
+      <td><span class="tag tag-bug">Bug</span></td>
+      <td><span class="tag tag-low">Low</span></td>
+      <td><span class="tag tag-low">Low</span></td>
+      <td>Tabbing forward through form fields works normally, but Shift+Tab (backwards) gets stuck on dropdown components. If a user overshoots a field, they cannot tab back to it and must use the mouse. Only affects reverse tab order.</td>
+      <td>UI / Accessibility</td>
+    </tr>
+
+    <tr class="section-divider">
+      <td colspan="7">Additional items worth considering &mdash; these could help long-term and further improve speed / reduce friction</td>
+    </tr>
+
+    <tr class="enhancement-row">
+      <td>14</td>
+      <td>Two Separate Site Versions (SSO vs. Main)</td>
+      <td><span class="tag tag-bug">Bug</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td>Two separate versions of NcConnect are maintained under different URLs &mdash; one SSO, one non-SSO. Both must be updated independently, and bugs fixed in one version may not be fixed in the other, leading to inconsistent behavior. This should be consolidated into a single site (e.g., SSO-only with a settings toggle for auth method, or a unified codebase serving both). Maintaining two parallel versions doubles the update/testing burden and is a persistent source of divergent bugs.</td>
+      <td>Platform / Infrastructure</td>
+    </tr>
+    <tr class="enhancement-row">
+      <td>15</td>
+      <td>Unified Workspace for Data Drops &amp; File Access</td>
+      <td><span class="tag tag-enhancement">Enhancement</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td>Viewing or dropping data currently requires leaving NcConnect and navigating deep server paths: client &rarr; product &rarr; date &rarr; production/dev &rarr; incoming/outgoing &rarr; target files. A typical data drop involves two of these navigations. Integrating file access and data dropping directly into NcConnect (a &ldquo;Drop Data&rdquo; component alongside one-click access to recent files for the current product) would eliminate these detours and keep the user in a single workflow.</td>
+      <td>Workflow / Files</td>
+    </tr>
+    <tr class="enhancement-row">
+      <td>16</td>
+      <td>Frontend Framework Evaluation (Blazor &rarr; React)</td>
+      <td><span class="tag tag-arch">Architecture</span></td>
+      <td><span class="tag tag-medium">Medium</span></td>
+      <td><span class="tag tag-high">High</span></td>
+      <td>The site is built on a Blazor-like C# framework. Evaluating a move to React or a similar modern JS framework could improve developer velocity, ecosystem support, and make the UX improvements in this list significantly easier to implement. Long-term initiative.</td>
+      <td>Platform / Frontend</td>
+    </tr>
+  </tbody>
+</table>
+
+<script>
+const counts = { total: 16, critical: 2, high: 6, medium: 6, low: 3 };
+document.getElementById("stats-bar").innerHTML = `
+  <div class="stat-card"><div class="label">Total Items</div><div class="value total">${counts.total}</div></div>
+  <div class="stat-card"><div class="label">Critical</div><div class="value critical">${counts.critical}</div></div>
+  <div class="stat-card"><div class="label">High</div><div class="value high">${counts.high}</div></div>
+  <div class="stat-card"><div class="label">Medium</div><div class="value medium">${counts.medium}</div></div>
+  <div class="stat-card"><div class="label">Low</div><div class="value low">${counts.low}</div></div>
+`;
+</script>
+</body>
+</html>

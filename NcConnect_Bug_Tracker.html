@@ -163,8 +163,8 @@
       <td>2</td>
       <td>Page Refresh / Back-Forward Breaks Page Content</td>
       <td><span class="tag tag-bug">Bug</span></td>
-      <td><span class="tag tag-critical">Critical</span></td>
-      <td><span class="tag tag-high">High</span></td>
+      <td><span class="tag tag-low">Low</span></td>
+      <td><span class="tag tag-low">Low</span></td>
       <td>Refreshing the page or using the browser&rsquo;s back/forward buttons causes the page to break &mdash; only the blue title/header bar remains visible, with no content rendered below it and no buttons functional. This is distinct from the gray-out issue; the tab is still technically alive but completely unusable. Forces the user to open a new tab and re-navigate the full deep path, with the same context loss and productivity drain.</td>
       <td>Core Navigation</td>
     </tr>
@@ -303,7 +303,7 @@
 </table>
 
 <script>
-const counts = { total: 16, critical: 2, high: 6, medium: 6, low: 3 };
+const counts = { total: 16, critical: 1, high: 5, medium: 6, low: 4 };
 document.getElementById("stats-bar").innerHTML = `
   <div class="stat-card"><div class="label">Total Items</div><div class="value total">${counts.total}</div></div>
   <div class="stat-card"><div class="label">Critical</div><div class="value critical">${counts.critical}</div></div>

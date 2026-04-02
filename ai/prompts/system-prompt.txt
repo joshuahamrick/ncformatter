@@ -33,14 +33,18 @@ Generate HTML templates that:
 - CRITICAL — SKIP PRODUCTION NOTES: Lines like "Letter to be sent via Certified Mail to the Mailing Address." or "Letter to be sent via [method] to [address]." are mailing/production instructions — NOT letter content. Skip them entirely.
 
 ### Property Address
-- CRITICAL: The RE/Property Address cell MUST ALWAYS use: {Compress({[M567]}|{[M583]}|{[M568]})}
-- NEVER use {[M567]} alone — this omits the unit number and city/state/zip. ALWAYS use Compress with all three parts.
-- Format in RE table cell: <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
-- The IR will show the RE row as already containing the Compress expression — use it exactly as shown.
+- The standard 3-part property address is: {Compress({[M567]}|{[M583]}|{[M568]})}
+- However, check the source document for which property variables actually appear:
+  - If the source shows M567, M583, and M568 → use {Compress({[M567]}|{[M583]}|{[M568]})}
+  - If the source shows only M567 and M568 (no M583/unit number) → use {Compress({[M567]}|{[M568]})}
+- Do NOT add variables that are not present in the source document
+- Format in RE table cell: <td>{Compress({[M567]}|{[M568]})}</td> or <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td> based on source
 
 ### Compress() Usage Rules
-- Compress() is ONLY for property address fields: {Compress({[M567]}|{[M583]}|{[M568]})}
-- NEVER use Compress() on mortgagee clause lines, company address lines, or any other multi-line content block
+- Compress() is for stacking multiple lines vertically: addresses, phone blocks, multi-line info
+- Property address: {Compress({[M567]}|{[M568]})} or {Compress({[M567]}|{[M583]}|{[M568]})} based on source
+- Company address: {Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.CompanyReturnAddr1]}|...)}
+- NEVER use Compress() on mortgagee clause lines — those get separate centered divs
 - Multiple consecutive ALIGN_CENTER plsMatrix variable paragraphs (like MortgageeClauseLine1–5) must each be output as their OWN separate <div style="text-align: center">...</div> line — NOT combined with Compress()
 
 ### Salutation
@@ -88,7 +92,7 @@ Generate HTML templates that:
 - Compress() with static text: Use {Compress(Line1|Line2|Line3|Line4)} for multi-line static addresses (no variable tags), e.g. {Compress(U.S. HUD|National Servicing Center|301 NW 6th Street, Suite 200|Oklahoma City, OK 73102)}
 
 ### RE / Loan Number Table Layouts
-Three patterns based on source structure:
+Four patterns based on source structure — use the labels EXACTLY as they appear in the source:
 1. Two-column aligned (label | value, e.g. FL103): labels and values are tab-aligned in source → use <table width="100%"> with 15% label column
 2. Three-column with RE: parent (e.g. CL008, FC001): source has "RE: Loan Number: {[M594]}" where "RE:" prefixes the first row. Use 3-column layout.
    CRITICAL DETECTION: If the IR shows a paragraph starting with "RE: Loan Number:" followed by a separate paragraph starting with "RE:" or "Property Address:", this IS the 3-column pattern. NEVER merge "RE:" and "Loan Number:" into one cell.
@@ -110,6 +114,15 @@ Three patterns based on source structure:
      <td valign="top" width="15%">RE:</td>
      <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
    </tr></tbody></table>
+4. Two-column with custom labels (e.g. LM300): source has "RE: Loan No." and "Property Address:" as separate label rows without an "RE:" parent prefix. Use the EXACT labels from the source:
+   <table width="100%"><tbody><tr>
+     <td width="20%" valign="top">RE: Loan No.</td>
+     <td>{[M594]}</td>
+   </tr><tr>
+     <td width="20%" valign="top">Property Address:</td>
+     <td>{Compress({[M567]}|{[M568]})}</td>
+   </tr></tbody></table>
+   CRITICAL: Use the label text EXACTLY as it appears in the source document (e.g. "RE: Loan No." not "RE: Loan Number:"). The second row label is whatever the source says — typically "Property Address:" not "RE:".
 
 ### Subject Heading Before Loan Number Table
 - When a bold paragraph appears directly before the Loan Number/RE table (marked [FORMATTING: BOLD] with no ALIGN_CENTER), format it as:
@@ -137,15 +150,31 @@ Three patterns based on source structure:
   <td><b>Virtual (via email, video or phone call):</b> Conduct the consultation from the comfort of your home.</td>
 - The bold applies to the label text UP TO AND INCLUDING the colon; the remainder is regular text
 
-### Numbered vs Bullet Lists
-- If source list items are auto-numbered (Word ListNumber style, marked LIST_ITEM with consecutive items), use explicit numbers: 1., 2., 3., etc. in the table cell
-- If source list items are bulleted, use •
-- Always use the table format for lists: <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr><td width="3%" valign="top">1.</td><td>...</td></tr></tbody></table></div>
+### Numbered vs Bullet Lists — IR Annotation Format
+- The IR now annotates list items with: [LIST_ITEM: type=bullet, level=0] or [LIST_ITEM: type=numbered, level=0]
+- These annotations appear BEFORE the <div> tag for that paragraph
+- When you see [LIST_ITEM: type=bullet], use • in the first cell
+- When you see [LIST_ITEM: type=numbered], use sequential numbers (1., 2., 3., etc.) in the first cell
+- ALWAYS use the table format for lists with margin-left: <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr><td width="3%" valign="top">•</td><td>...</td></tr></tbody></table></div>
+- Group consecutive list items of the same type into a SINGLE table (multiple <tr> rows), NOT separate tables per item
 - IMPORTANT: If the IR contains [EMPTY_LIST_ITEM_LEVEL_X], this is an empty bullet placeholder — output it as a bullet row with an empty content cell wrapped in a div table:
   <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
     <td width="3%" valign="top">•</td>
     <td></td>
   </tr></tbody></table></div>
+
+### Indented Paragraphs — IR Annotation Format
+- The IR annotates indented (non-list) paragraphs with: [INDENT_LEFT: NNN] where NNN is the indent in twips
+- Indented paragraphs that are NOT list items should generally retain their context — they may be address blocks, sub-paragraphs, or continuation lines
+- Do NOT add margin-left to every indented paragraph — only list tables get margin-left
+
+### Spacing — IR Format
+- The IR uses <br> tags to represent blank lines from the source document
+- A single <br> = one blank line in the source; <br><br> = two blank lines, etc.
+- Do NOT add extra <br> tags that are not present in the IR
+- Do NOT remove <br> tags that ARE present in the IR
+- If two <div> elements appear consecutively with no <br> between them, they should be output as adjacent divs with NO spacing between them
+- CRITICAL: The spacing in the IR directly reflects the source document's paragraph spacing — trust it
 
 ### Separate List Groups (LIST_SEPARATOR)
 - CRITICAL: When the IR contains [LIST_SEPARATOR: ...], the list items above and below it MUST be output as SEPARATE <div><table> blocks, NOT combined into one table.
@@ -220,8 +249,9 @@ CRITICAL FORMATTING RULES:
 
 ### Closing Signature Section
 - ONLY include elements that actually appear in the source document's closing — do NOT invent or add standard elements
+- The spacing after Sincerely should match the IR — if the IR has a <br> between "Sincerely," and the signer line, include it. If the IR has NO <br> (they are adjacent divs), do NOT add one.
 - Common closing elements (include ONLY if present in source):
-  - <div>Sincerely,</div> followed by <br> — ALWAYS add a <br> after Sincerely, before the signer/department line
+  - <div>Sincerely,</div>
   - Department or signer name: <div>Tax and Insurance Department</div> or <div>{[plsMatrix.CompanyLongName]}</div>
   - Company return address: <div>{[plsMatrix.CompanyReturnAddr1]}</div>, <div>{[plsMatrix.CompanyReturnAddr2]}</div>
   - Phone: <div>{[plsMatrix.SPOCContactPhone]}</div> or similar

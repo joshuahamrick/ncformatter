@@ -46,12 +46,8 @@ def normalize_html(html):
 	# spacing (e.g. <br><br> after language sections, <br><br><br><br> for signature gaps)
 	# must be preserved. Claude is instructed to put multiple <br> on one line when intentional.
 	
-	# Ensure <br> after <div>Sincerely,</div> before the signer/department line
-	normalized = re.sub(
-		r'(<div>Sincerely,</div>)\n(<div>(?!<br>))',
-		r'\1\n<br>\n\2',
-		normalized
-	)
+	# NOTE: Do NOT force <br> after Sincerely — spacing should match the source document.
+	# The IR now preserves actual blank-line spacing from the docx.
 	
 	# Fix bare ampersands in HTML text content (outside template variables)
 	# Process in segments: split on {template} blocks and fix & in non-template parts

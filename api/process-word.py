@@ -143,6 +143,9 @@ def process_word_document(file_bytes, file_name):
             paragraph_data = extract_paragraph_formatting(para)
             paragraphs.append(paragraph_data)
         
+        # Resolve list types (bullet vs numbered) from numbering definitions
+        resolve_list_types(doc, paragraphs)
+        
         # Process tables
         for table in doc.tables:
             table_data = extract_table_formatting(table)
@@ -190,8 +193,78 @@ def process_word_document(file_bytes, file_name):
             'formattedHtml': f'<div>Error processing document: {str(e)}</div>'
         }
 
+def resolve_list_types(doc, paragraphs):
+    """Resolve whether list items are bullet or numbered by reading the numbering XML definitions."""
+    import zipfile
+    import re as _re
+    from docx.oxml.ns import qn
+    
+    bullet_chars = {'\uf0b7', '\u2022', '\u25cf', '\u25cb', '\u25a0', '\u25aa', '-', '\u2013', '\u2014'}
+    
+    try:
+        numbering_xml = None
+        temp = io.BytesIO()
+        doc.save(temp)
+        temp.seek(0)
+        with zipfile.ZipFile(temp, 'r') as z:
+            if 'word/numbering.xml' in z.namelist():
+                with z.open('word/numbering.xml') as f:
+                    numbering_xml = f.read().decode('utf-8')
+        
+        if not numbering_xml:
+            for p in paragraphs:
+                if p.get('isList'):
+                    p['listType'] = 'bullet'
+            return
+        
+        # Build map: numId -> abstractNumId
+        num_to_abstract = {}
+        for m in _re.finditer(r'<w:num\s+w:numId="(\d+)"[^>]*>.*?<w:abstractNumId\s+w:val="(\d+)"', numbering_xml, _re.DOTALL):
+            num_to_abstract[m.group(1)] = m.group(2)
+        
+        # Build map: abstractNumId -> numFmt for level 0
+        abstract_fmt = {}
+        for m in _re.finditer(r'<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>(.*?)</w:abstractNum>', numbering_xml, _re.DOTALL):
+            abs_id = m.group(1)
+            body = m.group(2)
+            lvl_match = _re.search(r'<w:lvl\s+w:ilvl="0"[^>]*>(.*?)</w:lvl>', body, _re.DOTALL)
+            if lvl_match:
+                lvl_body = lvl_match.group(1)
+                fmt_match = _re.search(r'<w:numFmt\s+w:val="([^"]+)"', lvl_body)
+                if fmt_match:
+                    abstract_fmt[abs_id] = fmt_match.group(1)
+                # Also check lvlText for bullet characters
+                txt_match = _re.search(r'<w:lvlText\s+w:val="([^"]*)"', lvl_body)
+                if txt_match and txt_match.group(1) in bullet_chars:
+                    abstract_fmt[abs_id] = 'bullet'
+        
+        for p in paragraphs:
+            if not p.get('isList'):
+                continue
+            num_id = p.pop('_numId', None)
+            if num_id and num_id in num_to_abstract:
+                abs_id = num_to_abstract[num_id]
+                fmt = abstract_fmt.get(abs_id, '')
+                if fmt == 'bullet':
+                    p['listType'] = 'bullet'
+                elif fmt in ('decimal', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'):
+                    p['listType'] = 'numbered'
+                else:
+                    p['listType'] = 'bullet'
+            else:
+                p['listType'] = 'bullet'
+    except Exception:
+        for p in paragraphs:
+            if p.get('isList'):
+                if '_numId' in p:
+                    del p['_numId']
+                p['listType'] = 'bullet'
+
+
 def extract_paragraph_formatting(paragraph):
     """Extract all formatting information from a paragraph"""
+    
+    from docx.oxml.ns import qn
     
     para_data = {
         'text': '',
@@ -200,8 +273,48 @@ def extract_paragraph_formatting(paragraph):
         'bold': False,
         'underline': False,
         'italic': False,
-        'runs': []
+        'runs': [],
+        'isList': False,
+        'listType': None,
+        'listLevel': 0,
+        'indentLeft': 0,
+        'spaceBefore': 0,
+        'spaceAfter': 0,
     }
+    
+    # Extract list/numbering info from XML
+    pPr = paragraph._p.find(qn('w:pPr'))
+    if pPr is not None:
+        numPr = pPr.find(qn('w:numPr'))
+        if numPr is not None:
+            para_data['isList'] = True
+            ilvl_elem = numPr.find(qn('w:ilvl'))
+            if ilvl_elem is not None:
+                para_data['listLevel'] = int(ilvl_elem.get(qn('w:val'), '0'))
+            numId_elem = numPr.find(qn('w:numId'))
+            if numId_elem is not None:
+                para_data['_numId'] = numId_elem.get(qn('w:val'), '')
+        
+        ind = pPr.find(qn('w:ind'))
+        if ind is not None:
+            left_val = ind.get(qn('w:left'), '0')
+            try:
+                para_data['indentLeft'] = int(left_val)
+            except (ValueError, TypeError):
+                pass
+    
+    # Extract paragraph spacing
+    pf = paragraph.paragraph_format
+    if pf.space_before is not None:
+        try:
+            para_data['spaceBefore'] = int(pf.space_before.pt) if pf.space_before else 0
+        except (AttributeError, TypeError):
+            pass
+    if pf.space_after is not None:
+        try:
+            para_data['spaceAfter'] = int(pf.space_after.pt) if pf.space_after else 0
+        except (AttributeError, TypeError):
+            pass
     
     # Get paragraph alignment
     alignment = paragraph.paragraph_format.alignment
@@ -499,82 +612,91 @@ def detect_document_type(paragraphs):
         return 'GENERIC'
 
 def generate_formatted_html(paragraphs, tables, document_type):
-    """Generate the final formatted HTML with proper structure"""
+    """Generate the final formatted HTML with proper structure.
+    
+    Uses empty paragraphs from the source to determine spacing (<br>) instead of
+    blindly inserting <br> between every element.
+    """
     
     html_parts = []
+    pending_breaks = 0
     
-    # Process each paragraph individually but with smart replacements
     for para in paragraphs:
         # Check if this is a table structure from visual layout analysis FIRST
-        # This must be checked before checking if text is empty
         if 'table_data' in para and para['table_data'].get('type') == 'aligned_pairs':
+            if pending_breaks > 0:
+                html_parts.append('<br>' * pending_breaks)
+                pending_breaks = 0
             rows = para['table_data']['rows']
-            # Generate HTML table from aligned pairs
             table_html = '<table width="100%"><tbody>'
             for row in rows:
                 label = row['label']
                 value = row['value']
-                # Determine column width based on label length
-                # Common patterns: SUBJECT/UHM LOAN NUMBER/JPMORGAN use 45%, PROPERTY uses 20%
                 if 'PROPERTY' in label.upper():
                     width = '20%'
                 else:
                     width = '45%'
-                # Process the value to handle formatting tags properly
-                # Remove "(Loan Number – No Dash)" type suffixes if present
                 import re
                 value = re.sub(r'\s*\(Loan Number[^)]*\)', '', value)
                 value = re.sub(r'\s*\(New Servicer[^)]*\)', '', value)
-                # Format table row with proper indentation to match expected output
                 table_html += f'<tr>\n  <td width="{width}" valign="top">{label}</td>\n  <td>{value}</td>\n</tr>'
             table_html += '</tbody></table>'
             html_parts.append(table_html)
             continue
         
-        # Skip empty paragraphs (but not table_data paragraphs which have empty text)
+        # Empty paragraphs become <br> spacing
         if not para.get('text', '').strip() and 'table_data' not in para:
+            pending_breaks += 1
             continue
             
         text = para['text'].strip()
         
-        # Debug: Check if this paragraph contains UHM LOAN NUMBER
-        if 'UHM LOAN NUMBER' in text or 'M594' in text:
-            # This will help us see if UHM LOAN NUMBER is being extracted
-            pass
+        # Flush pending breaks before content
+        if pending_breaks > 0:
+            html_parts.append('<br>' * pending_breaks)
+            pending_breaks = 0
+        
+        # Build formatting annotations for list items and indented paragraphs
+        annotations = []
+        if para.get('isList'):
+            lt = para.get('listType', 'bullet')
+            lvl = para.get('listLevel', 0)
+            annotations.append(f'[LIST_ITEM: type={lt}, level={lvl}]')
+        
+        indent_left = para.get('indentLeft', 0)
+        if indent_left > 200 and not para.get('isList'):
+            annotations.append(f'[INDENT_LEFT: {indent_left}]')
         
         # Create the div with proper formatting
         div_attrs = []
         
-        # Add alignment
         if para['alignment'] != 'left':
             div_attrs.append(f'text-align: {para["alignment"]}')
         
-        # Add font size (if consistent across runs)
         font_sizes = [run['fontSize'] for run in para['runs'] if run['fontSize']]
         if font_sizes and len(set(font_sizes)) == 1:
             div_attrs.append(f'font-size: {font_sizes[0]}')
         
-        # Build the div tag
         div_style = f' style="{"; ".join(div_attrs)}"' if div_attrs else ''
         
-        # Process the text with formatting
         formatted_text = process_text_with_formatting(para['runs'])
         
-        html_parts.append(f'<div{div_style}>{formatted_text}</div>')
+        annotation_prefix = ' '.join(annotations) + ' ' if annotations else ''
+        html_parts.append(f'{annotation_prefix}<div{div_style}>{formatted_text}</div>')
+    
+    # Flush any trailing breaks
+    if pending_breaks > 0:
+        html_parts.append('<br>' * pending_breaks)
     
     # Process tables from Word document
-    # Add tables to HTML output - they will be formatted and repositioned by fix_servicer_table_formatting if needed
     for table_data in tables:
         if table_data and table_data.get('rows'):
-            # Generate HTML table from Word document table
             table_html = '<div><table width="100%" style="border-collapse: collapse"><tbody>'
             for row in table_data.get('rows', []):
                 table_html += '<tr>'
                 for cell in row.get('cells', []):
                     cell_text = cell.get('text', '').strip()
-                    # Replace newlines with <br> tags
                     cell_text = cell_text.replace('\n', '<br>')
-                    # Handle bold formatting
                     if cell.get('bold'):
                         cell_text = f'<b>{cell_text}</b>'
                     table_html += f'<td>{cell_text}</td>'
@@ -582,7 +704,7 @@ def generate_formatted_html(paragraphs, tables, document_type):
             table_html += '</tbody></table></div>'
             html_parts.append(table_html)
     
-    return '\n<br>\n'.join(html_parts)
+    return '\n'.join(html_parts)
 
 def process_section(paragraphs, section_type):
     """Process a section of paragraphs based on its type"""

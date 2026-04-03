@@ -224,6 +224,91 @@ def _extract_table_ir(table):
 	}
 
 
+def _resolve_list_types(doc, blocks):
+	"""Resolve whether list items are bullet or numbered by reading numbering.xml definitions."""
+	import zipfile
+	import re as _re
+	
+	bullet_chars = {'\uf0b7', '\u2022', '\u25cf', '\u25cb', '\u25a0', '\u25aa', '-', '\u2013', '\u2014'}
+	
+	try:
+		numbering_xml = None
+		temp = io.BytesIO()
+		doc.save(temp)
+		temp.seek(0)
+		with zipfile.ZipFile(temp, 'r') as z:
+			if 'word/numbering.xml' in z.namelist():
+				with z.open('word/numbering.xml') as f:
+					numbering_xml = f.read().decode('utf-8')
+		
+		if not numbering_xml:
+			for b in blocks:
+				if b.get('type') == 'paragraph' and b.get('isListItem'):
+					b['listType'] = 'bullet'
+			return
+		
+		num_to_abstract = {}
+		for m in _re.finditer(r'<w:num\s+w:numId="(\d+)"[^>]*>.*?<w:abstractNumId\s+w:val="(\d+)"', numbering_xml, _re.DOTALL):
+			num_to_abstract[m.group(1)] = m.group(2)
+		
+		abstract_fmt = {}
+		for m in _re.finditer(r'<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>(.*?)</w:abstractNum>', numbering_xml, _re.DOTALL):
+			abs_id = m.group(1)
+			body = m.group(2)
+			lvl_match = _re.search(r'<w:lvl\s+w:ilvl="0"[^>]*>(.*?)</w:lvl>', body, _re.DOTALL)
+			if lvl_match:
+				lvl_body = lvl_match.group(1)
+				fmt_match = _re.search(r'<w:numFmt\s+w:val="([^"]+)"', lvl_body)
+				if fmt_match:
+					abstract_fmt[abs_id] = fmt_match.group(1)
+				txt_match = _re.search(r'<w:lvlText\s+w:val="([^"]*)"', lvl_body)
+				if txt_match and txt_match.group(1) in bullet_chars:
+					abstract_fmt[abs_id] = 'bullet'
+		
+		# Build a map from paragraph XML element to numId
+		from docx.oxml.ns import qn
+		para_numids = {}
+		for b in blocks:
+			if b.get('type') != 'paragraph' or not b.get('isListItem'):
+				continue
+			# We need the raw paragraph element to get numId
+			# Since we don't store it, re-scan from doc paragraphs
+		
+		# Re-scan doc paragraphs to get numId mapping
+		para_texts_to_numid = {}
+		for para in doc.paragraphs:
+			pPr = para._p.find(qn('w:pPr'))
+			if pPr is not None:
+				numPr = pPr.find(qn('w:numPr'))
+				if numPr is not None:
+					numId_elem = numPr.find(qn('w:numId'))
+					if numId_elem is not None:
+						num_id = numId_elem.get(qn('w:val'), '')
+						text = ''.join(run.text for run in para.runs if run.text)
+						para_texts_to_numid[text.strip()] = num_id
+		
+		for b in blocks:
+			if b.get('type') != 'paragraph' or not b.get('isListItem'):
+				continue
+			text = ''.join(r.get('text', '') for r in b.get('runs', [])).strip()
+			num_id = para_texts_to_numid.get(text, '')
+			if num_id and num_id in num_to_abstract:
+				abs_id = num_to_abstract[num_id]
+				fmt = abstract_fmt.get(abs_id, '')
+				if fmt == 'bullet':
+					b['listType'] = 'bullet'
+				elif fmt in ('decimal', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'):
+					b['listType'] = 'numbered'
+				else:
+					b['listType'] = 'bullet'
+			else:
+				b['listType'] = 'bullet'
+	except Exception:
+		for b in blocks:
+			if b.get('type') == 'paragraph' and b.get('isListItem'):
+				b['listType'] = 'bullet'
+
+
 def _build_ir_document(doc):
 	# CRITICAL: Accept all tracked changes first
 	# Documents with track changes have content in <w:ins> tags that python-docx doesn't read
@@ -340,7 +425,9 @@ def _build_ir_document(doc):
 				if tbl._tbl is element:
 					blocks.append(_extract_table_ir(tbl))
 					break
-	# Images are not handled at this pass; can be added later if needed
+	# Resolve list types (bullet vs numbered) from numbering definitions
+	_resolve_list_types(doc, blocks)
+	
 	# Store header texts in meta for header detection
 	return {
 		'blocks': blocks,

@@ -151,10 +151,9 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
 - The bold applies to the label text UP TO AND INCLUDING the colon; the remainder is regular text
 
 ### Numbered vs Bullet Lists — IR Annotation Format
-- The IR now annotates list items with: [LIST_ITEM: type=bullet, level=0] or [LIST_ITEM: type=numbered, level=0]
-- These annotations appear BEFORE the <div> tag for that paragraph
-- When you see [LIST_ITEM: type=bullet], use • in the first cell
-- When you see [LIST_ITEM: type=numbered], use sequential numbers (1., 2., 3., etc.) in the first cell
+- The IR annotates list items in the FORMATTING hints as: LIST_ITEM(type=bullet, level=0) or LIST_ITEM(type=numbered, level=0)
+- When you see LIST_ITEM(type=bullet), use • in the first cell
+- When you see LIST_ITEM(type=numbered), use sequential numbers (1., 2., 3., etc.) in the first cell
 - ALWAYS use the table format for lists with margin-left: <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr><td width="3%" valign="top">•</td><td>...</td></tr></tbody></table></div>
 - Group consecutive list items of the same type into a SINGLE table (multiple <tr> rows), NOT separate tables per item
 - IMPORTANT: If the IR contains [EMPTY_LIST_ITEM_LEVEL_X], this is an empty bullet placeholder — output it as a bullet row with an empty content cell wrapped in a div table:
@@ -164,7 +163,7 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
   </tr></tbody></table></div>
 
 ### Indented Paragraphs — IR Annotation Format
-- The IR annotates indented (non-list) paragraphs with: [INDENT_LEFT: NNN] where NNN is the indent in twips
+- The IR annotates indented paragraphs in the FORMATTING hints as: INDENT_LEFT_NNpt where NN is the indent in points
 - Indented paragraphs that are NOT list items should generally retain their context — they may be address blocks, sub-paragraphs, or continuation lines
 - Do NOT add margin-left to every indented paragraph — only list tables get margin-left
 

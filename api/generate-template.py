@@ -531,10 +531,16 @@ def format_ir_for_prompt(ir):
 			if leading_spaces and leading_spaces > 0:
 				formatting_hints.append(f"INDENT_{leading_spaces}spaces")
 			
-			# Add list item indicator (CRITICAL for bullet point detection)
+			# Add list item indicator with type (CRITICAL for bullet/numbered detection)
 			if block.get('isListItem'):
 				list_level = block.get('listLevel', 0)
-				formatting_hints.append(f"LIST_ITEM_LEVEL_{list_level}")
+				list_type = block.get('listType', 'bullet')
+				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level})")
+			
+			# Add left indent if significant (helps with margin-left decisions)
+			left_indent = block.get('leftIndentPt')
+			if left_indent and left_indent > 10:
+				formatting_hints.append(f"INDENT_LEFT_{int(left_indent)}pt")
 			
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""

@@ -32,17 +32,18 @@ Generate HTML templates that:
 - CRITICAL — HEADER METADATA: Source documents often list company address variables at the top (e.g. "<CompanyLongName>", "<CompanyReturnAddr1>", "<CompanyReturnAddr2>"). These are letterhead DEFINITIONS — they are already rendered inside {Insert(H003 TagHeader)}. Do NOT output them as separate <div> elements after {[mailingAddress]}. Nothing goes between the spacing block and the first content element (subject heading or Loan Number table).
 - CRITICAL — SKIP PRODUCTION NOTES: Lines like "Letter to be sent via Certified Mail to the Mailing Address." or "Letter to be sent via [method] to [address]." are mailing/production instructions — NOT letter content. Skip them entirely.
 
-### Property Address
-- The standard 3-part property address is: {Compress({[M567]}|{[M583]}|{[M568]})}
-- However, check the source document for which property variables actually appear:
-  - If the source shows M567, M583, and M568 → use {Compress({[M567]}|{[M583]}|{[M568]})}
-  - If the source shows only M567 and M568 (no M583/unit number) → use {Compress({[M567]}|{[M568]})}
-- Do NOT add variables that are not present in the source document
-- Format in RE table cell: <td>{Compress({[M567]}|{[M568]})}</td> or <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td> based on source
+### Property Address — Source-Driven (NEVER Default to 3-Part)
+- CRITICAL: There is NO "standard" property address format. The Compress() call must include ONLY the variables that actually appear in the source document's IR.
+- Scan the IR for which property variables appear:
+  - If the source shows M567, M583, AND M568 → use {Compress({[M567]}|{[M583]}|{[M568]})}
+  - If the source shows only M567 and M568 (NO M583) → use {Compress({[M567]}|{[M568]})}
+  - If the source shows only M567 → use {[M567]}
+- NEVER add M583 (or any other variable) that is not present in the source document — this is the #1 most common error
+- Format in RE table cell based ONLY on what's in the source document
 
 ### Compress() Usage Rules
 - Compress() is for stacking multiple lines vertically: addresses, phone blocks, multi-line info
-- Property address: {Compress({[M567]}|{[M568]})} or {Compress({[M567]}|{[M583]}|{[M568]})} based on source
+- Property address: use ONLY the variables present in the source — {Compress({[M567]}|{[M568]})} when source has 2 vars, {Compress({[M567]}|{[M583]}|{[M568]})} when source has all 3
 - Company address: {Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.CompanyReturnAddr1]}|...)}
 - NEVER use Compress() on mortgagee clause lines — those get separate centered divs
 - Multiple consecutive ALIGN_CENTER plsMatrix variable paragraphs (like MortgageeClauseLine1–5) must each be output as their OWN separate <div style="text-align: center">...</div> line — NOT combined with Compress()
@@ -92,6 +93,7 @@ Generate HTML templates that:
 - Compress() with static text: Use {Compress(Line1|Line2|Line3|Line4)} for multi-line static addresses (no variable tags), e.g. {Compress(U.S. HUD|National Servicing Center|301 NW 6th Street, Suite 200|Oklahoma City, OK 73102)}
 
 ### RE / Loan Number Table Layouts
+CRITICAL: Read the IR carefully to determine which pattern applies. The LABELS and VARIABLES must match the source EXACTLY — do not substitute one pattern's labels for another's.
 Four patterns based on source structure — use the labels EXACTLY as they appear in the source:
 1. Two-column aligned (label | value, e.g. FL103): labels and values are tab-aligned in source → use <table width="100%"> with 15% label column
 2. Three-column with RE: parent (e.g. CL008, FC001): source has "RE: Loan Number: {[M594]}" where "RE:" prefixes the first row. Use 3-column layout.
@@ -105,14 +107,14 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
    </tr><tr>
      <td width="3%" valign="top"></td>
      <td width="20%" valign="top">Property Address:</td>
-     <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+     <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>  ← only because CL008 source has M583; use source vars
    </tr></tbody></table>
 3. Loan Number + RE not aligned (e.g. IA004): values NOT tab-aligned, RE has multi-line address → use colspan=2 for loan number row:
    <table width="100%"><tbody><tr>
      <td colspan="2">Loan Number: {[M594]}</td>
    </tr><tr>
      <td valign="top" width="15%">RE:</td>
-     <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+     <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>  ← only because IA004 source has M583; use source vars
    </tr></tbody></table>
 4. Two-column with custom labels (e.g. LM300): source has "RE: Loan No." and "Property Address:" as separate label rows without an "RE:" parent prefix. Use the EXACT labels from the source:
    <table width="100%"><tbody><tr>
@@ -120,9 +122,10 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
      <td>{[M594]}</td>
    </tr><tr>
      <td width="20%" valign="top">Property Address:</td>
-     <td>{Compress({[M567]}|{[M568]})}</td>
+     <td>{Compress({[M567]}|{[M568]})}</td>  ← only M567+M568 because LM300 source has NO M583
    </tr></tbody></table>
    CRITICAL: Use the label text EXACTLY as it appears in the source document (e.g. "RE: Loan No." not "RE: Loan Number:"). The second row label is whatever the source says — typically "Property Address:" not "RE:".
+   CRITICAL: The Compress() variables must match the source — if the source has no M583, do NOT include M583.
 
 ### Subject Heading Before Loan Number Table
 - When a bold paragraph appears directly before the Loan Number/RE table (marked [FORMATTING: BOLD] with no ALIGN_CENTER), format it as:

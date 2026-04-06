@@ -142,6 +142,7 @@ def load_few_shot_examples():
 		'CL008/CL008-formatted.html',       # Loss mit: 3-col RE table, numbered+bullet lists, soft-return splitting, &amp; encoding
 		'IA004/IA004-formatted.html',        # FHA coverage term: colspan=2 loan row, bordered comparison table, Math() addition
 		'FC001/FC001-formatted.html',        # Foreclosure notice: separate bullet tables, <br> within bullets, numbered lists, Compress address, OR separator, partial underline
+		'LM300/LM300-formatted.html',       # HUD Pre-Foreclosure Sale: 2-col RE table with custom labels, 2-part Compress (no M583), margin-left bullets, no <br> after Sincerely
 	]
 
 	curated = foundational + recently_trained
@@ -1027,14 +1028,14 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
        continues aligned here, past the number.
    2.  Second item text stays in its own column too.
    ```
-   → Table structure:
-   <table width="100%"><tbody><tr>
+   → Table structure (MUST include <div> wrapper and margin-left):
+   <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
      <td width="5%" valign="top">1.</td>
      <td>This is the first item and when the text wraps it continues aligned here, past the number.</td>
    </tr><tr>
      <td width="5%" valign="top">2.</td>
      <td>Second item text stays in its own column too.</td>
-   </tr></tbody></table>
+   </tr></tbody></table></div>
    
    **Use DIV format** when the list item text WRAPS BACK to the same margin as the number,
    meaning the number and text share the same column and wrapped text goes all the way left:
@@ -1053,11 +1054,12 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - If text wraps inline with the number (same indent level) → DIV
    - When in doubt, check the source document's spatial layout
    
-   **BULLET LIST FORMAT (width="3%", border-collapse) - when using TABLE:**
-   <table width="100%" style="border-collapse: collapse"><tbody><tr>
+   **BULLET LIST FORMAT (width="3%", border-collapse, margin-left) - when using TABLE:**
+   <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
      <td width="3%" valign="top">•</td>
      <td>First item text</td>
-   </tr></tbody></table>
+   </tr></tbody></table></div>
+   CRITICAL: The margin-left and <div> wrapper are MANDATORY for all bullet/numbered list tables.
    
    **CRITICAL**: NEVER change numbered lists (1., 2.) to bullets (•) or vice versa!
    **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%" when using TABLE format!
@@ -1192,6 +1194,16 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Rule: The `<br>` tags around "Sincerely," are determined by ACTUAL blank lines in the source document
    - Count the blank lines before and after "Sincerely," in the source — each blank line = one `<br>`
    - Do NOT assume a fixed pattern — read the spacing from the document
+
+❌ **WRONG**: Adding M583 to Compress() when it's not in the source document
+   - Bad: `{Compress({[M567]}|{[M583]}|{[M568]})}` when the source only has M567 and M568
+   - Good: `{Compress({[M567]}|{[M568]})}` — include ONLY the variables present in the source
+   - Rule: NEVER default to 3-part Compress. Scan the IR for which address variables actually appear.
+
+❌ **WRONG**: Using "RE:" as the second row label when the source says "Property Address:"
+   - Bad: `<td>RE:</td>` for the property address row when source says "Property Address:"
+   - Good: `<td>Property Address:</td>` — copy the EXACT label from the source document
+   - Rule: The second row label in an RE table is NOT always "RE:" — read the source.
 
 ❌ **WRONG**: Not detecting aligned label-value groups as tables
    - Bad: Multiple consecutive `<div>Label: value</div>` with same indentation
@@ -1328,13 +1340,13 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
      Loan Number:    {[M594]}     [no INDENT note]
      RE:             {Compress...} [no INDENT note]
      ```
-     Format as 2-column table:
+     Format as 2-column table (Compress vars MUST match source — include M583 ONLY if source has it):
      <table width="100%"><tbody><tr>
        <td width="20%" valign="top">Loan Number:</td>
        <td>{[M594]}</td>
      </tr><tr>
        <td width="20%" valign="top">RE:</td>
-       <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+       <td>{Compress({[M567]}|{[M568]})}</td>  ← add M583 ONLY if it appears in the source
      </tr></tbody></table>
      
      **Pattern B (3-column)**: When "RE:" hangs left (different indentation)
@@ -1345,7 +1357,7 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
      
      The paragraph with "RE:" has NO indent, but "Property Address:" HAS indent
      ```
-     Format as 3-column table (split "RE:" from "Loan Number:"):
+     Format as 3-column table (split "RE:" from "Loan Number:") — Compress vars MUST match source:
      <table width="100%"><tbody><tr>
        <td width="3%" valign="top">RE:</td>
        <td width="20%" valign="top">Loan Number:</td>
@@ -1353,7 +1365,7 @@ STEP 1 - EXTRACT STRUCTURE ELEMENTS (BEFORE SALUTATION):
      </tr><tr>
        <td width="3%" valign="top"></td>
        <td width="20%" valign="top">Property Address:</td>
-       <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+       <td>{Compress({[M567]}|{[M568]})}</td>  ← add M583 ONLY if it appears in the source
      </tr></tbody></table>
      
      **CRITICAL DETECTION**: 
@@ -1429,7 +1441,7 @@ STEP 4 - VERIFY COMPLETENESS:
     - 1 <br> after Loan Number/Property Address table (if present)
     - 1 <br> before and after salutation line
     - 1 <br> between body paragraphs
-    - 1 <br> before and after "Sincerely,"
+    - Spacing around "Sincerely," is SOURCE-DRIVEN: check the IR for actual blank lines before/after it. If the IR shows a <br> between "Sincerely," and the next line, include it. If there is NO <br> (they are adjacent), do NOT add one. Do NOT assume 1 <br> after "Sincerely," — read the source.
     - In the closing section, use 1 <br> to separate logical groups (e.g. between company name and legal notice lines)
 
 5. Convert math expressions properly - CRITICAL SYSTEMATIC CONVERSION:

@@ -566,15 +566,24 @@ def format_ir_for_prompt(ir):
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
-			# Extract table content - include more detail
 			table_text = []
-			for row in rows[:10]:  # Increased limit to capture more rows
+			for row in rows[:10]:
 				cells = row.get('cells', [])
 				cell_texts = []
-				for c in cells[:5]:  # Increased cell limit
-					cell_text = ''.join([r.get('text', '') for r in c.get('runs', [])])
+				for c in cells[:5]:
+					# Cell content can be stored as direct 'runs' or nested in 'content' paragraphs
+					cell_text = ''
+					if c.get('runs'):
+						cell_text = ''.join([r.get('text', '') for r in c.get('runs', [])])
+					elif c.get('content'):
+						parts = []
+						for para in c['content']:
+							para_text = ''.join([r.get('text', '') for r in para.get('runs', [])])
+							if para_text.strip():
+								parts.append(para_text.strip())
+						cell_text = ' '.join(parts)
 					if cell_text.strip():
-						cell_texts.append(cell_text[:200])  # Increased character limit
+						cell_texts.append(cell_text[:200])
 				if cell_texts:
 					row_text = ' | '.join(cell_texts)
 					table_text.append(row_text)

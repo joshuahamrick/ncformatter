@@ -699,10 +699,15 @@ def format_ir_for_prompt(ir):
 		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line):
 			mailing_addr_indices.add(i)
 
-	# Detect which address variables exist in the document
-	has_m567 = any(re.search(r'\bM567\b', l) for l in formatted)
-	has_m583 = any(re.search(r'\bM583\b', l) for l in formatted)
-	has_m568 = any(re.search(r'\bM568\b', l) for l in formatted)
+	# Detect which address variables exist in the RAW IR blocks (not the filtered list,
+	# because M583/M568 may have been filtered as metadata but still need to be in Compress)
+	all_block_text = ' '.join(
+		''.join(r.get('text', '') for r in b.get('runs', []))
+		for b in blocks if b.get('type') == 'paragraph'
+	)
+	has_m567 = bool(re.search(r'\bM567\b', all_block_text))
+	has_m583 = bool(re.search(r'\bM583\b', all_block_text))
+	has_m568 = bool(re.search(r'\bM568\b', all_block_text))
 	compress_parts = []
 	if has_m567: compress_parts.append('{[M567]}')
 	if has_m583: compress_parts.append('{[M583]}')

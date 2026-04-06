@@ -725,19 +725,21 @@ def format_ir_for_prompt(ir):
 		# Paragraph immediately before first mortgagee clause: suppress trailing <br>
 		if i == pre_mortgagee_idx:
 			line += " [NOTE: Mortgagee clause lines follow IMMEDIATELY after this paragraph — do NOT add <br> between this paragraph and the mortgagee lines]"
-		# RE/Property Address row: directly replace content with the full Compress form.
-		# Always use all three parts — M583/M568 may have been filtered from formatted list
-		# but they are ALWAYS part of the property address in NcConnect templates.
+		# RE/Property Address row: merge address variables into Compress form using ONLY
+		# the variables that actually appear in the source document (source-driven).
 		if re.search(r'(?:RE:|Property Address:)\s+.*M567', line):
 			para_num = re.match(r'Paragraph (\d+):', line)
 			num = para_num.group(1) if para_num else '?'
 			fmt_match = re.search(r'\[FORMATTING:[^\]]*\]', line)
 			fmt_note = f' {fmt_match.group()}' if fmt_match else ''
-			full_compress = '{Compress({[M567]}|{[M583]}|{[M568]})}'
-			line = f"Paragraph {num}: RE: {full_compress}{fmt_note}"
-		# Skip M583/M568 standalone lines — already baked into the RE Compress above
-		if re.search(r'^Paragraph \d+:\s*(?:\{?\[?M583\]?\}?|#M583#)\s*(?:\[|$)', line):
+			# Preserve the ORIGINAL label from the source (e.g. "Property Address:" or "RE:")
+			label_match = re.match(r'Paragraph \d+:\s*((?:RE:|Property Address:)\s*)', line)
+			original_label = label_match.group(1).strip() if label_match else 'Property Address:'
+			line = f"Paragraph {num}: {original_label} {compress_expr}{fmt_note}"
+		# Skip M583 standalone lines if M583 was merged into Compress above
+		if has_m583 and re.search(r'^Paragraph \d+:\s*(?:\{?\[?M583\]?\}?|#M583#)\s*(?:\[|$)', line):
 			continue
+		# Skip M568 standalone lines — merged into the Compress expression above
 		if re.search(r'^Paragraph \d+:\s*(?:\{?\[?M568\]?\}?|#M568#)\s*(?:\[|$)', line):
 			continue
 		# Mortgagee clause lines: annotate to prevent Compress wrapping and enforce no leading <br>

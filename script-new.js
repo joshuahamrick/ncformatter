@@ -33,6 +33,8 @@ class WordFormatter {
         this._layoutPdfBase64 = null;
         this._layoutPdfError = null;
         this._layoutPdfObjectUrl = null;
+        this._layoutPngBase64 = null;
+        this._layoutPngError = null;
 
         console.log('Elements found:', {
             fileInput: !!this.fileInput,
@@ -189,6 +191,8 @@ class WordFormatter {
             }
             this._layoutPdfBase64 = null;
             this._layoutPdfError = null;
+            this._layoutPngBase64 = null;
+            this._layoutPngError = null;
 
             this.showProcessing();
 			let htmlOut = '';
@@ -243,6 +247,8 @@ class WordFormatter {
 				const ir = result.ir;
 				this._layoutPdfBase64 = result.layoutPdfBase64 || null;
 				this._layoutPdfError = result.layoutPdfError || null;
+				this._layoutPngBase64 = result.layoutPngBase64 || null;
+				this._layoutPngError = result.layoutPngError || null;
 
 				// Client-side PII pre-check before sending to AI
 				const piiCheck = this._clientSidePIICheck(ir);
@@ -340,15 +346,19 @@ class WordFormatter {
             const apiUrl = '/api/generate-template';
             console.log('Calling AI generation endpoint:', apiUrl);
             
+            const genBody = {
+                ir: ir,
+                docMeta: {},
+                userInstruction: userInstruction,
+                chatHistory: this.chatHistoryData
+            };
+            if (this._layoutPngBase64) {
+                genBody.layoutPngBase64 = this._layoutPngBase64;
+            }
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ir: ir,
-                    docMeta: {},
-                    userInstruction: userInstruction,
-                    chatHistory: this.chatHistoryData
-                })
+                body: JSON.stringify(genBody)
             }).catch(fetchError => {
                 // Network error - endpoint might not exist or CORS issue
                 console.error('Fetch error:', fetchError);
@@ -544,7 +554,13 @@ class WordFormatter {
                     const blob = new Blob([bytes], { type: 'application/pdf' });
                     if (this._layoutPdfObjectUrl) URL.revokeObjectURL(this._layoutPdfObjectUrl);
                     this._layoutPdfObjectUrl = URL.createObjectURL(blob);
-                    this.layoutPdfBanner.innerHTML = '<a href="' + this._layoutPdfObjectUrl + '" download="layout-reference.pdf" rel="noopener">Download layout PDF</a> — open in a browser or PDF viewer to compare tables and text placement to the generated HTML.';
+                    let pdfLine = '<a href="' + this._layoutPdfObjectUrl + '" download="layout-reference.pdf" rel="noopener">Download layout PDF</a> — open in a browser or PDF viewer to compare tables and text placement to the generated HTML.';
+                    if (this._layoutPngBase64) {
+                        pdfLine += ' <b>First-page snapshot was sent to the AI</b> for layout matching.';
+                    } else if (this._layoutPngError) {
+                        pdfLine += ' <span style="opacity:.9">(PNG snapshot for AI: ' + String(this._layoutPngError).replace(/</g, '&lt;') + ')</span>';
+                    }
+                    this.layoutPdfBanner.innerHTML = pdfLine;
                 } catch (e) {
                     console.warn('layout pdf blob failed', e);
                     this.layoutPdfBanner.textContent = 'Layout PDF was returned but could not be prepared for download.';

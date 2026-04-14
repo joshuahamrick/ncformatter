@@ -34,10 +34,10 @@ Curated examples from `formatter examples/`:
 ### 4. API Endpoints
 
 #### `/api/process-doc.py`
-- Input: `{ fileData, fileName, includeLayoutPdf? }` — optional `includeLayoutPdf: true` requests DOCX→PDF after the PII gate (see `api/docx_to_pdf.py`: LibreOffice `soffice` on `PATH` or `SOFFICE_PATH`, or Word + pywin32 on Windows). Response may include `layoutPdfBase64` or `layoutPdfError` without blocking `ir`.
+- Input: `{ fileData, fileName, includeLayoutPdf? }` — optional `includeLayoutPdf: true` requests DOCX→PDF after the PII gate (see `api/docx_to_pdf.py`: LibreOffice `soffice` on `PATH` or `SOFFICE_PATH`, or Word + pywin32 on Windows). Response may include `layoutPdfBase64` or `layoutPdfError` without blocking `ir`. When PDF succeeds, `api/layout_raster.py` may add `layoutPngBase64` (page 1 for vision) or `layoutPngError` if `pypdfium2`/Pillow are missing or raster fails.
 
 #### `/api/generate-template.py`
-- Input: `{ ir, docMeta, optionalChatHistory, optionalUserInstruction }`
+- Input: `{ ir, docMeta, optionalChatHistory, optionalUserInstruction, layoutPngBase64? }` — optional PNG (same as `process-doc` output) enables multimodal layout hints in Claude.
 - Output: `{ html, notes }`
 - Generates initial HTML template from IR
 

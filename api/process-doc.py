@@ -29,6 +29,14 @@ except ImportError:
 	except ImportError:
 		try_convert_docx_to_pdf = None
 
+try:
+	from api.layout_raster import try_pdf_first_page_png
+except ImportError:
+	try:
+		from layout_raster import try_pdf_first_page_png
+	except ImportError:
+		try_pdf_first_page_png = None
+
 
 def _align_to_str(alignment):
 	if alignment == WD_ALIGN_PARAGRAPH.CENTER:
@@ -494,6 +502,12 @@ class handler(BaseHTTPRequestHandler):
 				if pdf_bytes is not None:
 					payload['layoutPdfBase64'] = base64.b64encode(pdf_bytes).decode('ascii')
 					payload['layoutPdfMime'] = 'application/pdf'
+					if try_pdf_first_page_png is not None:
+						png_bytes, png_err = try_pdf_first_page_png(pdf_bytes)
+						if png_bytes is not None:
+							payload['layoutPngBase64'] = base64.b64encode(png_bytes).decode('ascii')
+						elif png_err:
+							payload['layoutPngError'] = png_err
 				else:
 					payload['layoutPdfError'] = pdf_err or 'unknown conversion error'
 

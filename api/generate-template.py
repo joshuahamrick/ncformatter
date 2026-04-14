@@ -2004,6 +2004,9 @@ class handler(BaseHTTPRequestHandler):
 			doc_meta = data.get('docMeta', {})
 			user_instruction = data.get('userInstruction')
 			chat_history = data.get('chatHistory', [])
+			layout_png_b64 = data.get('layoutPngBase64')
+			if isinstance(layout_png_b64, str) and 'base64,' in layout_png_b64:
+				layout_png_b64 = layout_png_b64.split('base64,', 1)[-1].strip()
 			
 			if not ir:
 				return self._send(400, {'success': False, 'error': 'No IR data provided'})
@@ -2093,16 +2096,42 @@ class handler(BaseHTTPRequestHandler):
 					max_tokens = 12000  # Large documents
 				else:
 					max_tokens = 8000   # Standard documents
-				
-				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}")
-				
+
+				use_layout_image = (
+					isinstance(layout_png_b64, str)
+					and len(layout_png_b64) > 200
+				)
+				if use_layout_image:
+					max_tokens = min(max_tokens + 4000, 16000)
+
+				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}, layoutImage={bool(use_layout_image)}")
+
+				if use_layout_image:
+					layout_note = (
+						"The first image is page 1 of the source Word document (exported via PDF then rasterized). "
+						"Use it to match table grid, borders, column widths, cell alignment, and spacing. "
+						"All wording and merge fields must still come from the Document Content / IR text below, not from the image.\n\n"
+					)
+					user_blocks = [
+						{
+							"type": "image",
+							"source": {
+								"type": "base64",
+								"media_type": "image/png",
+								"data": layout_png_b64.strip(),
+							},
+						},
+						{"type": "text", "text": layout_note + user_message},
+					]
+					messages = [{"role": "user", "content": user_blocks}]
+				else:
+					messages = [{"role": "user", "content": user_message}]
+
 				response = client.messages.create(
 					model=model_name,
 					max_tokens=max_tokens,
 					system=full_system_prompt,
-					messages=[
-						{"role": "user", "content": user_message}
-					],
+					messages=messages,
 					temperature=0  # Deterministic
 				)
 				

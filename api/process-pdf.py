@@ -11,6 +11,14 @@ try:
 except Exception:
 	PDF_AVAILABLE = False
 
+try:
+	from api.layout_raster import try_pdf_first_page_png
+except ImportError:
+	try:
+		from layout_raster import try_pdf_first_page_png
+	except ImportError:
+		try_pdf_first_page_png = None
+
 
 def _group_lines_to_paragraphs(lines):
 	paragraphs = []
@@ -93,7 +101,23 @@ class handler(BaseHTTPRequestHandler):
 				return self._send(500, {'success': False, 'error': 'pdfminer.six library not available'})
 			file_bytes = base64.b64decode(file_data)
 			ir = _extract_ir_from_pdf(file_bytes)
-			return self._send(200, {'success': True, 'fileName': file_name, 'ir': ir})
+			payload = {'success': True, 'fileName': file_name, 'ir': ir}
+
+			# Optional layout reference: file is already PDF — no LibreOffice needed.
+			# IR from pdfminer is plain text (no bold/tables); PNG helps Claude match layout.
+			if data.get('includeLayoutPdf'):
+				payload['layoutPdfBase64'] = base64.b64encode(file_bytes).decode('ascii')
+				payload['layoutPdfMime'] = 'application/pdf'
+				if try_pdf_first_page_png is not None:
+					png_bytes, png_err = try_pdf_first_page_png(file_bytes)
+					if png_bytes is not None:
+						payload['layoutPngBase64'] = base64.b64encode(png_bytes).decode('ascii')
+					elif png_err:
+						payload['layoutPngError'] = png_err
+				else:
+					payload['layoutPngError'] = 'layout raster not available'
+
+			return self._send(200, payload)
 		except Exception as e:
 			err = {
 				'success': False,

@@ -271,32 +271,59 @@ class WordFormatter {
 				
 				// Use AI generation instead of renderer
 				htmlOut = await this.generateTemplateWithAI(ir);
-			} else if (isPdfDocument(file)) {
+            } else if (isPdfDocument(file)) {
+				const includeLayoutPdf = !!(document.getElementById('includeLayoutPdf') && document.getElementById('includeLayoutPdf').checked);
 				const arrayBuffer = await readFileAsArrayBuffer(file);
+				const base64String = await new Promise((resolve, reject) => {
+					const r = new FileReader();
+					r.onload = () => resolve(String(r.result).split(',')[1]);
+					r.onerror = () => reject(new Error('Failed to read file'));
+					r.readAsDataURL(file);
+				});
 				let ir = await extractIRFromPdf(arrayBuffer);
 				// Fallback to server PDF extraction if result looks empty/low-confidence
 				const hasContent = Array.isArray(ir.blocks) && ir.blocks.some(b => b.type === 'paragraph' && joinRunsText(b.runs || []).trim().length > 0);
 				if (!hasContent || (typeof ir.confidence === 'number' && ir.confidence < 0.5)) {
 					try {
-						const base64String = await new Promise((resolve, reject) => {
-							const r = new FileReader();
-							r.onload = () => resolve(String(r.result).split(',')[1]);
-							r.onerror = () => reject(new Error('Failed to read file'));
-							r.readAsDataURL(file);
-						});
 						const resp = await fetch('/api/process-pdf', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ fileData: base64String, fileName: file.name })
+							body: JSON.stringify({ fileData: base64String, fileName: file.name, includeLayoutPdf })
 						});
 						if (resp.ok) {
 							const json = await resp.json();
 							if (json && json.success && json.ir) {
 								ir = json.ir;
 							}
+							if (includeLayoutPdf && json) {
+								this._layoutPdfBase64 = json.layoutPdfBase64 || null;
+								this._layoutPdfError = json.layoutPdfError || null;
+								this._layoutPngBase64 = json.layoutPngBase64 || null;
+								this._layoutPngError = json.layoutPngError || null;
+							}
 						}
 					} catch (e) {
 						console.warn('PDF server fallback failed:', e);
+					}
+				} else if (includeLayoutPdf) {
+					// Client-side IR is fine; still ask server for layout PDF/PNG (no LibreOffice needed).
+					try {
+						const resp = await fetch('/api/process-pdf', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ fileData: base64String, fileName: file.name, includeLayoutPdf: true })
+						});
+						if (resp.ok) {
+							const json = await resp.json();
+							if (json) {
+								this._layoutPdfBase64 = json.layoutPdfBase64 || null;
+								this._layoutPdfError = json.layoutPdfError || null;
+								this._layoutPngBase64 = json.layoutPngBase64 || null;
+								this._layoutPngError = json.layoutPngError || null;
+							}
+						}
+					} catch (e) {
+						console.warn('PDF layout reference request failed:', e);
 					}
 				}
 				// Client-side PII pre-check for PDF path
@@ -385,6 +412,10 @@ class WordFormatter {
                     console.error('PII Policy Block:', result.pii_scan);
                 }
                 throw new Error(errorMsg);
+            }
+
+            if (typeof result.layoutImageUsed === 'boolean') {
+                console.log('generate-template: layoutImageUsed=', result.layoutImageUsed);
             }
             
             return result.html || '';

@@ -2108,8 +2108,9 @@ class handler(BaseHTTPRequestHandler):
 
 				if use_layout_image:
 					layout_note = (
-						"The first image is page 1 of the source Word document (exported via PDF then rasterized). "
+						"The first image is page 1 of the source document as rendered (PDF raster). "
 						"Use it to match table grid, borders, column widths, cell alignment, and spacing. "
+						"Preserve bold/italic/underline from the IR run formatting below; use the image to confirm structure and alignment. "
 						"All wording and merge fields must still come from the Document Content / IR text below, not from the image.\n\n"
 					)
 					user_blocks = [
@@ -2161,7 +2162,8 @@ class handler(BaseHTTPRequestHandler):
 			return self._send(200, {
 				'success': True,
 				'html': html,
-				'notes': notes
+				'notes': notes,
+				'layoutImageUsed': bool(use_layout_image),
 			})
 			
 		except Exception as e:

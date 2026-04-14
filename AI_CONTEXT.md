@@ -33,6 +33,9 @@ Curated examples from `formatter examples/`:
 
 ### 4. API Endpoints
 
+#### `/api/process-doc.py`
+- Input: `{ fileData, fileName, includeLayoutPdf? }` — optional `includeLayoutPdf: true` requests DOCX→PDF after the PII gate (see `api/docx_to_pdf.py`: LibreOffice `soffice` on `PATH` or `SOFFICE_PATH`, or Word + pywin32 on Windows). Response may include `layoutPdfBase64` or `layoutPdfError` without blocking `ir`.
+
 #### `/api/generate-template.py`
 - Input: `{ ir, docMeta, optionalChatHistory, optionalUserInstruction }`
 - Output: `{ html, notes }`

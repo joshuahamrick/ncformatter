@@ -45,6 +45,10 @@
                         <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
                             Browse Files
                         </button>
+                        <label style="margin-top:14px;font-size:12px;color:#4a5568;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;max-width:520px;margin-left:auto;margin-right:auto;text-align:left">
+                            <input type="checkbox" id="includeLayoutPdf" style="flex-shrink:0">
+                            <span>Also request a <b>layout PDF</b> from the server (needs LibreOffice or Word where the API runs; slower). Use it to visually match tables and spacing.</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -58,6 +62,7 @@
             <!-- Results Section -->
             <div id="resultsSection" class="results-section" style="display: none;">
                 <div class="output-container">
+                    <div id="layoutPdfBanner" style="display:none;margin-bottom:12px;padding:10px 12px;font-size:13px;background:#f0f4f8;border:1px solid #d0d9e3;border-radius:6px;color:#2d3748"></div>
                     <div class="tabs">
                         <button class="tab-btn" data-tab="preview">Preview</button>
                         <button class="tab-btn active" data-tab="html">HTML Code</button>

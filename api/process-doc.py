@@ -21,6 +21,14 @@ except ImportError:
 		build_error_response = None
 		log_audit_event = None
 
+try:
+	from api.docx_to_pdf import try_convert_docx_to_pdf
+except ImportError:
+	try:
+		from docx_to_pdf import try_convert_docx_to_pdf
+	except ImportError:
+		try_convert_docx_to_pdf = None
+
 
 def _align_to_str(alignment):
 	if alignment == WD_ALIGN_PARAGRAPH.CENTER:
@@ -478,7 +486,18 @@ class handler(BaseHTTPRequestHandler):
 			if log_audit_event:
 				log_audit_event('DOC_PROCESSED', file_name, pii_scan, 'IR extraction successful')
 
-			return self._send(200, {'success': True, 'fileName': file_name, 'ir': ir})
+			payload = {'success': True, 'fileName': file_name, 'ir': ir}
+
+			# Optional layout PDF (for browser screenshot / multimodal compare). Runs after PII gate.
+			if data.get('includeLayoutPdf') and try_convert_docx_to_pdf is not None:
+				pdf_bytes, pdf_err = try_convert_docx_to_pdf(file_bytes, file_name)
+				if pdf_bytes is not None:
+					payload['layoutPdfBase64'] = base64.b64encode(pdf_bytes).decode('ascii')
+					payload['layoutPdfMime'] = 'application/pdf'
+				else:
+					payload['layoutPdfError'] = pdf_err or 'unknown conversion error'
+
+			return self._send(200, payload)
 		except Exception as e:
 			err = {
 				'success': False,

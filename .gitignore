@@ -4,4 +4,6 @@ dist/
 tools/debug-output.html
 tests/snapshots/artifacts/
 .env
+__pycache__/
+*.pyc
 

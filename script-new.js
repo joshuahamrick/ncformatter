@@ -16,6 +16,7 @@ class WordFormatter {
         this.copyButton = document.getElementById('copyButton');
         this.processingDiv = document.getElementById('processing');
         this.tabButtons = document.querySelectorAll('.tab-btn');
+        this.layoutPdfBanner = document.getElementById('layoutPdfBanner');
         
         // Chat panel elements
         this.chatPanel = document.getElementById('chatPanel');
@@ -29,7 +30,10 @@ class WordFormatter {
         this.currentHtml = null;
         this.initialHtml = null;
         this.chatHistoryData = [];
-        
+        this._layoutPdfBase64 = null;
+        this._layoutPdfError = null;
+        this._layoutPdfObjectUrl = null;
+
         console.log('Elements found:', {
             fileInput: !!this.fileInput,
             dropZone: !!this.dropZone,
@@ -179,6 +183,13 @@ class WordFormatter {
         console.log('Processing file:', file.name);
         
         try {
+            if (this._layoutPdfObjectUrl) {
+                URL.revokeObjectURL(this._layoutPdfObjectUrl);
+                this._layoutPdfObjectUrl = null;
+            }
+            this._layoutPdfBase64 = null;
+            this._layoutPdfError = null;
+
             this.showProcessing();
 			let htmlOut = '';
 			if (this.isWordDocument(file)) {
@@ -193,10 +204,11 @@ class WordFormatter {
 				const apiUrl = '/api/process-doc';
 				console.log('Calling process-doc endpoint:', apiUrl);
 				
+				const includeLayoutPdf = !!(document.getElementById('includeLayoutPdf') && document.getElementById('includeLayoutPdf').checked);
 				const response = await fetch(apiUrl, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ fileData: base64String, fileName: file.name })
+					body: JSON.stringify({ fileData: base64String, fileName: file.name, includeLayoutPdf })
 				}).catch(fetchError => {
 					console.error('Fetch error:', fetchError);
 					throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel.`);
@@ -229,7 +241,9 @@ class WordFormatter {
 				
 				if (!result.success) throw new Error(result.error || 'DOCX processing error');
 				const ir = result.ir;
-				
+				this._layoutPdfBase64 = result.layoutPdfBase64 || null;
+				this._layoutPdfError = result.layoutPdfError || null;
+
 				// Client-side PII pre-check before sending to AI
 				const piiCheck = this._clientSidePIICheck(ir);
 				if (piiCheck && piiCheck.blocked) {
@@ -519,6 +533,30 @@ class WordFormatter {
         // Show chat panel
         if (this.chatPanel) {
             this.chatPanel.style.display = 'flex';
+        }
+
+        if (this.layoutPdfBanner) {
+            if (this._layoutPdfBase64) {
+                try {
+                    const binary = atob(this._layoutPdfBase64);
+                    const bytes = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                    if (this._layoutPdfObjectUrl) URL.revokeObjectURL(this._layoutPdfObjectUrl);
+                    this._layoutPdfObjectUrl = URL.createObjectURL(blob);
+                    this.layoutPdfBanner.innerHTML = '<a href="' + this._layoutPdfObjectUrl + '" download="layout-reference.pdf" rel="noopener">Download layout PDF</a> — open in a browser or PDF viewer to compare tables and text placement to the generated HTML.';
+                } catch (e) {
+                    console.warn('layout pdf blob failed', e);
+                    this.layoutPdfBanner.textContent = 'Layout PDF was returned but could not be prepared for download.';
+                }
+                this.layoutPdfBanner.style.display = 'block';
+            } else if (this._layoutPdfError) {
+                this.layoutPdfBanner.textContent = 'Layout PDF: ' + this._layoutPdfError;
+                this.layoutPdfBanner.style.display = 'block';
+            } else {
+                this.layoutPdfBanner.style.display = 'none';
+                this.layoutPdfBanner.textContent = '';
+            }
         }
     }
 

@@ -307,6 +307,36 @@ body {
     box-shadow: 0 8px 25px rgba(220, 38, 53, 0.4);
 }
 
+/* Below drop zone (outside .drop-zone-content so pointer-events work) */
+.layout-pdf-option {
+    max-width: 520px;
+    margin: 16px auto 0;
+    padding: 12px 14px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #c9d1d9;
+    line-height: 1.45;
+}
+
+.layout-pdf-option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.layout-pdf-option-label input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #dc2635;
+}
+
 /* Processing Status */
 .processing-status {
     text-align: center;

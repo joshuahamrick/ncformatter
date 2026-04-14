@@ -45,12 +45,15 @@
                         <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
                             Browse Files
                         </button>
-                        <label style="margin-top:14px;font-size:12px;color:#4a5568;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;max-width:520px;margin-left:auto;margin-right:auto;text-align:left">
-                            <input type="checkbox" id="includeLayoutPdf" style="flex-shrink:0">
-                            <span>Also request a <b>layout PDF</b> (needs LibreOffice or Word on the server). When PDF succeeds, a <b>first-page PNG</b> is built for the AI to match tables and spacing—download the PDF to compare yourself too.</span>
-                        </label>
                     </div>
                 </div>
+            </div>
+
+            <div class="layout-pdf-option" role="group" aria-label="Layout reference for AI">
+                <label class="layout-pdf-option-label">
+                    <input type="checkbox" id="includeLayoutPdf">
+                    <span>Request a <strong>layout PDF</strong> (LibreOffice or Word on the server). If conversion succeeds, a <strong>first-page PNG</strong> is sent to the AI for table and spacing alignment; you can download the PDF to compare too.</span>
+                </label>
             </div>
 
             <!-- Processing Status -->

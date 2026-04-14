@@ -55,7 +55,7 @@ def try_convert_docx_to_pdf(
 		else:
 			err_s = _convert_via_soffice(docx_path, pdf_path)
 			if err_s:
-				return None, f"soffice: {err_s}"
+				return None, err_s
 
 		if not pdf_path.is_file():
 			return None, "conversion produced no pdf file"
@@ -87,7 +87,17 @@ def _resolve_soffice_executable() -> str | None:
 def _convert_via_soffice(docx_path: Path, pdf_path: Path) -> str | None:
 	exe = _resolve_soffice_executable()
 	if not exe:
-		return "soffice/libreoffice not found (set SOFFICE_PATH or install LibreOffice)"
+		if os.environ.get("VERCEL"):
+			return (
+				"LibreOffice is not available on Vercel’s default Python runtime (no soffice binary). "
+				"Workaround: in Word use File → Save As → PDF, upload that PDF here, and turn on the layout option — "
+				"the app can rasterize a PDF without LibreOffice. "
+				"To convert .docx on the server you need a custom deployment (Docker image with LibreOffice) or run the API on Windows with Word/LibreOffice."
+			)
+		return (
+			"LibreOffice (soffice) not found. Install LibreOffice, ensure soffice is on PATH, "
+			"or set SOFFICE_PATH to the full path of the soffice executable."
+		)
 	outdir = str(docx_path.parent)
 	try:
 		proc = subprocess.run(

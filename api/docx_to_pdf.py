@@ -4,10 +4,10 @@ Optional DOCX → PDF conversion for layout-accurate visual reference (tables, s
 Used when callers pass includeLayoutPdf=true on /api/process-doc.
 
 Resolution order:
-  1) SOFFICE_PATH or PATH: LibreOffice / soffice --headless (Linux server, local dev)
-  2) Windows: Microsoft Word via pywin32 if installed (best Word fidelity)
+  - Windows: Microsoft Word (pywin32) first, then LibreOffice soffice (PATH, SOFFICE_PATH, or Program Files).
+  - Linux/macOS: LibreOffice soffice / libreoffice on PATH or SOFFICE_PATH.
 
-Set SOFFICE_PATH to the full path of soffice.exe on Windows if not on PATH.
+Optional: set SOFFICE_PATH to the full path of soffice.exe when Word is unavailable.
 """
 from __future__ import annotations
 
@@ -45,11 +45,17 @@ def try_convert_docx_to_pdf(
 
 		pdf_path = tmpdir / f"{stem}.pdf"
 
-		err = _convert_via_soffice(docx_path, pdf_path)
-		if err:
-			err2 = _convert_via_word_com(docx_path, pdf_path)
-			if err2:
-				return None, f"soffice: {err}; word: {err2}"
+		# Windows + Word: try COM first (typical dev box has Office; no LibreOffice needed).
+		if os.name == "nt":
+			err_w = _convert_via_word_com(docx_path, pdf_path)
+			if err_w:
+				err_s = _convert_via_soffice(docx_path, pdf_path)
+				if err_s:
+					return None, f"word: {err_w}; soffice: {err_s}"
+		else:
+			err_s = _convert_via_soffice(docx_path, pdf_path)
+			if err_s:
+				return None, f"soffice: {err_s}"
 
 		if not pdf_path.is_file():
 			return None, "conversion produced no pdf file"
@@ -61,8 +67,25 @@ def try_convert_docx_to_pdf(
 		return pdf_bytes, None
 
 
+def _resolve_soffice_executable() -> str | None:
+	explicit = os.environ.get("SOFFICE_PATH")
+	if explicit and os.path.isfile(explicit):
+		return explicit
+	for cand in (shutil.which("soffice"), shutil.which("libreoffice")):
+		if cand:
+			return cand
+	if os.name == "nt":
+		program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+		program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
+		for base in (program_files, program_files_x86):
+			p = Path(base) / "LibreOffice" / "program" / "soffice.exe"
+			if p.is_file():
+				return str(p)
+	return None
+
+
 def _convert_via_soffice(docx_path: Path, pdf_path: Path) -> str | None:
-	exe = os.environ.get("SOFFICE_PATH") or shutil.which("soffice") or shutil.which("libreoffice")
+	exe = _resolve_soffice_executable()
 	if not exe:
 		return "soffice/libreoffice not found (set SOFFICE_PATH or install LibreOffice)"
 	outdir = str(docx_path.parent)

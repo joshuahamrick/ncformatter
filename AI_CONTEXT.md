@@ -34,7 +34,7 @@ Curated examples from `formatter examples/`:
 ### 4. API Endpoints
 
 #### `/api/process-doc.py`
-- Input: `{ fileData, fileName, includeLayoutPdf? }` — optional `includeLayoutPdf: true` requests DOCX→PDF after the PII gate (see `api/docx_to_pdf.py`: LibreOffice `soffice` on `PATH` or `SOFFICE_PATH`, or Word + pywin32 on Windows). Response may include `layoutPdfBase64` or `layoutPdfError` without blocking `ir`. When PDF succeeds, `api/layout_raster.py` may add `layoutPngBase64` (page 1 for vision) or `layoutPngError` if `pypdfium2`/Pillow are missing or raster fails.
+- Input: `{ fileData, fileName, includeLayoutPdf? }` — optional `includeLayoutPdf: true` requests DOCX→PDF after the PII gate (`api/docx_to_pdf.py`). **Windows:** tries **Word COM** first (install `pywin32`, declared in `requirements.txt` for win32 only), then LibreOffice under `Program Files` / `PATH` / `SOFFICE_PATH`. **Linux (e.g. Vercel):** needs `soffice` on the image or conversion stays disabled. Response may include `layoutPdfBase64` or `layoutPdfError` without blocking `ir`. When PDF succeeds, `api/layout_raster.py` may add `layoutPngBase64` (page 1 for vision) or `layoutPngError` if `pypdfium2`/Pillow are missing or raster fails. Local one-shot: `tools/setup-layout-pdf.ps1`.
 
 #### `/api/generate-template.py`
 - Input: `{ ir, docMeta, optionalChatHistory, optionalUserInstruction, layoutPngBase64? }` — optional PNG (same as `process-doc` output) enables multimodal layout hints in Claude.

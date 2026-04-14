@@ -1,1 +1,14 @@
-{}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/process-doc.py": {
+      "maxDuration": 120
+    },
+    "api/generate-template.py": {
+      "maxDuration": 120
+    },
+    "api/patch-template.py": {
+      "maxDuration": 90
+    }
+  }
+}

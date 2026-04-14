@@ -80,6 +80,9 @@ class handler(BaseHTTPRequestHandler):
 			current_html = data.get('currentHtml')
 			instruction = data.get('instruction')
 			ir = data.get('ir')
+			layout_png_b64 = data.get('layoutPngBase64')
+			if isinstance(layout_png_b64, str) and 'base64,' in layout_png_b64:
+				layout_png_b64 = layout_png_b64.split('base64,', 1)[-1].strip()
 			
 			if not current_html:
 				return self._send(400, {'success': False, 'error': 'No current HTML provided'})
@@ -264,15 +267,41 @@ Return ONLY the modified HTML with proper newlines and formatting:"""
 					'success': False,
 					'error': f'Request is too large (~{total_estimated_tokens} tokens). The HTML template or instruction is too large to process.'
 				})
-			
+
+			use_layout_image = (
+				isinstance(layout_png_b64, str)
+				and len(layout_png_b64) > 200
+			)
+			if use_layout_image:
+				max_tokens = min(max_tokens + 4000, 16000)
+				patch_layout_note = (
+					"The first image is page 1 of the source document as rendered. "
+					"Use it when applying the instruction so tables, borders, column alignment, and spacing stay faithful. "
+					"Preserve merge fields and helper functions in the HTML; only change what the instruction requires.\n\n"
+				)
+				user_blocks = [
+					{
+						"type": "image",
+						"source": {
+							"type": "base64",
+							"media_type": "image/png",
+							"data": layout_png_b64.strip(),
+						},
+					},
+					{"type": "text", "text": patch_layout_note + user_message},
+				]
+				patch_messages = [{"role": "user", "content": user_blocks}]
+			else:
+				patch_messages = [{"role": "user", "content": user_message}]
+
+			print(f"patch-template: layoutImage={bool(use_layout_image)}, max_tokens={max_tokens}")
+
 			try:
 				response = client.messages.create(
 					model=model_name,
 					max_tokens=max_tokens,
 					system=system_prompt,
-					messages=[
-						{"role": "user", "content": user_message}
-					],
+					messages=patch_messages,
 					temperature=0  # Deterministic
 				)
 				print(f"Anthropic API call successful, response length: {len(response.content[0].text)}")
@@ -303,7 +332,8 @@ Return ONLY the modified HTML with proper newlines and formatting:"""
 			
 			return self._send(200, {
 				'success': True,
-				'html': html
+				'html': html,
+				'layoutImageUsed': bool(use_layout_image),
 			})
 			
 		except json.JSONDecodeError as e:

@@ -17,6 +17,7 @@ class WordFormatter {
         this.processingDiv = document.getElementById('processing');
         this.tabButtons = document.querySelectorAll('.tab-btn');
         this.layoutPdfBanner = document.getElementById('layoutPdfBanner');
+        this.generationMeta = document.getElementById('generationMeta');
         
         // Chat panel elements
         this.chatPanel = document.getElementById('chatPanel');
@@ -35,6 +36,7 @@ class WordFormatter {
         this._layoutPdfObjectUrl = null;
         this._layoutPngBase64 = null;
         this._layoutPngError = null;
+        this._lastLayoutImageUsed = null;
 
         console.log('Elements found:', {
             fileInput: !!this.fileInput,
@@ -193,6 +195,7 @@ class WordFormatter {
             this._layoutPdfError = null;
             this._layoutPngBase64 = null;
             this._layoutPngError = null;
+            this._lastLayoutImageUsed = null;
 
             this.showProcessing();
 			let htmlOut = '';
@@ -416,6 +419,9 @@ class WordFormatter {
 
             if (typeof result.layoutImageUsed === 'boolean') {
                 console.log('generate-template: layoutImageUsed=', result.layoutImageUsed);
+                this._lastLayoutImageUsed = result.layoutImageUsed;
+            } else {
+                this._lastLayoutImageUsed = null;
             }
             
             return result.html || '';
@@ -466,14 +472,18 @@ class WordFormatter {
             const apiUrl = '/api/patch-template';
             console.log('Calling patch-template endpoint:', apiUrl);
             
+            const patchBody = {
+                currentHtml: this.currentHtml,
+                instruction: instruction,
+                ir: this.lastIr
+            };
+            if (this._layoutPngBase64) {
+                patchBody.layoutPngBase64 = this._layoutPngBase64;
+            }
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    currentHtml: this.currentHtml,
-                    instruction: instruction,
-                    ir: this.lastIr
-                })
+                body: JSON.stringify(patchBody)
             }).catch(fetchError => {
                 console.error('Fetch error:', fetchError);
                 throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel.`);
@@ -574,6 +584,23 @@ class WordFormatter {
         // Show chat panel
         if (this.chatPanel) {
             this.chatPanel.style.display = 'flex';
+        }
+
+        if (this.generationMeta) {
+            if (this._lastLayoutImageUsed === true) {
+                this.generationMeta.style.display = 'block';
+                this.generationMeta.textContent =
+                    'Initial generation: the model received your document IR plus a first-page layout image (tables/spacing). ' +
+                    '“Apply change” also receives that image when this session has a snapshot.';
+            } else if (this._lastLayoutImageUsed === false) {
+                this.generationMeta.style.display = 'block';
+                this.generationMeta.textContent =
+                    'Initial generation: the model received IR text only — no layout image was sent (typical for Word on Vercel without LibreOffice). ' +
+                    'Output can match older runs. For layout-aware runs on Vercel, use a PDF with the layout option checked, or run Word conversion where the API has LibreOffice/Word.';
+            } else {
+                this.generationMeta.style.display = 'none';
+                this.generationMeta.textContent = '';
+            }
         }
 
         if (this.layoutPdfBanner) {

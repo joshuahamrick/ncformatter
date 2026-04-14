@@ -1,0 +1,17 @@
+# Local Gotenberg for development (matches production API).
+# Run: docker compose -f deploy/gotenberg/docker-compose.yml up -d
+# Then: GOTENBERG_URL=http://127.0.0.1:3044  (and GOTENBERG_BASIC_AUTH if you enable auth below)
+
+services:
+  gotenberg:
+    image: gotenberg/gotenberg:8-libreoffice
+    ports:
+      - "3044:3000"
+    environment:
+      API_PORT: "3000"
+      API_BODY_LIMIT: "50MB"
+      API_TIMEOUT: "120s"
+      # Optional: uncomment to require Basic auth (same as Fly + Vercel GOTENBERG_BASIC_AUTH)
+      # API_ENABLE_BASIC_AUTH: "true"
+      # GOTENBERG_API_BASIC_AUTH_USERNAME: "local"
+      # GOTENBERG_API_BASIC_AUTH_PASSWORD: "change-me"

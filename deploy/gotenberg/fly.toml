@@ -1,0 +1,41 @@
+# Gotenberg (LibreOffice) for print-accurate .docx → PDF used by NcFormatter /api/process-doc.
+#
+# Deploy from this directory:
+#   cd deploy/gotenberg && fly deploy
+#
+# Before first deploy: set `app` to a unique Fly app name (globally unique).
+# Then set Vercel env GOTENBERG_URL=https://<app>.fly.dev
+# Raise API_BODY_LIMIT in [env] if large .docx uploads fail.
+
+# Must be globally unique; change before `fly deploy` if already taken.
+app = "ncformatter-gotenberg"
+primary_region = "iad"
+
+[build]
+  image = "gotenberg/gotenberg:8-libreoffice"
+
+[env]
+  API_PORT = "3000"
+  API_BODY_LIMIT = "50MB"
+  API_TIMEOUT = "120s"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 8
+    soft_limit = 2
+
+# No HTTP check: if you enable API_ENABLE_BASIC_AUTH, /health may require auth.
+# Use `fly status` or hit /health manually after deploy.
+
+[[vm]]
+  memory = "2gb"
+  cpus = 2
+  cpu_kind = "shared"

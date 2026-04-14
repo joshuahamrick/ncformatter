@@ -37,7 +37,6 @@ class WordFormatter {
         this._layoutPngBase64 = null;
         this._layoutPngError = null;
         this._lastLayoutImageUsed = null;
-        this._layoutSnapshotBrowser = false;
 
         console.log('Elements found:', {
             fileInput: !!this.fileInput,
@@ -184,106 +183,6 @@ class WordFormatter {
         return null;
     }
 
-    /**
-     * When the server has no LibreOffice (Vercel), rasterize an approximate first-page
-     * view of the .docx in the browser (mammoth → HTML → html2canvas) for Claude vision.
-     */
-    async _tryBrowserDocxLayoutPng(file) {
-        const empty = { pngBase64: null, error: null };
-        try {
-            if (typeof mammoth === 'undefined') {
-                return { pngBase64: null, error: 'mammoth library not loaded' };
-            }
-            if (typeof html2canvas === 'undefined') {
-                return { pngBase64: null, error: 'html2canvas library not loaded' };
-            }
-            const arrayBuffer = await file.arrayBuffer();
-            const { value: html } = await mammoth.convertToHtml({ arrayBuffer });
-            if (!html || !String(html).trim()) {
-                return { pngBase64: null, error: 'mammoth produced empty HTML' };
-            }
-
-            const wrap = document.createElement('div');
-            wrap.setAttribute(
-                'style',
-                [
-                    'position:fixed',
-                    'left:-12000px',
-                    'top:0',
-                    'width:816px',
-                    'height:1056px',
-                    'overflow:hidden',
-                    'background:#ffffff',
-                    'box-sizing:border-box',
-                    'padding:48px 56px',
-                    'font-family:"Times New Roman",Times,serif',
-                    'font-size:12pt',
-                    'line-height:1.2',
-                    'color:#000000',
-                    '-webkit-font-smoothing:antialiased'
-                ].join(';')
-            );
-            const inner = document.createElement('div');
-            inner.className = 'ncf-mammoth-html';
-            inner.innerHTML = html;
-            inner.querySelectorAll('table').forEach((t) => {
-                t.style.borderCollapse = 'collapse';
-                t.style.width = '100%';
-            });
-            inner.querySelectorAll('td,th').forEach((c) => {
-                c.style.border = '1px solid #ccc';
-                c.style.padding = '2px 4px';
-                c.style.verticalAlign = 'top';
-            });
-            wrap.appendChild(inner);
-            document.body.appendChild(wrap);
-            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-            let canvas = await html2canvas(wrap, {
-                scale: 1.2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                backgroundColor: '#ffffff',
-                width: 816,
-                height: 1056,
-                windowWidth: 816,
-                windowHeight: 1056
-            });
-
-            document.body.removeChild(wrap);
-
-            const maxB64 = 1400000;
-            let dataUrl = canvas.toDataURL('image/png');
-            let guard = 0;
-            while (dataUrl && dataUrl.length > maxB64 && guard < 12) {
-                guard += 1;
-                const w = Math.max(320, Math.floor(canvas.width * 0.82));
-                const h = Math.max(420, Math.floor(canvas.height * 0.82));
-                const oc = document.createElement('canvas');
-                oc.width = w;
-                oc.height = h;
-                const ctx = oc.getContext('2d');
-                if (!ctx) break;
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, w, h);
-                ctx.drawImage(canvas, 0, 0, w, h);
-                canvas = oc;
-                dataUrl = canvas.toDataURL('image/png', 0.85);
-            }
-
-            const parts = String(dataUrl || '').split(',');
-            const b64 = parts.length > 1 ? parts[1].trim() : '';
-            if (!b64 || b64.length < 200) {
-                return { pngBase64: null, error: 'snapshot too small or empty' };
-            }
-            return { pngBase64: b64, error: null };
-        } catch (e) {
-            const msg = e && e.message ? String(e.message) : String(e);
-            return { pngBase64: null, error: msg || 'browser layout capture failed' };
-        }
-    }
-
     async processFile(file) {
         console.log('Processing file:', file.name);
         
@@ -297,7 +196,6 @@ class WordFormatter {
             this._layoutPngBase64 = null;
             this._layoutPngError = null;
             this._lastLayoutImageUsed = null;
-            this._layoutSnapshotBrowser = false;
 
             this.showProcessing();
 			let htmlOut = '';
@@ -314,20 +212,10 @@ class WordFormatter {
 				console.log('Calling process-doc endpoint:', apiUrl);
 				
 				const includeLayoutPdf = !!(document.getElementById('includeLayoutPdf') && document.getElementById('includeLayoutPdf').checked);
-				let browserLayout = { pngBase64: null, error: null };
-				if (includeLayoutPdf) {
-					browserLayout = await this._tryBrowserDocxLayoutPng(file);
-					if (browserLayout.pngBase64) {
-						console.log('Browser DOCX layout snapshot OK, length=', browserLayout.pngBase64.length);
-					} else if (browserLayout.error) {
-						console.warn('Browser DOCX layout snapshot skipped:', browserLayout.error);
-					}
-				}
-				const serverLayoutPdf = includeLayoutPdf && !browserLayout.pngBase64;
 				const response = await fetch(apiUrl, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ fileData: base64String, fileName: file.name, includeLayoutPdf: serverLayoutPdf })
+					body: JSON.stringify({ fileData: base64String, fileName: file.name, includeLayoutPdf })
 				}).catch(fetchError => {
 					console.error('Fetch error:', fetchError);
 					throw new Error(`Network error: ${fetchError.message}. The API endpoint may not be deployed correctly on Vercel.`);
@@ -361,19 +249,9 @@ class WordFormatter {
 				if (!result.success) throw new Error(result.error || 'DOCX processing error');
 				const ir = result.ir;
 				this._layoutPdfBase64 = result.layoutPdfBase64 || null;
-				this._layoutPdfError = serverLayoutPdf ? (result.layoutPdfError || null) : null;
-				if (result.layoutPngBase64) {
-					this._layoutPngBase64 = result.layoutPngBase64;
-					this._layoutSnapshotBrowser = false;
-				} else if (browserLayout.pngBase64) {
-					this._layoutPngBase64 = browserLayout.pngBase64;
-					this._layoutSnapshotBrowser = true;
-				} else {
-					this._layoutPngBase64 = null;
-					this._layoutSnapshotBrowser = false;
-				}
-				this._layoutPngError =
-					this._layoutPngBase64 ? null : (result.layoutPngError || browserLayout.error || null);
+				this._layoutPdfError = result.layoutPdfError || null;
+				this._layoutPngBase64 = result.layoutPngBase64 || null;
+				this._layoutPngError = result.layoutPngError || null;
 
 				// Client-side PII pre-check before sending to AI
 				const piiCheck = this._clientSidePIICheck(ir);
@@ -717,8 +595,8 @@ class WordFormatter {
             } else if (this._lastLayoutImageUsed === false) {
                 this.generationMeta.style.display = 'block';
                 this.generationMeta.textContent =
-                    'Initial generation: the model received IR text only — no layout image was sent (layout option off, or browser/server snapshot failed). ' +
-                    'Turn the layout option on; for Word on Vercel the app tries a browser snapshot automatically.';
+                    'Initial generation: the model received IR text only — no layout image was sent (option off, or .docx→PDF conversion failed). ' +
+                    'For Word templates on Vercel, set server env GOTENBERG_URL to a Gotenberg instance, or upload a PDF exported from Word.';
             } else {
                 this.generationMeta.style.display = 'none';
                 this.generationMeta.textContent = '';
@@ -745,11 +623,6 @@ class WordFormatter {
                     console.warn('layout pdf blob failed', e);
                     this.layoutPdfBanner.textContent = 'Layout PDF was returned but could not be prepared for download.';
                 }
-                this.layoutPdfBanner.style.display = 'block';
-            } else if (this._layoutPngBase64 && this._layoutSnapshotBrowser) {
-                this.layoutPdfBanner.innerHTML =
-                    '<b>Layout snapshot (browser)</b> — approximate first-page render of your .docx was sent to the AI. ' +
-                    'For a print-perfect reference PDF, use <i>Save As → PDF</i> in Word and upload the PDF with this option on.';
                 this.layoutPdfBanner.style.display = 'block';
             } else if (this._layoutPdfError) {
                 this.layoutPdfBanner.textContent = 'Layout PDF: ' + this._layoutPdfError;

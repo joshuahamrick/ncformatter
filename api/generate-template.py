@@ -579,12 +579,38 @@ def format_ir_for_prompt(ir):
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
-			table_text = []
-			for row in rows[:10]:
+			tbl_borders = block.get('tableBorders')
+			tbl_style = block.get('styleName') or ''
+
+			# Describe border style in plain words for the model
+			if tbl_borders:
+				bkind = tbl_borders.get('kind', '')
+				bsides = tbl_borders.get('sides', {})
+				if bkind == 'none':
+					border_hint = 'TABLE_BORDERS: none (no visible borders)'
+				elif bkind == 'box':
+					# show outer border detail
+					ex = next((v for v in bsides.values() if v and v != 'none'), 'solid')
+					border_hint = f'TABLE_BORDERS: box (outer border only, style={ex})'
+				elif bkind == 'grid':
+					ex = bsides.get('top') or bsides.get('insideH') or 'solid'
+					border_hint = f'TABLE_BORDERS: grid (full inside+outside borders, style={ex})'
+				elif bkind == 'inner-only':
+					ex = bsides.get('insideH') or bsides.get('insideV') or 'solid'
+					border_hint = f'TABLE_BORDERS: inner-only (no outer border, inner lines style={ex})'
+				else:
+					parts = ', '.join(f'{k}={v}' for k, v in bsides.items() if v)
+					border_hint = f'TABLE_BORDERS: mixed ({parts})'
+			elif tbl_style and tbl_style.lower() not in ('normal', 'table normal', ''):
+				border_hint = f'TABLE_BORDERS: inherited from style "{tbl_style}"'
+			else:
+				border_hint = 'TABLE_BORDERS: none (no explicit borders set)'
+
+			table_text = [border_hint]
+			for row_i, row in enumerate(rows):
 				cells = row.get('cells', [])
 				cell_texts = []
-				for c in cells[:5]:
-					# Cell content can be stored as direct 'runs' or nested in 'content' paragraphs
+				for c in cells:
 					cell_text = ''
 					if c.get('runs'):
 						cell_text = ''.join([r.get('text', '') for r in c.get('runs', [])])
@@ -595,15 +621,33 @@ def format_ir_for_prompt(ir):
 							if para_text.strip():
 								parts.append(para_text.strip())
 						cell_text = ' '.join(parts)
-					if cell_text.strip():
-						cell_texts.append(cell_text[:200])
+					# Build cell hint including width, colspan, cell-level border override
+					cell_hint = cell_text.strip()[:200] if cell_text.strip() else '(empty)'
+					w = c.get('widthPct')
+					span = c.get('colSpan')
+					vmerge = c.get('vMerge')
+					cb = c.get('borders')
+					cell_meta = []
+					if w:
+						cell_meta.append(f'w={w}%')
+					if span:
+						cell_meta.append(f'colspan={span}')
+					if vmerge:
+						cell_meta.append(f'vmerge={vmerge}')
+					if cb:
+						# Only report if it meaningfully overrides
+						override = ', '.join(f'{k}={v}' for k, v in cb.items() if v and v != 'none')
+						if override:
+							cell_meta.append(f'cell-border={{{override}}}')
+					if cell_meta:
+						cell_hint = f'[{"; ".join(cell_meta)}] {cell_hint}'
+					cell_texts.append(cell_hint)
 				if cell_texts:
-					row_text = ' | '.join(cell_texts)
-					table_text.append(row_text)
+					table_text.append(f'  Row {row_i+1}: ' + ' | '.join(cell_texts))
 			if table_text:
 				formatted.append(f"Table {idx + 1} ({len(rows)} rows):")
-				for i, row_text in enumerate(table_text):
-					formatted.append(f"  Row {i+1}: {row_text}")
+				for line in table_text:
+					formatted.append(f"  {line}")
 	
 	# Claude has 200K context window - we can be much more generous with content
 	# Include ALL blocks for most documents, only sample for extremely large ones
@@ -1696,7 +1740,18 @@ CRITICAL: YOU MUST INCLUDE ALL CONTENT FROM THE DOCUMENT IN THE EXACT ORDER IT A
 - For tables, extract the ACTUAL table structure and content from the document - look at the Document Content for table information
 - NEVER generate placeholder tables with "Column 1, Column 2" or "Add actual table rows here" - extract the real table content
 - If you see table content in the Document Content, extract ALL rows and cells with their actual content
-- Tables should have proper structure: headers in first row with <b> tags, data rows below, proper borders and styling
+- Tables should have proper structure: headers in first row with <b> tags, data rows below
+
+**TABLE BORDER RULES — read the TABLE_BORDERS annotation on every table and apply exactly:**
+- `TABLE_BORDERS: none` → `<table width="100%" style="border-collapse:collapse">` with NO border styles on any td/th
+- `TABLE_BORDERS: box (outer border only …)` → add `border="1"` (or equivalent CSS) on the `<table>` only; no `<td>` borders
+- `TABLE_BORDERS: grid (full inside+outside …)` → `<table width="100%" border="1" style="border-collapse:collapse">` — every cell gets a visible border. Use the reported style (e.g. "single 0.5pt") to set the CSS border value on the table
+- `TABLE_BORDERS: inner-only …` → no outer table border; add `border-top: 1px solid` / `border-bottom: 1px solid` on each `<td>` for row separators only
+- `TABLE_BORDERS: mixed (…)` → set each `<td>` individually using the per-side values listed
+- If a cell annotation includes `cell-border={…}`, that cell overrides the table-level border for those sides
+- Column widths: if a cell has `[w=X%]`, apply `style="width:X%"` on that `<td>` / `<th>`
+- Colspan: if `[colspan=N]`, emit `colspan="N"` on that `<td>`
+- Row height from `vAlign`: apply `valign="top"` / `valign="middle"` / `valign="bottom"` as reported
 - Look for table content in the Document Content section - if you see "Table X" with rows, extract ALL of those rows into the HTML table structure
 - NEVER skip tables - if the document has a table, it MUST appear in the HTML output
 - CRITICAL: If you see text like "Payment Supplement Funds Applied" or any table-related header in the Document Content, there MUST be a table following it - look for "Table X" entries in the Document Content and include that complete table structure

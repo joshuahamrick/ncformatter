@@ -209,34 +209,210 @@ def _extract_paragraph_ir(paragraph):
 	return para_ir
 
 
+def _border_style(elem):
+	"""Return a compact border descriptor string from a w:top/bottom/left/right element, or None."""
+	if elem is None:
+		return None
+	val = elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val') or ''
+	sz  = elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz') or ''
+	color = elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}color') or ''
+	if val in ('nil', 'none', ''):
+		return 'none'
+	parts = [val]
+	if sz:
+		try:
+			parts.append(f'{int(sz)/8:.2g}pt')
+		except Exception:
+			parts.append(sz)
+	if color and color.lower() not in ('auto', 'ffffff', ''):
+		parts.append(f'#{color}')
+	return ' '.join(parts)
+
+
+def _table_border_summary(tblPr_elem):
+	"""Summarise table-level border settings from w:tblPr XML element."""
+	if tblPr_elem is None:
+		return None
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	tblBorders = tblPr_elem.find(f'{{{ns}}}tblBorders')
+	if tblBorders is None:
+		return None
+	sides = {}
+	for side in ('top', 'bottom', 'left', 'right', 'insideH', 'insideV'):
+		el = tblBorders.find(f'{{{ns}}}{side}')
+		s = _border_style(el)
+		if s:
+			sides[side] = s
+	if not sides:
+		return None
+	# Classify: all outer = 'box', all none = 'none', has inner = 'grid', else 'mixed'
+	outer = {sides.get(k) for k in ('top','bottom','left','right')}
+	inner = {sides.get(k) for k in ('insideH','insideV')}
+	outer_vis = all(v and v != 'none' for v in [sides.get(k) for k in ('top','bottom','left','right') if sides.get(k)])
+	inner_vis = any(v and v != 'none' for v in [sides.get('insideH'), sides.get('insideV')] if v)
+	has_any = any(v and v != 'none' for v in sides.values())
+	if not has_any:
+		kind = 'none'
+	elif outer_vis and inner_vis:
+		kind = 'grid'
+	elif outer_vis and not inner_vis:
+		kind = 'box'
+	elif not outer_vis and inner_vis:
+		kind = 'inner-only'
+	else:
+		kind = 'mixed'
+	return {'kind': kind, 'sides': sides}
+
+
+def _cell_border_summary(tcPr_elem):
+	"""Summarise cell-level border overrides from w:tcPr element."""
+	if tcPr_elem is None:
+		return None
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	tcBorders = tcPr_elem.find(f'{{{ns}}}tcBorders')
+	if tcBorders is None:
+		return None
+	sides = {}
+	for side in ('top', 'bottom', 'left', 'right'):
+		el = tcBorders.find(f'{{{ns}}}{side}')
+		s = _border_style(el)
+		if s:
+			sides[side] = s
+	return sides if sides else None
+
+
+def _tcw_pct(tcPr_elem, table_width_twips):
+	"""Return approximate column width percentage from w:tcW, or None."""
+	if tcPr_elem is None:
+		return None
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	tcW = tcPr_elem.find(f'{{{ns}}}tcW')
+	if tcW is None:
+		return None
+	w_type = tcW.get(f'{{{ns}}}type') or ''
+	w_val = tcW.get(f'{{{ns}}}w') or ''
+	try:
+		val = int(w_val)
+	except Exception:
+		return None
+	if w_type == 'pct':
+		return round(val / 50, 1)  # 50ths of a percent
+	if w_type in ('dxa', '') and table_width_twips and table_width_twips > 0:
+		return round(val / table_width_twips * 100, 1)
+	return None
+
+
+def _table_width_twips(tblPr_elem):
+	if tblPr_elem is None:
+		return None
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	tblW = tblPr_elem.find(f'{{{ns}}}tblW')
+	if tblW is None:
+		return None
+	try:
+		return int(tblW.get(f'{{{ns}}}w') or '0') or None
+	except Exception:
+		return None
+
+
+def _vmerge_info(tcPr_elem):
+	"""Returns 'restart' (first merged cell), 'continue', or None."""
+	if tcPr_elem is None:
+		return None
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	vm = tcPr_elem.find(f'{{{ns}}}vMerge')
+	if vm is None:
+		return None
+	val = vm.get(f'{{{ns}}}val') or ''
+	return 'restart' if val == 'restart' else 'continue'
+
+
+def _gridspan(tcPr_elem):
+	"""Return column span (int >= 1)."""
+	if tcPr_elem is None:
+		return 1
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	gs = tcPr_elem.find(f'{{{ns}}}gridSpan')
+	if gs is None:
+		return 1
+	try:
+		return max(1, int(gs.get(f'{{{ns}}}val') or '1'))
+	except Exception:
+		return 1
+
+
+def _cell_valign(tcPr_elem):
+	if tcPr_elem is None:
+		return None
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	vAlign = tcPr_elem.find(f'{{{ns}}}vAlign')
+	if vAlign is None:
+		return None
+	v = vAlign.get(f'{{{ns}}}val') or ''
+	return v if v in ('top', 'center', 'bottom') else None
+
+
 def _extract_table_ir(table):
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	tblPr = table._tbl.find(f'{{{ns}}}tblPr')
+	tbl_width = _table_width_twips(tblPr)
+	tbl_borders = _table_border_summary(tblPr)
+	tbl_style = None
+	if tblPr is not None:
+		ts = tblPr.find(f'{{{ns}}}tblStyle')
+		if ts is not None:
+			tbl_style = ts.get(f'{{{ns}}}val')
+
 	rows_ir = []
 	for row in table.rows:
 		cells_ir = []
+		# Build a deduplicated list of (cell_element, cell_object) pairs for this row
+		seen_ids = set()
+		row_cells = []
 		for cell in row.cells:
-			# Each cell content: extract paragraphs as IRParagraphs
+			cid = id(cell._tc)
+			if cid in seen_ids:
+				continue
+			seen_ids.add(cid)
+			row_cells.append(cell)
+
+		for cell in row_cells:
+			tcPr = cell._tc.find(f'{{{ns}}}tcPr')
 			content = []
-			# Deduplicate paragraph references due to python-docx table cell structure
-			seen = set()
+			seen_para = set()
 			for para in cell.paragraphs:
 				key = id(para)
-				if key in seen:
+				if key in seen_para:
 					continue
-				seen.add(key)
+				seen_para.add(key)
 				content.append(_extract_paragraph_ir(para))
-			cells_ir.append({
+
+			col_span = _gridspan(tcPr)
+			vmerge = _vmerge_info(tcPr)
+			cell_borders = _cell_border_summary(tcPr)
+			valign = _cell_valign(tcPr)
+			width_pct = _tcw_pct(tcPr, tbl_width)
+
+			cell_ir = {
 				'content': content,
-				'widthPct': None,
+				'widthPct': width_pct,
 				'align': None,
-				'header': False
-			})
+				'vAlign': valign,
+				'colSpan': col_span if col_span > 1 else None,
+				'vMerge': vmerge,
+				'header': False,
+				'borders': cell_borders,
+			}
+			cells_ir.append(cell_ir)
 		rows_ir.append({'cells': cells_ir})
+
 	return {
 		'type': 'table',
 		'rows': rows_ir,
 		'widthPct': 100,
 		'borderCollapse': True,
-		'styleName': None
+		'styleName': tbl_style,
+		'tableBorders': tbl_borders,
 	}
 
 

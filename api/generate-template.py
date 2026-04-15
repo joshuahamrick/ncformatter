@@ -11,6 +11,14 @@ except ImportError:
 	ANTHROPIC_AVAILABLE = False
 
 try:
+	from api.anthropic_retry import messages_create_with_retries
+except ImportError:
+	try:
+		from anthropic_retry import messages_create_with_retries
+	except ImportError:
+		messages_create_with_retries = None  # type: ignore
+
+try:
 	from api.pii_scanner import scan_ir_for_pii, build_error_response, log_audit_event
 except ImportError:
 	try:
@@ -181,7 +189,12 @@ def load_few_shot_examples():
 				print(f"Error loading example {rel_path}: {e}")
 		else:
 			print(f"Example file not found: {full_path}")
-	
+
+	max_n = int(os.environ.get("FEW_SHOT_MAX_EXAMPLES", "0") or "0")
+	if max_n > 0 and len(examples) > max_n:
+		print(f"FEW_SHOT_MAX_EXAMPLES={max_n}: using first {max_n} of {len(examples)} few-shot examples")
+		examples = examples[:max_n]
+
 	return examples
 
 def format_ir_for_prompt(ir):
@@ -2128,13 +2141,23 @@ class handler(BaseHTTPRequestHandler):
 				else:
 					messages = [{"role": "user", "content": user_message}]
 
-				response = client.messages.create(
-					model=model_name,
-					max_tokens=max_tokens,
-					system=full_system_prompt,
-					messages=messages,
-					temperature=0  # Deterministic
-				)
+				if messages_create_with_retries is not None:
+					response = messages_create_with_retries(
+						client,
+						model=model_name,
+						max_tokens=max_tokens,
+						system=full_system_prompt,
+						messages=messages,
+						temperature=0,
+					)
+				else:
+					response = client.messages.create(
+						model=model_name,
+						max_tokens=max_tokens,
+						system=full_system_prompt,
+						messages=messages,
+						temperature=0,
+					)
 				
 				html = response.content[0].text.strip()
 				print(f"Anthropic API call successful, HTML length: {len(html)}")

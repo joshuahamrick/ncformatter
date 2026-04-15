@@ -10,6 +10,14 @@ except ImportError:
 	ANTHROPIC_AVAILABLE = False
 
 try:
+	from api.anthropic_retry import messages_create_with_retries
+except ImportError:
+	try:
+		from anthropic_retry import messages_create_with_retries
+	except ImportError:
+		messages_create_with_retries = None  # type: ignore
+
+try:
 	from api.pii_scanner import scan_ir_for_pii, scan_text_for_pii, build_error_response, log_audit_event
 except ImportError:
 	try:
@@ -297,13 +305,23 @@ Return ONLY the modified HTML with proper newlines and formatting:"""
 			print(f"patch-template: layoutImage={bool(use_layout_image)}, max_tokens={max_tokens}")
 
 			try:
-				response = client.messages.create(
-					model=model_name,
-					max_tokens=max_tokens,
-					system=system_prompt,
-					messages=patch_messages,
-					temperature=0  # Deterministic
-				)
+				if messages_create_with_retries is not None:
+					response = messages_create_with_retries(
+						client,
+						model=model_name,
+						max_tokens=max_tokens,
+						system=system_prompt,
+						messages=patch_messages,
+						temperature=0,
+					)
+				else:
+					response = client.messages.create(
+						model=model_name,
+						max_tokens=max_tokens,
+						system=system_prompt,
+						messages=patch_messages,
+						temperature=0,
+					)
 				print(f"Anthropic API call successful, response length: {len(response.content[0].text)}")
 			except Exception as api_error:
 				error_msg = f"Anthropic API error: {str(api_error)}"

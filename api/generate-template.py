@@ -151,6 +151,7 @@ def load_few_shot_examples():
 		'IA004/IA004-formatted.html',        # FHA coverage term: colspan=2 loan row, bordered comparison table, Math() addition
 		'FC001/FC001-formatted.html',        # Foreclosure notice: separate bullet tables, <br> within bullets, numbered lists, Compress address, OR separator, partial underline
 		'LM300/LM300-formatted.html',       # HUD Pre-Foreclosure Sale: 2-col RE table with custom labels, 2-part Compress (no M583), margin-left bullets, no <br> after Sincerely
+		'CL028/CL028-formatted.html',       # Illinois Affidavit of Defense: 60/40 IMPORTANT NOTICE header, bordered lender/consumer table, grid home table, border-bottom writing lines, dual 50/50 signature tables
 	]
 
 	curated = foundational + recently_trained
@@ -1327,6 +1328,55 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: `{Insert(H003 TagHeader)}` when H003 just appears as a plain tag `{[H003]} (Company Address Line 2)`
    - Good: `{[tagHeader]}` — the default when no suppress/conditional logic exists around H003
    - Rule: Only use {Insert(H003 TagHeader)} when you see conditional suppression language around H003
+
+**SPECIAL HEADER LAYOUT — "IMPORTANT NOTICE" documents (affidavits, legal notices):**
+When the source document has a large bold "IMPORTANT NOTICE" or similar title in the upper right alongside the company header, use a two-column header table instead of a plain tagHeader div:
+```html
+<table width="100%"><tbody><tr>
+  <td width="60%">{Insert(H003 TagHeader)}</td>
+  <td width="40%" style="font-size: 16pt; font-weight: bold; text-align: center; font-family: Arial Black; vertical-align: middle">IMPORTANT<br>NOTICE</td>
+</tr></tbody></table>
+```
+This applies to: CL028 (Illinois Affidavit of Defense) and similar legal affidavit/notice documents.
+
+**BORDERED LENDER/CONSUMER TABLE — affidavit documents:**
+When the document has a side-by-side "Lender Name and Address | Consumer Name and Address" info block, wrap the table in a border div:
+```html
+<div style="border: 2px solid rgba(0,0,0,1)">
+  <table width="100%" style="border-collapse: collapse"><tbody>
+    <tr>
+      <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px; text-align: center; font-weight: bold">Lender (Lienholder) Name and Address</td>
+      <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px; text-align: center; font-weight: bold">Consumer Name and Address</td>
+    </tr>
+    <tr>
+      <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px">{Compress({[H131]}|{[H132]}|{[H133]}|{[H134]}|{[H135]})}</td>
+      <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px">{Compress({[M558]}|{[M567]}|{[M568]}|Loan Number: {[M594]})}</td>
+    </tr>
+  </tbody></table>
+</div>
+```
+Do NOT use O294/O295/O296/O297 etc. for this table — those are SPOC variables, not borrower address variables.
+
+**WRITING LINES (defense/response lines) — use border-bottom divs, NOT tables:**
+When the source document has blank horizontal lines for the reader to write on:
+```html
+<div style="border-bottom: 1px solid rgba(0,0,0,1); padding-top: 22px; margin-bottom: 4px"></div>
+```
+Repeat once per line needed. Do NOT use a table with &nbsp; cells — that creates invisible blank space, not visible lines.
+
+**SIGNATURE TABLES — two separate tables for two signatories:**
+```html
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Consumer's Name</td>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Date Signed</td>
+</tr></tbody></table>
+<br>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Consumer's Name</td>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Date Signed</td>
+</tr></tbody></table>
+```
+Do NOT use a 3-column layout with a blank middle spacer column.
 
 Generate the HTML template following these EXACT rules:
 

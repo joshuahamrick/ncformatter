@@ -152,6 +152,7 @@ def load_few_shot_examples():
 		'FC001/FC001-formatted.html',        # Foreclosure notice: separate bullet tables, <br> within bullets, numbered lists, Compress address, OR separator, partial underline
 		'LM300/LM300-formatted.html',       # HUD Pre-Foreclosure Sale: 2-col RE table with custom labels, 2-part Compress (no M583), margin-left bullets, no <br> after Sincerely
 		'CL028/CL028-formatted.html',       # Illinois Affidavit of Defense: 60/40 IMPORTANT NOTICE header, bordered lender/consumer table, grid home table, border-bottom writing lines, dual 50/50 signature tables
+		'ES014/ES014-formatted.html',       # Escrow Cancellation Request: bordered title/warning boxes, dual signature tables, border-bottom writing lines, inline underline spans, stacked centered return address
 	]
 
 	curated = foundational + recently_trained

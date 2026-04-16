@@ -939,9 +939,18 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - Example: `{If({Number({[M467]})} < {Number({[M962]})})}`
    - Prevents string comparison issues with values like "100,000"
    
-   **Blank/Zero Checks:**
-   - Use: `'{[TAG]}' IN ('', '0', NULL)`
-   - Example: `{If('{[M467]}' IN ('', '0', NULL))}{[M962]}{Else}...{End If}`
+   **Blank/Zero Checks — field type determines the NOT IN list:**
+
+   - **Numeric/money fields** (amounts, balances, percentages — M-prefix variables like M467, M591, T106, Q365, etc.):
+     Use `('', '0', '.00', NULL)` — catches numeric zeros stored as strings
+     Example: `{If('{[M467]}' IN ('', '0', '.00', NULL))}{[M962]}{Else}...{End If}`
+
+   - **Text/name/contact fields** (SPOC names, addresses, labels — O-prefix variables like O274, O294, O295, O276, O296, etc.):
+     Use `('', NULL)` ONLY — never add `'0'` or `'.00'` to text field checks
+     Example: `{If('{[O294]}' NOT IN ('', NULL) AND '{[O295]}' NOT IN ('', NULL))}{[O294]}, {[O295]}{Else}{[plsMatrix.SPOCContact]}{End If}`
+
+   **CRITICAL**: O294, O295, O274, O276, O296 are SPOC contact name/text fields.
+   NEVER use `'0'` or `'.00'` in their NOT IN checks — only `('', NULL)`.
    
    **CRITICAL: NEVER nest {If()} inside {Math()}!**
    - WRONG: `{Math(formula/{If(condition)}{[TAG1]}{Else}{[TAG2]}{End If}*100)}`

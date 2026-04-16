@@ -254,20 +254,37 @@ Verify ALL content sections are included:
 Check for:
 - Investor conditionals (M944 = 'F' for Fannie, 'H' for Freddie)
 - Occupancy conditionals (M657 = '1')
-- SPOC conditionals (O274, O294)
+- SPOC conditionals (O274, O294, O295, O276, O296)
 - Date/calculation conditionals
 - Verify placement (inside boxes, outside boxes)
+
+**CRITICAL: NOT IN list depends on field type**
+
+| Field type | Correct NOT IN list | Examples |
+|---|---|---|
+| Numeric/money fields | `('', '0', '.00', NULL)` | M467, M591, T106, Q365 |
+| Text/name/contact fields | `('', NULL)` | O274, O294, O295, O276, O296 |
+
+**❌ WRONG — adding `'0'` / `'.00'` to a text/SPOC field:**
+```html
+{If('{[O294]}' NOT IN ('', '0', '.00', NULL) AND '{[O295]}' NOT IN ('', '0', '.00', NULL))}
+```
+
+**✅ CORRECT — text fields only check empty string and NULL:**
+```html
+{If('{[O294]}' NOT IN ('', NULL) AND '{[O295]}' NOT IN ('', NULL))}{[O294]}, {[O295]}{Else}{[plsMatrix.SPOCContact]}{End If}
+```
 
 **CRITICAL: Conditional Formatting Rules**
 
 **❌ WRONG - Formatting AROUND conditional wrapper:**
 ```html
-<div><b><u>{If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else}...{End If}</u></b></div>
+<div><b><u>{If('{[O274]}' NOT IN ('', NULL))}{[O274]}{Else}...{End If}</u></b></div>
 ```
 
 **✅ CORRECT - Formatting INSIDE conditional (on the variables):**
 ```html
-<div>{If('{[O274]}' NOT IN ('', '0', NULL))}{[O274]}{Else}...{End If}</div>
+<div>{If('{[O274]}' NOT IN ('', NULL))}{[O274]}{Else}...{End If}</div>
 ```
 
 **Rule**: Formatting applies to the CONTENT being rendered, not the conditional logic wrapper.

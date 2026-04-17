@@ -28,6 +28,22 @@
         <main class="main-content">
             <div class="content-wrapper">
                 <div class="main-panel">
+            <!-- Advanced option above drop zone -->
+            <div class="advanced-option-row">
+                <label class="advanced-option-label">
+                    <input type="checkbox" id="includeLayoutPdf">
+                    <span class="advanced-option-text">Advanced</span>
+                </label>
+                <span class="info-icon" tabindex="0" aria-label="Advanced option details">
+                    &#9432;
+                    <span class="info-tooltip">
+                        Sends the model a <strong>first-page layout snapshot</strong> (PNG) alongside the document for better table and alignment accuracy.<br><br>
+                        <strong>PDF:</strong> rasterized automatically on the server.<br>
+                        <strong>Word:</strong> requires print-accurate PDF conversion — uses local LibreOffice/Word if available, or set the <code>GOTENBERG_URL</code> environment variable to a <a href="https://gotenberg.dev/" target="_blank" rel="noopener noreferrer">Gotenberg</a> instance (LibreOffice in Docker).
+                    </span>
+                </span>
+            </div>
+
             <!-- Upload Area -->
             <div class="upload-section">
                 <div id="dropZone" class="drop-zone">
@@ -47,13 +63,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-
-            <div class="layout-pdf-option" role="group" aria-label="Layout reference for AI">
-                <label class="layout-pdf-option-label">
-                    <input type="checkbox" id="includeLayoutPdf">
-                    <span>Send the model a <strong>first-page layout snapshot</strong> (PNG) for tables and alignment. <strong>PDF:</strong> rasterized on the server. <strong>Word:</strong> needs print-accurate conversion — local LibreOffice/Word, or set server env <code>GOTENBERG_URL</code> to a <a href="https://gotenberg.dev/" target="_blank" rel="noopener">Gotenberg</a> instance (LibreOffice in Docker).</span>
-                </label>
             </div>
 
             <!-- Processing Status -->

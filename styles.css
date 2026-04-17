@@ -307,25 +307,95 @@ body {
     box-shadow: 0 8px 25px rgba(220, 38, 53, 0.4);
 }
 
-/* Below drop zone (outside .drop-zone-content so pointer-events work) */
-.layout-pdf-option {
+/* Advanced option row — above drop zone */
+.advanced-option-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     max-width: 520px;
-    margin: 16px auto 0;
-    padding: 12px 14px;
-    background: #21262d;
-    border: 1px solid #30363d;
-    border-radius: 8px;
-    font-size: 12px;
-    color: #c9d1d9;
-    line-height: 1.45;
+    margin: 0 auto 10px;
+    justify-content: flex-end;
 }
 
-.layout-pdf-option-label {
+.advanced-option-label {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
+    font-size: 12px;
+    color: #8b949e;
+    user-select: none;
+}
+
+.advanced-option-label input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
+    accent-color: #dc2635;
+    flex-shrink: 0;
+}
+
+.advanced-option-text {
+    font-size: 12px;
+    color: #8b949e;
+}
+
+/* Info icon with hover tooltip */
+.info-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    color: #6e7681;
+    cursor: help;
+    line-height: 1;
+}
+
+.info-icon:hover,
+.info-icon:focus {
+    color: #c9d1d9;
+    outline: none;
+}
+
+.info-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    width: 280px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    color: #c9d1d9;
+    line-height: 1.5;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     text-align: left;
+}
+
+.info-tooltip a {
+    color: #58a6ff;
+    text-decoration: none;
+}
+
+.info-tooltip code {
+    background: #21262d;
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: 10.5px;
+}
+
+.info-icon:hover .info-tooltip,
+.info-icon:focus .info-tooltip {
+    display: block;
+}
+
+/* Legacy class kept for compat — not used */
+.layout-pdf-option {
+    display: none;
 }
 
 .layout-pdf-option-label input[type="checkbox"] {

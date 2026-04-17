@@ -88,8 +88,8 @@ def normalize_html(html):
 			if j == -1:
 				j = len(normalized)
 			text_chunk = normalized[i:j]
-			# Fix bare & that's not already an HTML entity (&amp; &lt; &gt; &quot; &#...)
-			text_chunk = re.sub(r'&(?!amp;|lt;|gt;|quot;|apos;|#)', '&amp;', text_chunk)
+		# Fix bare & that's not already an HTML entity (&amp; &lt; &gt; &quot; &#... &nbsp; etc.)
+		text_chunk = re.sub(r'&(?!amp;|lt;|gt;|quot;|apos;|nbsp;|#)', '&amp;', text_chunk)
 			fixed_parts.append(text_chunk)
 			i = j
 	normalized = ''.join(fixed_parts)

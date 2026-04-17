@@ -40,9 +40,11 @@ def normalize_html(html):
 	normalized = re.sub(r'<div>\(see\s+["\'].*?Business Rules.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
 	normalized = re.sub(r'<div>\(see\s+["\'].*?BKFS.*?\)</div>', '', normalized, flags=re.IGNORECASE | re.DOTALL)
 	
-	# Fix nested divs
+	# Fix UNSTYLED nested divs (plain <div><div> with no attributes) but NOT styled nested divs
+	# IMPORTANT: Do NOT collapse <div style="..."><div style="..."> — these are intentional nested structures
+	# like the centered title box: <div style="text-align:center"><div style="display:inline-block;...">
 	normalized = re.sub(r'<div><div>', '<div>', normalized)
-	normalized = re.sub(r'</div></div>', '</div>', normalized)
+	# Do NOT collapse </div></div> — intentional double close for nested divs like centered title box
 	
 	# Normalize line endings
 	normalized = normalized.replace('\r\n', '\n').replace('\r', '\n')
@@ -57,6 +59,9 @@ def normalize_html(html):
 	# NOTE: Do NOT force <br> after Sincerely — spacing should match the source document.
 	# The IR now preserves actual blank-line spacing from the docx.
 	
+	# Fix over-escaped &amp;nbsp; before {Font()} directives — AI sometimes double-escapes this
+	normalized = re.sub(r'&amp;nbsp;(\{Font\()', r'&nbsp;\1', normalized)
+
 	# Fix bare ampersands in HTML text content (outside template variables)
 	# Process in segments: split on {template} blocks and fix & in non-template parts
 	fixed_parts = []
@@ -1333,6 +1338,11 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: `<div>I understand that by canceling my escrow account, Triad Financial Services will no longer...</div>`
    - Good: `<div>I understand that by canceling my escrow account, {[plsMatrix.CompanyLongName]} will no longer...</div>`
    - Rule: When you see the servicer/company name (like "Triad Financial Services", "NewCourse", or any company name that matches the document producer) used in body text paragraphs, replace it with `{[plsMatrix.CompanyLongName]}`. Company names in document body are ALWAYS dynamic variables.
+
+❌ **WRONG**: Wrapping comma-separated address lines in {Compress()} when the source shows them inline
+   - Bad: `<div style="text-align: center">{Compress({[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|{[plsMatrix.CompanyReturnAddr3]})}</div>`
+   - Good: `<div style="text-align: center">{[plsMatrix.CompanyReturnAddr1]}, {[plsMatrix.CompanyReturnAddr2]}, {[plsMatrix.CompanyReturnAddr3]}</div>`
+   - Rule: When the document shows company return address components (CompanyReturnAddr1/2/3) as a SINGLE LINE with commas between them, output them comma-separated inline. Only use {Compress()} for stacked address blocks (one per line). The signal: if the source document has all three on one line separated by commas → inline; if they're on separate lines → {Compress()}
 
 ❌ **WRONG**: Not closing the outer centered div after the title box
    - Bad: `<div style="text-align: center"><div style="display: inline-block; ...">Title</div>` ← missing closing </div>

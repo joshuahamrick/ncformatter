@@ -1288,9 +1288,10 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Good: `<div><b>Please note that all appraisals must be ordered through our offices and are at the expense of the property owner.</b> Due to your loan's investor...</div>`
 
 ❌ **WRONG**: Underlining phone/email/fax when source does NOT show underline
-   - Bad: `<u>{[plsMatrix.CSPhoneNumber]}</u>` (added underline not in source)
+   - Bad: `<u>{[plsMatrix.CSPhoneNumber]}</u>` or `<u>{[plsMatrix.TaxEmail]}</u>` (added underline not in source)
    - Good: `{[plsMatrix.CSPhoneNumber]}` (no underline unless source explicitly has [FORMATTING: UNDERLINE])
    - Rule: ONLY underline if the source paragraph explicitly has underline formatting — do NOT assume phone numbers/emails/fax should be underlined
+   - CRITICAL: Email hyperlinks in Word show as underlined because they're hyperlinks. The [FORMATTING: HYPERLINK(...)] or [FORMATTING: UNDERLINE] hint from an email/URL does NOT mean you should output `<u>` — it just means Word displayed it as a link. Leave email/phone/fax plsMatrix variables plain (no tags) unless the IR shows BOTH [FORMATTING: UNDERLINE] AND [FORMATTING: ITALIC] together.
 
 ❌ **WRONG**: Guessing spacing around Sincerely instead of reading the source
    - Rule: The `<br>` tags around "Sincerely," are determined by ACTUAL blank lines in the source document
@@ -1326,7 +1327,7 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 ❌ **WRONG**: Applying italic/underline to email/phone/fax variables that are just linked, not formatted
    - Bad: `<u><i>{[plsMatrix.TaxEmail]}</i></u>` or `<i>{[plsMatrix.TaxEmail]}</i>` or `<u>{[plsMatrix.TaxEmail]}</u>`
    - Good: `{[plsMatrix.TaxEmail]}` — plain by default
-   - Rule: Hyperlinks on email addresses appear underlined in Word because they are hyperlinks, NOT because of italic/underline formatting applied to the run. NEVER apply `<u>` alone to email/phone/fax variables. ONLY apply `<u><i>` when the IR explicitly shows BOTH the UNDERLINE AND ITALIC hints TOGETHER in the same formatting note — e.g., `[FORMATTING: UNDERLINE, ITALIC]`.
+   - Rule: Hyperlinks on email addresses appear underlined in Word because they are hyperlinks, NOT because of italic/underline formatting applied to the run. **NEVER apply `<u>` alone to `{[plsMatrix.TaxEmail]}`, `{[plsMatrix.TaxFax]}`, `{[plsMatrix.CSPhoneNumber]}`, or any plsMatrix contact variable.** ONLY apply `<u><i>` when the IR explicitly shows BOTH the UNDERLINE AND ITALIC hints TOGETHER in the same formatting note. Email at the END of a paragraph (e.g., "or email {[plsMatrix.TaxEmail]}") is NEVER underlined.
 
 ❌ **WRONG**: Outputting a company/servicer name as literal text when it appears in the document body
    - Bad: `<div>I understand that by canceling my escrow account, Triad Financial Services will no longer...</div>`
@@ -1334,9 +1335,14 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Rule: When you see the servicer/company name (like "Triad Financial Services", "NewCourse", or any company name that matches the document producer) used in body text paragraphs, replace it with `{[plsMatrix.CompanyLongName]}`. Company names in document body are ALWAYS dynamic variables.
 
 ❌ **WRONG**: Not closing the outer centered div after the title box
-   - Bad: `<div style="text-align: center"><div style="display: inline-block; ...">Title</div>\n<br>`
-   - Good: `<div style="text-align: center"><div style="display: inline-block; ...">Title</div></div>\n<br>`
-   - Rule: The CENTERED TITLE BOX pattern uses TWO nested divs. The outer div centers the content; the inner div is the bordered box. Both divs MUST be properly closed on the same line: `...Title</div></div>`
+   - Bad: `<div style="text-align: center"><div style="display: inline-block; ...">Title</div>` ← missing closing </div>
+   - Good: `<div style="text-align: center"><div style="display: inline-block; ...">Title</div></div>`
+   - Rule: The CENTERED TITLE BOX pattern uses TWO nested divs. BOTH must be closed. The pattern is: `<div style="text-align: center"><div style="display: inline-block; ...">CONTENT</div></div>` — exactly TWO closing `</div>` tags at the end, on the SAME line.
+
+❌ **WRONG**: HTML-encoding `&nbsp;` as `&amp;nbsp;` in Font() declarations
+   - Bad: `&amp;nbsp;{Font(Arial|9.5pt)}`
+   - Good: `&nbsp;{Font(Arial|9.5pt)}`
+   - Rule: The `&nbsp;` before `{Font()}` is a literal HTML non-breaking space entity — output it as `&nbsp;` exactly, NOT as `&amp;nbsp;`
 
 ❌ **WRONG**: Using CSS `double` border or `6px double` for warning boxes with red borders
    - Bad: `<div style="border: 6px double red; ...">...</div>`

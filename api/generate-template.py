@@ -842,16 +842,22 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	import re as _re_header
 	blocks = ir.get('blocks', [])
 	has_h003_conditional = False
+	has_h003_address_lines = False  # H002/H003/H004 listed as separate company address line variables
 	has_nmls = False
-	for b in blocks[:20]:  # Only check first 20 blocks (header area)
+	for b in blocks[:25]:  # Only check first 25 blocks (header area)
 		runs = b.get('runs', [])
 		text = ''.join(r.get('text', '') for r in runs)
 		# Match NMLID (no S) and NMLSID — both are valid NMLS identifier tags
 		if _re_header.search(r'NMLS?ID', text, _re_header.IGNORECASE):
 			has_nmls = True
 			break
+		# H003 with explicit conditional/suppress language
 		if _re_header.search(r'H003', text) and _re_header.search(r'suppress|IF\s+.*H003|null|hide|conditional', text, _re_header.IGNORECASE):
 			has_h003_conditional = True
+		# H002/H003/H004 appearing as separate company address line variables
+		# (Company Address Line 1/2/3) → these are the individual components of the tag header
+		if _re_header.search(r'H00[234]', text) and _re_header.search(r'Company Address Line|Address Line', text, _re_header.IGNORECASE):
+			has_h003_address_lines = True
 	
 	header_texts = ir.get('meta', {}).get('headerTexts', [])
 	for ht in header_texts:
@@ -862,10 +868,10 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	
 	if has_nmls:
 		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{Header(NMLSID)}</div> — NMLS detected]\n"
-	elif has_h003_conditional:
-		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{Insert(H003 TagHeader)}</div> — H003 conditional logic detected]\n"
+	elif has_h003_conditional or has_h003_address_lines:
+		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{Insert(H003 TagHeader)}</div> — H003/company address line variables detected]\n"
 	else:
-		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{[tagHeader]}</div> — no conditional logic around H003, use default]\n"
+		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{[tagHeader]}</div> — no H003 address lines detected, use default]\n"
 	
 	# Inject default font directive if detected in document metadata
 	default_font = ir.get('meta', {}).get('defaultFont')
@@ -1241,7 +1247,7 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
 2. Is there a "RE:" or "Property Address:" label? → YES = create table row with Compress() using ONLY the address variables present in the document (M567, M583, M568 — include only those that appear)
 3. Check the [HEADER_DIRECTIVE] at the top of Document Content — it tells you EXACTLY which header to use. OBEY IT. Three cases:
    - [HEADER_DIRECTIVE: ... NMLS detected] → Use <div>{Header(NMLSID)}</div>
-   - [HEADER_DIRECTIVE: ... H003 conditional logic detected] → Use <div>{Insert(H003 TagHeader)}</div>
+   - [HEADER_DIRECTIVE: ... H003/company address line variables detected] → Use <div>{Insert(H003 TagHeader)}</div>
    - [HEADER_DIRECTIVE: ... use default] → Use <div>{[tagHeader]}</div>
 4. Where does "Sincerely," appear? → Note the paragraph number
 5. What comes AFTER "Sincerely,"? → List all remaining content
@@ -1318,9 +1324,19 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Rule: Hyperlinks in source are dynamic variables → convert to plsMatrix format
 
 ❌ **WRONG**: Applying italic/underline to email/phone/fax variables that are just linked, not formatted
-   - Bad: `<u><i>{[plsMatrix.TaxEmail]}</i></u>` or `<i>{[plsMatrix.TaxEmail]}</i>`
-   - Good: `{[plsMatrix.TaxEmail]}` — plain, unless the source explicitly shows italic+underline with [FORMATTING: UNDERLINE, ITALIC]
-   - Rule: Hyperlinks on email addresses appear underlined in Word because they are hyperlinks, NOT because of italic/underline formatting applied to the run. Only apply `<u><i>` when the IR explicitly shows BOTH UNDERLINE and ITALIC hints together.
+   - Bad: `<u><i>{[plsMatrix.TaxEmail]}</i></u>` or `<i>{[plsMatrix.TaxEmail]}</i>` or `<u>{[plsMatrix.TaxEmail]}</u>`
+   - Good: `{[plsMatrix.TaxEmail]}` — plain by default
+   - Rule: Hyperlinks on email addresses appear underlined in Word because they are hyperlinks, NOT because of italic/underline formatting applied to the run. NEVER apply `<u>` alone to email/phone/fax variables. ONLY apply `<u><i>` when the IR explicitly shows BOTH the UNDERLINE AND ITALIC hints TOGETHER in the same formatting note — e.g., `[FORMATTING: UNDERLINE, ITALIC]`.
+
+❌ **WRONG**: Outputting a company/servicer name as literal text when it appears in the document body
+   - Bad: `<div>I understand that by canceling my escrow account, Triad Financial Services will no longer...</div>`
+   - Good: `<div>I understand that by canceling my escrow account, {[plsMatrix.CompanyLongName]} will no longer...</div>`
+   - Rule: When you see the servicer/company name (like "Triad Financial Services", "NewCourse", or any company name that matches the document producer) used in body text paragraphs, replace it with `{[plsMatrix.CompanyLongName]}`. Company names in document body are ALWAYS dynamic variables.
+
+❌ **WRONG**: Not closing the outer centered div after the title box
+   - Bad: `<div style="text-align: center"><div style="display: inline-block; ...">Title</div>\n<br>`
+   - Good: `<div style="text-align: center"><div style="display: inline-block; ...">Title</div></div>\n<br>`
+   - Rule: The CENTERED TITLE BOX pattern uses TWO nested divs. The outer div centers the content; the inner div is the bordered box. Both divs MUST be properly closed on the same line: `...Title</div></div>`
 
 ❌ **WRONG**: Using CSS `double` border or `6px double` for warning boxes with red borders
    - Bad: `<div style="border: 6px double red; ...">...</div>`
@@ -1353,10 +1369,10 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Good: Copying the label text EXACTLY as it appears in the source
    - Rule: Labels in Loan Number/RE tables must match the source document verbatim
 
-❌ **WRONG**: Using {Insert(H003 TagHeader)} when H003 has no conditional logic
-   - Bad: `{Insert(H003 TagHeader)}` when H003 just appears as a plain tag `{[H003]} (Company Address Line 2)`
-   - Good: `{[tagHeader]}` — the default when no suppress/conditional logic exists around H003
-   - Rule: Only use {Insert(H003 TagHeader)} when you see conditional suppression language around H003
+❌ **WRONG**: Using {[tagHeader]} when the source document has H002/H003/H004 company address line variables
+   - Bad: `{[tagHeader]}` when the source document lists `{[H002]} (Company Address Line 1)`, `{[H003]} (Company Address Line 2)`, `{[H004]} (Company Address Line 3)` separately
+   - Good: `{Insert(H003 TagHeader)}` — use this when the source has H002/H003/H004 as separate address line variables, OR when H003 has conditional suppression logic
+   - Rule: Check the [HEADER_DIRECTIVE] at the top of Document Content — it tells you exactly which header to use based on IR analysis
 
 **FONT DECLARATION — when IR metadata shows a document-level font/size:**
 When the document IR contains a `defaultFont` or the first paragraph style specifies a default font (e.g. `Arial 9.5pt`), emit it as the very first line of the template, before the header div:

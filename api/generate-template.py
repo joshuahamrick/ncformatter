@@ -888,17 +888,50 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	else:
 		font_directive = ""
 
-	ir_content = header_directive + font_directive + ir_content
+	# Detect large gaps of empty paragraphs between header area and body content
+	# In form-style DOCX files, 15+ consecutive empty paragraphs act as a visual section separator (<hr>)
+	gap_directive = ""
+	empty_run = 0
+	max_empty = 0
+	gap_position = None
+	for idx_b, b in enumerate(blocks):
+		if b.get('type') == 'paragraph':
+			runs = b.get('runs', [])
+			text = ''.join(r.get('text','') for r in runs).strip()
+			if not text:
+				empty_run += 1
+				if empty_run > max_empty:
+					max_empty = empty_run
+					gap_position = idx_b
+			else:
+				empty_run = 0
+	if max_empty >= 15:
+		gap_directive = f"\n[SECTION_GAP_DETECTED: {max_empty} consecutive empty paragraphs act as a visual section separator — render as <hr> between mailing address and document title/body]\n"
+
+	ir_content = header_directive + font_directive + gap_directive + ir_content
 	
 	# Append text box content if present (floating text boxes are not in body flow)
 	text_boxes = ir.get('meta', {}).get('textBoxes', [])
 	if text_boxes:
-		ir_content += "\n\n=== FLOATING TEXT BOXES (appear as bordered boxes in document) ===\n"
-		ir_content += "IMPORTANT: These are visually prominent boxes (often with borders) that appear at the top right or elsewhere.\n"
-		ir_content += "They typically contain Loan Number, Property Address, or other key reference info.\n"
-		ir_content += "Include their content as a table in the appropriate location (usually just before or after the salutation area).\n"
+		ir_content += "\n\n=== FLOATING TEXT BOXES (visually prominent boxes floating in document layout) ===\n"
+		ir_content += "PLACEMENT RULES — read the content to decide where each box belongs:\n"
+		ir_content += "  - SHORT TITLE box (1-3 words, e.g. 'Escrow Cancellation Request', 'Loan Summary') → place AFTER mailing address, centered. Use {Compress(Part1|Part2)} to split the title across two lines at a natural word boundary (e.g. 'Escrow Cancellation Request' → {Compress(Escrow Cancellation|Request)})\n"
+		ir_content += "  - WARNING/NOTICE box (long sentence starting with 'If you do not...', 'You must...', 'IMPORTANT:') → place at the VERY BOTTOM of the document, AFTER return address and fax/email lines\n"
+		ir_content += "  - LOAN/PROPERTY INFO box (Loan Number, Property Address, RE:) → place after mailing address, before salutation\n"
 		for i, tb in enumerate(text_boxes):
-			ir_content += f"\nText Box {i+1}:\n"
+			tb_text = ' '.join(
+				''.join(r.get('text','') for r in row.get('runs',[])).strip()
+				for row in tb.get('rows',[])
+			).strip()
+			# Classify this text box so Claude knows where to place it
+			import re as _re_tb
+			if len(tb_text.split()) <= 6 and not _re_tb.search(r'If you|must|required|payment|IMPORTANT', tb_text, _re_tb.IGNORECASE):
+				tb_role = "TITLE (place after mailing address, centered)"
+			elif _re_tb.search(r'If you|must|required|payment will|escrow payment', tb_text, _re_tb.IGNORECASE):
+				tb_role = "WARNING (place at very BOTTOM of document, after return address and fax/email lines)"
+			else:
+				tb_role = "INFO (place after mailing address)"
+			ir_content += f"\nText Box {i+1} [{tb_role}]:\n"
 			for row in tb.get('rows', []):
 				text = ''.join(r.get('text', '') for r in row.get('runs', []))
 				if text.strip():
@@ -1341,6 +1374,19 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Good: `<div>I understand that by canceling my escrow account, {[plsMatrix.CompanyLongName]} will no longer...</div>`
    - Rule: When you see the servicer/company name (like "Triad Financial Services", "NewCourse", or any company name that matches the document producer) used in body text paragraphs, replace it with `{[plsMatrix.CompanyLongName]}`. Company names in document body are ALWAYS dynamic variables.
 
+❌ **WRONG**: Merging multiple consecutive short centered paragraphs into one div
+   - Bad: `<div style="text-align: center">You may fax the form to {[plsMatrix.TaxFax]} or email a copy to {[plsMatrix.TaxEmail]}</div>`
+   - Good: Three separate centered divs:
+     `<div style="text-align: center">You may fax the signed and dated form to {[plsMatrix.TaxFax]}</div>`
+     `<div style="text-align: center">or</div>`
+     `<div style="text-align: center">email a signed and dated copy to {[plsMatrix.TaxEmail]}</div>`
+   - Rule: Each paragraph in the source document becomes its own `<div>` — NEVER merge them, even if they're short
+
+❌ **WRONG**: Placing a WARNING floating text box in the middle of the document
+   - Bad: Warning box after body paragraphs but before signature tables
+   - Good: Warning box at the VERY BOTTOM — after signature tables, address section, questions paragraph, return address, AND fax/email lines
+   - Rule: When a floating text box is labeled "WARNING (place at very BOTTOM)" in the IR, output it as the LAST structural element before the fax/email divs — or after them. It NEVER goes in the middle of the document.
+
 ❌ **WRONG**: Wrapping comma-separated address lines in {Compress()} when the source shows them inline
    - Bad: `<div style="text-align: center">{Compress({[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|{[plsMatrix.CompanyReturnAddr3]})}</div>`
    - Good: `<div style="text-align: center">{[plsMatrix.CompanyReturnAddr1]}, {[plsMatrix.CompanyReturnAddr2]}, {[plsMatrix.CompanyReturnAddr3]}</div>`
@@ -1528,9 +1574,11 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
    - Identify ALL sections: header area, body paragraphs, signature area, legal notices
    - Count total paragraphs so you know when you're done
    - **CHECK FOR FLOATING TEXT BOXES**: Look for the "=== FLOATING TEXT BOXES ===" section at the bottom of Document Content.
-     If present, these are bordered boxes (often upper right) containing Loan Number, Property Address, etc.
-     ALWAYS convert these to a table in the header area (after mailing address, before salutation).
-     Even if the body paragraphs don't mention "Loan Number:", if a text box has it — include the table.
+     Each text box is labeled with its role: TITLE, WARNING, or INFO.
+     - TITLE box → place after mailing address, centered
+     - WARNING box → place at the VERY BOTTOM of document (after return address, after fax/email lines)
+     - INFO box → place after mailing address, before salutation
+   - **CHECK FOR [SECTION_GAP_DETECTED]**: If this directive is present at the top of Document Content, you MUST output `<hr>` immediately after `<div>{[mailingAddress]}</div>` — do NOT use `<br><br><br><br><br>`. This is MANDATORY, not optional. The `<hr>` replaces all spacing after the mailing address in these documents.
    - Look for CONDITIONAL SECTIONS: Text like "(IF TAG = value then insert the below):" 
      indicates conditional content. Convert these to {If()} blocks in the output.
      Example: "(IF M007 IBM State Code = "19" then insert the below):" → {If('{[M007]}' = '19')}
@@ -1712,7 +1760,7 @@ STEP 4 - VERIFY COMPLETENESS:
     - 1 <br> after header tag
     - NO <br> between date and mailing address (they are adjacent)
     - <br><br><br><br><br> after mailing address (standard 5-br gap before next section)
-    - EXCEPTION: If a horizontal rule/line (`<hr>`) immediately follows the mailing address, use `<hr>` instead of the 5-br gap — do NOT add both
+    - EXCEPTION: If `[SECTION_GAP_DETECTED]` is present OR `[FORMATTING: BORDER_BOTTOM]` appears on a paragraph near the mailing address, use `<hr>` instead of the 5-br gap. NEVER combine `<hr>` with `<br>` tags before or after it.
     - 1 <br> after Loan Number/Property Address table (if present)
     - 1 <br> before and after salutation line
     - 1 <br> between body paragraphs

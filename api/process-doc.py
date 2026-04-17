@@ -636,12 +636,14 @@ def _build_ir_document(doc):
 	# Resolve list types (bullet vs numbered) from numbering definitions
 	_resolve_list_types(doc, blocks)
 	
-	# Extract document-level default font and size from docDefaults
+	# Extract document-level default font and size
+	# Check docDefaults first, then fall back to "Body Text" and "Normal" paragraph styles
 	default_font = None
 	default_font_size_pt = None
 	try:
 		styles_elem = doc.element.find(qn('w:styles'))
 		if styles_elem is not None:
+			# 1. Try docDefaults
 			doc_defaults = styles_elem.find(qn('w:docDefaults'))
 			if doc_defaults is not None:
 				rPrDefault = doc_defaults.find('.//' + qn('w:rPrDefault'))
@@ -663,6 +665,33 @@ def _build_ir_document(doc):
 									default_font_size_pt = int(val) / 2
 								except Exception:
 									pass
+			# 2. If docDefaults didn't give us font, check "Body Text" then "Normal" styles
+			if not default_font:
+				for style_name_check in ('Body Text', 'Normal'):
+					for style_elem in styles_elem.findall(qn('w:style')):
+						name_elem = style_elem.find(qn('w:name'))
+						if name_elem is not None and name_elem.get(qn('w:val')) == style_name_check:
+							rPr = style_elem.find('.//' + qn('w:rPr'))
+							if rPr is not None:
+								rFonts = rPr.find(qn('w:rFonts'))
+								sz = rPr.find(qn('w:sz'))
+								if rFonts is not None:
+									f = (rFonts.get(qn('w:ascii')) or
+										 rFonts.get(qn('w:hAnsi')) or
+										 rFonts.get(qn('w:cs')))
+									if f and f not in ('Times New Roman', 'Calibri'):
+										default_font = f
+								if sz is not None and not default_font_size_pt:
+									val = sz.get(qn('w:val'))
+									if val:
+										try:
+											default_font_size_pt = int(val) / 2
+										except Exception:
+											pass
+							if default_font:
+								break
+					if default_font:
+						break
 	except Exception:
 		pass
 

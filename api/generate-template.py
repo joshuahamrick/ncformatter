@@ -93,7 +93,8 @@ def normalize_html(html):
 
 	# Final cleanup: fix any &amp;nbsp; that ended up before {Font()} directives
 	# This must run AFTER the bare-amp loop (which might re-encode &nbsp;)
-	normalized = re.sub(r'&amp;nbsp;(\{Font\()', r'&nbsp;\1', normalized)
+	# Use str.replace for reliability (regex was not reliably matching on all platforms)
+	normalized = normalized.replace('&amp;nbsp;{Font(', '&nbsp;{Font(')
 	
 	return normalized.strip()
 

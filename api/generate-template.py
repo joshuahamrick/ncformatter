@@ -59,9 +59,6 @@ def normalize_html(html):
 	# NOTE: Do NOT force <br> after Sincerely — spacing should match the source document.
 	# The IR now preserves actual blank-line spacing from the docx.
 	
-	# Fix over-escaped &amp;nbsp; before {Font()} directives — AI sometimes double-escapes this
-	normalized = re.sub(r'&amp;nbsp;(\{Font\()', r'&nbsp;\1', normalized)
-
 	# Fix bare ampersands in HTML text content (outside template variables)
 	# Process in segments: split on {template} blocks and fix & in non-template parts
 	fixed_parts = []
@@ -93,6 +90,10 @@ def normalize_html(html):
 			fixed_parts.append(text_chunk)
 			i = j
 	normalized = ''.join(fixed_parts)
+
+	# Final cleanup: fix any &amp;nbsp; that ended up before {Font()} directives
+	# This must run AFTER the bare-amp loop (which might re-encode &nbsp;)
+	normalized = re.sub(r'&amp;nbsp;(\{Font\()', r'&nbsp;\1', normalized)
 	
 	return normalized.strip()
 

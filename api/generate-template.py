@@ -152,7 +152,7 @@ def load_few_shot_examples():
 		'FC001/FC001-formatted.html',        # Foreclosure notice: separate bullet tables, <br> within bullets, numbered lists, Compress address, OR separator, partial underline
 		'LM300/LM300-formatted.html',       # HUD Pre-Foreclosure Sale: 2-col RE table with custom labels, 2-part Compress (no M583), margin-left bullets, no <br> after Sincerely
 		'CL028/CL028-formatted.html',       # Illinois Affidavit of Defense: 60/40 IMPORTANT NOTICE header, bordered lender/consumer table, grid home table, border-bottom writing lines, dual 50/50 signature tables
-		'ES014/ES014-formatted.html',       # Escrow Cancellation Request: bordered title/warning boxes, dual signature tables, border-bottom writing lines, inline underline spans, stacked centered return address
+		'ES014/ES014-formatted.html',       # Escrow Cancellation Request: Font() declaration, <hr> divider, Compress title box, account/borrower table, 80%-wide 40/1/20 signature tables, address section table, nested-table double-border warning box, plain TaxEmail at bottom
 	]
 
 	curated = foundational + recently_trained
@@ -547,6 +547,10 @@ def format_ir_for_prompt(ir):
 			if leading_spaces and leading_spaces > 0:
 				formatting_hints.append(f"INDENT_{leading_spaces}spaces")
 			
+			# Add paragraph bottom border hint (signals horizontal rule separator)
+			if block.get('borderBottom'):
+				formatting_hints.append("BORDER_BOTTOM — this paragraph has a bottom border; render as <hr> if empty, or follow with <hr> if it has text")
+
 			# Add list item indicator with type (CRITICAL for bullet/numbered detection)
 			if block.get('isListItem'):
 				list_level = block.get('listLevel', 0)
@@ -863,7 +867,15 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	else:
 		header_directive = "\n[HEADER_DIRECTIVE: Use <div>{[tagHeader]}</div> — no conditional logic around H003, use default]\n"
 	
-	ir_content = header_directive + ir_content
+	# Inject default font directive if detected in document metadata
+	default_font = ir.get('meta', {}).get('defaultFont')
+	default_font_size_pt = ir.get('meta', {}).get('defaultFontSizePt')
+	if default_font and default_font_size_pt:
+		font_directive = f"\n[DEFAULT_FONT: {default_font} {default_font_size_pt}pt — emit `&nbsp;{{Font({default_font}|{default_font_size_pt}pt)}}` as the very first line before the header div]\n"
+	else:
+		font_directive = ""
+
+	ir_content = header_directive + font_directive + ir_content
 	
 	# Append text box content if present (floating text boxes are not in body flow)
 	text_boxes = ir.get('meta', {}).get('textBoxes', [])
@@ -1305,6 +1317,22 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Good: `<div>New website: <u>{[plsMatrix.WebSite]}</u></div>`
    - Rule: Hyperlinks in source are dynamic variables → convert to plsMatrix format
 
+❌ **WRONG**: Applying italic/underline to email/phone/fax variables that are just linked, not formatted
+   - Bad: `<u><i>{[plsMatrix.TaxEmail]}</i></u>` or `<i>{[plsMatrix.TaxEmail]}</i>`
+   - Good: `{[plsMatrix.TaxEmail]}` — plain, unless the source explicitly shows italic+underline with [FORMATTING: UNDERLINE, ITALIC]
+   - Rule: Hyperlinks on email addresses appear underlined in Word because they are hyperlinks, NOT because of italic/underline formatting applied to the run. Only apply `<u><i>` when the IR explicitly shows BOTH UNDERLINE and ITALIC hints together.
+
+❌ **WRONG**: Using CSS `double` border or `6px double` for warning boxes with red borders
+   - Bad: `<div style="border: 6px double red; ...">...</div>`
+   - Good: Nested table — outer table 1px red border, inner td 3px red border (creates visual double-border):
+     `<table style="border: 1px solid rgba(255,0,0,1); padding: 0; width: 80%; margin: 0"><tbody><tr><td style="border: 3px solid rgba(255,0,0,1); padding: 8px; ...">...</td></tr></tbody></table>`
+   - Rule: When IR shows `[TABLE_BORDERS: red]` or `borderColor: red` on a warning box, use the nested table pattern
+
+❌ **WRONG**: Using `{If(...)}` conditional for co-borrower names when {Compress()} is available
+   - Bad: `{If('{[M559]}' NOT IN ('', NULL))}<div>{[M559]}</div>{End If}`
+   - Good: `{Compress({[M558]}|{[M559]})}` — Compress already suppresses empty lines
+   - Rule: When listing borrower names (M558/M559), use Compress() to handle optional co-borrower, not {If()}
+
 ❌ **WRONG**: Skipping colored or highlighted text
    - Bad: Missing conditional sections, missing tags, missing paragraphs
    - Good: ALL content from the document is included regardless of text color
@@ -1329,6 +1357,85 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: `{Insert(H003 TagHeader)}` when H003 just appears as a plain tag `{[H003]} (Company Address Line 2)`
    - Good: `{[tagHeader]}` — the default when no suppress/conditional logic exists around H003
    - Rule: Only use {Insert(H003 TagHeader)} when you see conditional suppression language around H003
+
+**FONT DECLARATION — when IR metadata shows a document-level font/size:**
+When the document IR contains a `defaultFont` or the first paragraph style specifies a default font (e.g. `Arial 9.5pt`), emit it as the very first line of the template, before the header div:
+```html
+&nbsp;{Font(Arial|9.5pt)}
+<div>{Insert(H003 TagHeader)}</div>
+```
+The `{Font(Font|Size)}` directive sets the base font for the entire document. If you see an IR metadata note `[DEFAULT_FONT: Arial 9.5pt]` or similar, always output `&nbsp;{Font(Arial|9.5pt)}` (or the detected font/size) on the first line.
+
+**HORIZONTAL RULE DIVIDER — after mailing address:**
+When the document has a thin horizontal line separating the mailing address from the body (often a paragraph with bottom border in the DOCX), output it as `<hr>` instead of `<br>` tags:
+```html
+<div>{[mailingAddress]}</div>
+<hr>
+<div style="text-align: center">...
+```
+Detection: If the IR contains `[FORMATTING: BORDER_BOTTOM]` on a paragraph between the mailing address and the document title/body, or a paragraph that is blank with only a bottom border → render as `<hr>`.
+
+**CENTERED TITLE BOX with {Compress()} for multi-line titles:**
+When a document has a large centered title in a bordered box where the title spans two lines (e.g. "Escrow Cancellation / Request"), use `{Compress()}` to split it across lines inside the box — do NOT use `font-weight: bold` unless the document explicitly shows bold:
+```html
+<div style="text-align: center"><div style="display: inline-block; border: 2pt solid rgba(0,0,0,1); padding: 10px; font-size: 18pt; min-width: 246pt; text-align: center">{Compress(Escrow Cancellation|Request)}</div></div>
+```
+- The outer centered div ensures the box is centered on the page
+- `min-width: 246pt` sets minimum box width (match the source document's text box width)
+- Use `{Compress(...)}` when the title has a line break (pipe `|` separating each line)
+
+**ACCOUNT + BORROWER NAME TABLE — form-style documents:**
+When a document has "Account Number:" and "Borrower Name(s):" as labeled fields (not in a paragraph, but in a form structure), render them as a compact table, and use `{Compress()}` for the borrower name to handle co-borrower on same field:
+```html
+<div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="20%" colspan="2">Account Number: {[M594]}</td>
+  <td></td>
+</tr><tr>
+  <td width="16%" valign="top">Borrower Name(s): </td>
+  <td>{Compress({[M558]}|{[M559]})}</td>
+</tr></tbody></table></div>
+```
+Use `{Compress({[M558]}|{[M559]})}` — NOT a conditional `{If(...)}` block — because `{Compress()}` already suppresses empty lines.
+
+**SIGNATURE TABLE DIMENSIONS — form-style letters (escrow, cancellation, request forms):**
+For signature tables on FORM documents (not affidavits), use 80% table width with a 40% signature column, 1% spacer, and 20% date column:
+```html
+<table width="80%" style="border-collapse: collapse"><tbody><tr>
+  <td width="40%" style="border-top: 0.85pt solid rgba(0,0,0,1); padding: 2px 8px 4px; font-size: 8pt">Borrower Signature</td>
+  <td width="1%"></td>
+  <td width="20%" style="border-top: 0.85pt solid rgba(0,0,0,1); padding: 2px 8px 4px; font-size: 8pt">Date</td>
+</tr></tbody></table>
+```
+This is different from affidavit documents (CL028 style) which use 100% width with 50/50 columns.
+
+**ADDRESS SECTION TABLE — label + writing line pairs:**
+When the document has fill-in lines for "City/State/Zip:" and "Contact Phone:" (or similar label+line fields), use a table where the label is in one cell and the writing line is the next cell with `border-bottom`:
+```html
+<table width="80%" style="border-collapse: collapse"><tbody><tr>
+  <td colspan="2">Once cancelled, please send escrow overage (if applicable) to the following address:</td>
+  <td></td>
+</tr><tr>
+  <td colspan="2" style="padding: 6px 0"></td>
+</tr><tr>
+  <td style="width: 20%">City/State/Zip:</td>
+  <td style="width: 60%; border-bottom: 0.85pt solid rgba(0,0,0,1)"></td>
+</tr><tr>
+  <td colspan="2" style="padding: 6px 0"></td>
+</tr><tr>
+  <td style="width: 20%">Contact Phone:</td>
+  <td style="width: 60%; border-bottom: 0.85pt solid rgba(0,0,0,1)"></td>
+</tr></tbody></table>
+```
+Use `padding: 6px 0` rows as spacers between label-line pairs. Do NOT use `<div>Label: <span style="...">` inline span — use the table format.
+
+**DOUBLE-BORDER WARNING BOX — using nested table (NOT CSS `double`):**
+When the source DOCX has a red double-line border box (VML `thinThick` or `thickThin` line style, red stroke), the correct HTML is a nested table: outer table with thin border, inner `<td>` with thick border, both red. This creates the visual double-border effect:
+```html
+<table style="border: 1px solid rgba(255,0,0,1); padding: 0; width: 80%; margin: 0"><tbody><tr>
+  <td style="border: 3px solid rgba(255,0,0,1); padding: 8px; font-size: 9.5pt; font-weight: bold; text-align: center">If you do not return this signed &amp; dated form we are required to collect monthly escrow payments and your monthly payment will increase to cover any escrow shortages.</td>
+</tr></tbody></table>
+```
+Detection cues: IR shows `[FORMATTING: BORDER_COLOR_RED]` or `[TABLE_BORDERS: red]` or `borderColor: red` on a text box or paragraph. Do NOT use `border: 6px double red` CSS — use the nested table pattern instead.
 
 **SPECIAL HEADER LAYOUT — "IMPORTANT NOTICE" documents (affidavits, legal notices):**
 When the source document has a large bold "IMPORTANT NOTICE" or similar title in the upper right alongside the company header, use a two-column header table instead of a plain tagHeader div:
@@ -1571,6 +1678,7 @@ STEP 4 - VERIFY COMPLETENESS:
     - 1 <br> after header tag
     - NO <br> between date and mailing address (they are adjacent)
     - <br><br><br><br><br> after mailing address (standard 5-br gap before next section)
+    - EXCEPTION: If a horizontal rule/line (`<hr>`) immediately follows the mailing address, use `<hr>` instead of the 5-br gap — do NOT add both
     - 1 <br> after Loan Number/Property Address table (if present)
     - 1 <br> before and after salutation line
     - 1 <br> between body paragraphs

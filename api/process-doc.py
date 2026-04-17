@@ -184,6 +184,21 @@ def _extract_paragraph_ir(paragraph):
 
 	is_list, level, marker = _detect_list_info(paragraph)
 
+	# Detect paragraph border (bottom border = horizontal rule separator)
+	para_border_bottom = None
+	try:
+		pPr_elem = paragraph._p.find(qn('w:pPr'))
+		if pPr_elem is not None:
+			pBdr = pPr_elem.find(qn('w:pBdr'))
+			if pBdr is not None:
+				bottom_el = pBdr.find(qn('w:bottom'))
+				if bottom_el is not None:
+					val = bottom_el.get(qn('w:val'), '')
+					if val not in ('nil', 'none', ''):
+						para_border_bottom = True
+	except Exception:
+		pass
+
 	para_ir = {
 		'type': 'paragraph',
 		'runs': runs,
@@ -198,7 +213,8 @@ def _extract_paragraph_ir(paragraph):
 		'lineHeightMultiple': None,
 		'leftIndentPt': float(paragraph.paragraph_format.left_indent.pt) if getattr(paragraph.paragraph_format, 'left_indent', None) else None,
 		'firstLineIndentPt': float(paragraph.paragraph_format.first_line_indent.pt) if getattr(paragraph.paragraph_format, 'first_line_indent', None) else None,
-		'hangingIndentPt': None
+		'hangingIndentPt': None,
+		'borderBottom': para_border_bottom,
 	}
 	hanging = getattr(paragraph.paragraph_format, 'hanging_indent', None)
 	if hanging is not None:
@@ -620,6 +636,36 @@ def _build_ir_document(doc):
 	# Resolve list types (bullet vs numbered) from numbering definitions
 	_resolve_list_types(doc, blocks)
 	
+	# Extract document-level default font and size from docDefaults
+	default_font = None
+	default_font_size_pt = None
+	try:
+		styles_elem = doc.element.find(qn('w:styles'))
+		if styles_elem is not None:
+			doc_defaults = styles_elem.find(qn('w:docDefaults'))
+			if doc_defaults is not None:
+				rPrDefault = doc_defaults.find('.//' + qn('w:rPrDefault'))
+				if rPrDefault is not None:
+					rPr = rPrDefault.find(qn('w:rPr'))
+					if rPr is not None:
+						rFonts = rPr.find(qn('w:rFonts'))
+						if rFonts is not None:
+							default_font = (
+								rFonts.get(qn('w:ascii')) or
+								rFonts.get(qn('w:hAnsi')) or
+								rFonts.get(qn('w:cs'))
+							)
+						sz = rPr.find(qn('w:sz'))
+						if sz is not None:
+							val = sz.get(qn('w:val'))
+							if val:
+								try:
+									default_font_size_pt = int(val) / 2
+								except Exception:
+									pass
+	except Exception:
+		pass
+
 	# Store header texts in meta for header detection
 	return {
 		'blocks': blocks,
@@ -628,7 +674,9 @@ def _build_ir_document(doc):
 		'images': [],
 		'meta': {
 			'headerTexts': header_texts,
-			'textBoxes': text_box_blocks
+			'textBoxes': text_box_blocks,
+			'defaultFont': default_font,
+			'defaultFontSizePt': default_font_size_pt,
 		}
 	}
 

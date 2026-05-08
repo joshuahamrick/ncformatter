@@ -1,0 +1,34 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>Congratulations your loan has been reinstated! Your commitment to taking the actions of paying the monies owed shows the value you put into your home. For your record keeping, below is the information confirming your loan has been reinstated:</div>
+<br>
+<div>Principal Balance: {Money({[M010]})}</div>
+<div style="margin-left: 36pt">Next Due Date: {[M026]}</div>
+<div>Next Payment Due Amount: {Money({[M029]})} (Total Monthly Payment)</div>
+<br>
+<div>At this time, we have ceased all collections and foreclosure efforts pertaining to this property.</div>
+<br>
+<div>If you have any questions or concerns, please contact us at {[plsMatrix.LossPreventionPhoneNumberTollFree]}. Our office hours are {[plsMatrix.HoursOfOperation]}. For your added convenience you can also visit {[plsMatrix.WebSite]} to review balances, transactions, and other loans details.</div>
+<br>
+<div>Sincerely,</div>
+<br>
+{If('{[S002]}' IN ('', NULL))}
+<div>James Curry</div>
+{Else}
+<div>{[S002]}</div>
+{End If}
+<div>Loss Prevention Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

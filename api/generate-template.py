@@ -131,6 +131,9 @@ def normalize_html(html):
 	for _var in COMPANY_VARS_NEEDING_PREFIX:
 		normalized = normalized.replace('{[' + _var + ']}', '{[plsMatrix.' + _var + ']}')
 
+	# Strip trailing <br> tags at end of document
+	normalized = re.sub(r'(\s*<br>\s*)+$', '', normalized.strip())
+
 	return normalized.strip()
 
 def load_system_prompt():
@@ -286,12 +289,15 @@ def format_ir_for_prompt(ir):
 	# - r'\(see\s+["\']' - could be actual content references
 	
 	para_counter = 0  # Sequential numbering - no gaps from skipped blanks
+	seen_salutation = False  # Only emit SPACING markers after the Dear/salutation
 	for idx, block in enumerate(blocks):
 		if block.get('type') == 'paragraph':
 			runs = block.get('runs', [])
 			text = ''.join([r.get('text', '') for r in runs]).strip()
 			
-			# Handle empty paragraphs
+			# Skip empty paragraphs — spacing is handled by template conventions, not blank lines
+			# Exception: preserve empty list items (empty bullet/numbered items are intentional placeholders)
+			# Exception: preserve blank paragraphs between list items (they indicate separate list groups)
 			if not text or len(text) < 3:
 				if block.get('isListItem') and (not text or len(text) < 3):
 					# Empty list item — include it as an explicit empty placeholder
@@ -312,9 +318,9 @@ def format_ir_for_prompt(ir):
 							if not prev_block.get('isListItem'):
 								prev_was_empty = True
 						break  # Only check immediate predecessor
-	
+
 					if not prev_was_empty:
-						# This is the FIRST block of a consecutive empty run.
+						# This is the first block of a consecutive empty run.
 						# Count how many consecutive empty blocks follow (including this one).
 						blank_count = 1
 						for next_idx in range(idx + 1, len(blocks)):
@@ -326,9 +332,9 @@ def format_ir_for_prompt(ir):
 								blank_count += 1
 							else:
 								break
-	
-						if blank_count >= 2:
-							# Explicit multi-blank-line spacing marker
+
+						if blank_count >= 2 and seen_salutation:
+							# Emit explicit SPACING marker (only in letter body, not header preamble)
 							br_tags = '<br>' * blank_count
 							para_counter += 1
 							formatted.append(
@@ -658,6 +664,9 @@ def format_ir_for_prompt(ir):
 			
 			para_counter += 1
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
+			# Track when we've entered the letter body (past the preamble)
+			if not seen_salutation and re.match(r'Dear\b', cleaned_text, re.IGNORECASE):
+				seen_salutation = True
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			tbl_borders = block.get('tableBorders')

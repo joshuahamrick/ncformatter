@@ -228,7 +228,11 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
 - Use <br> tags ONLY where the source document has blank lines/spacing between paragraphs
 - CRITICAL: Do NOT add <br> between consecutive paragraphs that have no blank line between them in the source — they should be adjacent <div> elements with nothing between them
 - Each blank line in the source document = one <br> tag between the surrounding <div> elements
-- CRITICAL — MULTIPLE CONSECUTIVE BLANK LINES: When the IR contains N consecutive empty paragraph blocks in a row (blocks where `runs` is empty), output exactly N `<br>` tags. NEVER collapse two blank paragraphs into one `<br>` — each empty block is a real blank line. Example: 2 consecutive empty blocks between two content paragraphs → `<br><br>`, not `<br>`.
+- CRITICAL — MULTIPLE CONSECUTIVE BLANK LINES: When the IR contains N consecutive empty paragraph blocks in a row (blocks where `runs` is empty), output EXACTLY N `<br>` tags — one per empty block. NEVER collapse multiple empty blocks into a single `<br>`. Count them and emit that exact count.
+  - 1 empty block between paragraphs → `<br>`
+  - 2 empty blocks between paragraphs → `<br><br>` (NOT just `<br>`)
+  - 3 empty blocks → `<br><br><br>`
+  - This applies everywhere in the document: between body paragraphs, before/after section headings, before Sincerely, etc.
 - Do NOT automatically add <br> before or after mortgagee clause lines, account number lines, or any tightly-grouped block — only add <br> if the source has a blank paragraph there
 - Use <b>...</b> for bold text
 - Use <u>...</u> for underlined text

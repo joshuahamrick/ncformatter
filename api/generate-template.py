@@ -95,7 +95,42 @@ def normalize_html(html):
 	# This must run AFTER the bare-amp loop (which might re-encode &nbsp;)
 	# Use str.replace for reliability (regex was not reliably matching on all platforms)
 	normalized = normalized.replace('&amp;nbsp;{Font(', '&nbsp;{Font(')
-	
+
+	# Fix bare comparison operators inside {If()} and {Else If()} conditions.
+	# LLMs reliably forget to HTML-encode <>, >=, <= inside template conditionals.
+	# This post-processing step guarantees correct encoding regardless of what the LLM emits.
+	def _encode_if_condition(m):
+		prefix = m.group(1)   # 'If' or 'Else If'
+		inner  = m.group(2)   # everything between the outer ( and )
+		# If already encoded, leave untouched to avoid double-encoding
+		if '&lt;' in inner or '&gt;' in inner:
+			return m.group(0)
+		# Encode longest operators first to avoid partial matches
+		inner = inner.replace('<>', '&lt;&gt;')
+		inner = inner.replace('>=', '&gt;=')
+		inner = inner.replace('<=', '&lt;=')
+		inner = re.sub(r'(?<![=!<>]) < (?![=])', ' &lt; ', inner)
+		inner = re.sub(r'(?<![=!<>]) > (?![=])', ' &gt; ', inner)
+		return '{' + prefix + '(' + inner + ')}'
+
+	# Pattern matches {If(...)} and {Else If(...)} where inner content may contain {[TAG]} vars
+	normalized = re.sub(
+		r'\{((?:Else\s+)?If)\(([^{}]*(?:\{[^{}]*\}[^{}]*)*)\)\}',
+		_encode_if_condition,
+		normalized
+	)
+
+	# Fix missing plsMatrix. prefix on known company variables that the LLM occasionally
+	# emits without the prefix (e.g. {[ServicingName]} instead of {[plsMatrix.ServicingName]}).
+	COMPANY_VARS_NEEDING_PREFIX = [
+		'ServicingName', 'WebSite', 'TaxEmail', 'TaxFax', 'InsuranceEmail',
+		'CompanyReturnAddr3', 'CompanyReturnAddr4',
+		'MortgageeClauseLine1', 'MortgageeClauseLine2', 'MortgageeClauseLine3',
+		'MortgageeClauseLine4', 'MortgageeClauseLine5',
+	]
+	for _var in COMPANY_VARS_NEEDING_PREFIX:
+		normalized = normalized.replace('{[' + _var + ']}', '{[plsMatrix.' + _var + ']}')
+
 	return normalized.strip()
 
 def load_system_prompt():

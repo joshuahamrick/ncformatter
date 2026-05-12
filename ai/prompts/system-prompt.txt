@@ -23,6 +23,8 @@ Generate HTML templates that:
 - Source documents may write variables WITHOUT curly braces: [M594], [L001E8] — always convert to {[TAG]} format: [M594] → {[M594]}
 - Remove last 2 characters from tag variables ending in digits/letters (L001E8 → {[L001]}, M029E6 → {[M029]}, H160E7 → {[H160]})
 - Company variables MUST use plsMatrix prefix: {[plsMatrix.CompanyLongName]}, {[plsMatrix.CSPhoneNumber]}, etc.
+- Known company variables (always use plsMatrix. prefix): `CompanyLongName`, `CompanyShortName`, `CSPhoneNumber`, `SPOCContactPhone`, `SPOCContact`, `HoursOfOperation`, `LossPreventionPhoneNumberTollFree`, `CompanyReturnAddr1`, `CompanyReturnAddr2`, `CompanyReturnAddr3`, `ServicingName`, `WebSite`, `TaxEmail`, `TaxFax`, `InsuranceEmail`, `MortgageeClauseLine1`, `MortgageeClauseLine2`, `MortgageeClauseLine3`, `MortgageeClauseLine4`, `MortgageeClauseLine5`
+- CRITICAL: Any variable that is NOT a standard loan/borrower variable (M-, L-, G-, H-, O-, T-, Q-, U-, S-prefix) and is not `mailingAddress`, `Salutation`, or `loanNumberLast4` MUST use the `plsMatrix.` prefix. When in doubt, add it.
 - Source documents may write company variables in angle-bracket format: <CompanyLongName>, <InsuranceEmail>, <HoursOfOperation> — always convert to {[plsMatrix.VariableName]} format: <CompanyLongName> → {[plsMatrix.CompanyLongName]}, <InsuranceEmail> → {[plsMatrix.InsuranceEmail]}, <HoursOfOperation> → {[plsMatrix.HoursOfOperation]}
 
 ### Document Structure
@@ -226,6 +228,7 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
 - Use <br> tags ONLY where the source document has blank lines/spacing between paragraphs
 - CRITICAL: Do NOT add <br> between consecutive paragraphs that have no blank line between them in the source — they should be adjacent <div> elements with nothing between them
 - Each blank line in the source document = one <br> tag between the surrounding <div> elements
+- CRITICAL — MULTIPLE CONSECUTIVE BLANK LINES: When the IR contains N consecutive empty paragraph blocks in a row (blocks where `runs` is empty), output exactly N `<br>` tags. NEVER collapse two blank paragraphs into one `<br>` — each empty block is a real blank line. Example: 2 consecutive empty blocks between two content paragraphs → `<br><br>`, not `<br>`.
 - Do NOT automatically add <br> before or after mortgagee clause lines, account number lines, or any tightly-grouped block — only add <br> if the source has a blank paragraph there
 - Use <b>...</b> for bold text
 - Use <u>...</u> for underlined text

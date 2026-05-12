@@ -132,6 +132,13 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
    CRITICAL: Use the label text EXACTLY as it appears in the source document (e.g. "RE: Loan No." not "RE: Loan Number:"). The second row label is whatever the source says — typically "Property Address:" not "RE:".
    CRITICAL: The Compress() variables must match the source — if the source has no M583, do NOT include M583.
 
+### Bold Text with Custom Font Size — CRITICAL Nesting Rule
+- CRITICAL: When a paragraph is BOTH bold AND has a non-standard font size (e.g. FONT_SIZE_13pt, FONT_SIZE_11pt), the `<b>` tag MUST wrap the outer `<div>`, NOT the text inside. This is required for Summernote to correctly apply the size change.
+  CORRECT: `<b><div style="text-align: center; font-size: 13pt">Notice of Escrow Deficiency</div></b>`
+  WRONG:   `<div style="text-align: center; font-size: 13pt"><b>Notice of Escrow Deficiency</b></div>`
+- For standard-size bold text (no custom font-size), `<b>` goes INSIDE the div as normal: `<div><b>Bold text here.</b></div>`
+- This applies to ALL paragraphs with a custom font size in the FORMATTING hint (FONT_SIZE_Xpt), regardless of alignment.
+
 ### Subject Heading Before Loan Number Table
 - When a bold paragraph appears directly before the Loan Number/RE table (marked [FORMATTING: BOLD] with no ALIGN_CENTER), format it as:
   <b><div style="font-size: 11pt">Subject Heading Text</div></b>

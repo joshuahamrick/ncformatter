@@ -124,6 +124,7 @@ def normalize_html(html):
 	# emits without the prefix (e.g. {[ServicingName]} instead of {[plsMatrix.ServicingName]}).
 	COMPANY_VARS_NEEDING_PREFIX = [
 		'ServicingName', 'WebSite', 'TaxEmail', 'TaxFax', 'InsuranceEmail',
+		'CSPhoneNumber', 'HoursOfOperation', 'HoursofOperation',
 		'CompanyReturnAddr3', 'CompanyReturnAddr4',
 		'MortgageeClauseLine1', 'MortgageeClauseLine2', 'MortgageeClauseLine3',
 		'MortgageeClauseLine4', 'MortgageeClauseLine5',
@@ -333,34 +334,46 @@ def format_ir_for_prompt(ir):
 							else:
 								break
 
-						if blank_count >= 2 and seen_salutation:
-							# Emit explicit SPACING marker (only in letter body, not header preamble)
-							br_tags = '<br>' * blank_count
+						# Check if this blank is between two list items (LIST_SEPARATOR)
+						prev_is_list = False
+						next_is_list = False
+						for prev_idx in range(idx - 1, max(0, idx - 3), -1):
+							if blocks[prev_idx].get('type') == 'paragraph':
+								prev_runs = blocks[prev_idx].get('runs', [])
+								prev_text_l = ''.join([r.get('text', '') for r in prev_runs]).strip()
+								if prev_text_l:
+									prev_is_list = blocks[prev_idx].get('isListItem', False)
+									break
+						for next_idx in range(idx + 1, min(len(blocks), idx + 3)):
+							if blocks[next_idx].get('type') == 'paragraph':
+								next_runs = blocks[next_idx].get('runs', [])
+								next_text_l = ''.join([r.get('text', '') for r in next_runs]).strip()
+								if next_text_l:
+									next_is_list = blocks[next_idx].get('isListItem', False)
+									break
+						if prev_is_list and next_is_list:
 							para_counter += 1
-							formatted.append(
-								f"Paragraph {para_counter}: [SPACING: {blank_count} blank lines — output exactly {br_tags}]"
-							)
-						else:
-							# Single blank line: check for list separator
-							prev_is_list = False
-							next_is_list = False
-							for prev_idx in range(idx - 1, max(0, idx - 3), -1):
-								if blocks[prev_idx].get('type') == 'paragraph':
-									prev_runs = blocks[prev_idx].get('runs', [])
-									prev_text_l = ''.join([r.get('text', '') for r in prev_runs]).strip()
-									if prev_text_l:
-										prev_is_list = blocks[prev_idx].get('isListItem', False)
-										break
-							for next_idx in range(idx + 1, min(len(blocks), idx + 3)):
-								if blocks[next_idx].get('type') == 'paragraph':
-									next_runs = blocks[next_idx].get('runs', [])
-									next_text_l = ''.join([r.get('text', '') for r in next_runs]).strip()
-									if next_text_l:
-										next_is_list = blocks[next_idx].get('isListItem', False)
-										break
-							if prev_is_list and next_is_list:
+							formatted.append(f"Paragraph {para_counter}: [LIST_SEPARATOR: blank line between list items — these are SEPARATE list groups, output as SEPARATE <div><table> blocks with <br> between them]")
+						elif seen_salutation:
+							# In the letter body: emit SPACING for any blank count.
+							# For single blank lines, skip preamble blanks (between conditional salutation H-tag blocks).
+							is_preamble_blank = False
+							if blank_count == 1:
+								for chk_idx in [idx - 1, idx + 1]:
+									if 0 <= chk_idx < len(blocks):
+										chk_block = blocks[chk_idx]
+										if chk_block.get('type') == 'paragraph':
+											chk_runs = chk_block.get('runs', [])
+											chk_text = ''.join([r.get('text', '') for r in chk_runs]).strip()
+											if re.search(r'\[H\d{3}\]', chk_text):
+												is_preamble_blank = True
+												break
+							if not is_preamble_blank:
+								br_tags = '<br>' * blank_count
 								para_counter += 1
-								formatted.append(f"Paragraph {para_counter}: [LIST_SEPARATOR: blank line between list items — these are SEPARATE list groups, output as SEPARATE <div><table> blocks with <br> between them]")
+								formatted.append(
+									f"Paragraph {para_counter}: [SPACING: {blank_count} blank lines — output exactly {br_tags}]"
+								)
 				continue
 			
 			# Allow short text if it looks like a label or contains template markers

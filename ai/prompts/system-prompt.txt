@@ -173,12 +173,12 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
 - Do NOT add margin-left to every indented paragraph — only list tables get margin-left
 
 ### Spacing — IR Format
-- The IR uses <br> tags to represent blank lines from the source document
-- A single <br> = one blank line in the source; <br><br> = two blank lines, etc.
-- Do NOT add extra <br> tags that are not present in the IR
-- Do NOT remove <br> tags that ARE present in the IR
-- If two <div> elements appear consecutively with no <br> between them, they should be output as adjacent divs with NO spacing between them
-- CRITICAL: The spacing in the IR directly reflects the source document's paragraph spacing — trust it
+- The IR uses `[SPACING: N blank lines — output exactly <br>×N]` markers to represent ALL blank line gaps between paragraphs in the letter body
+- A `[SPACING: 1 blank lines — output exactly <br>]` = one blank line → output `<br>` between the surrounding paragraphs
+- A `[SPACING: 2 blank lines — output exactly <br><br>]` = two blank lines → output `<br><br>`, etc.
+- CRITICAL: If two consecutive paragraphs have NO `[SPACING]` marker between them, they are ADJACENT in the source — output them as adjacent `<div>` elements with NOTHING between them (no `<br>`)
+- CRITICAL: NEVER add `<br>` between paragraphs that have no SPACING marker between them
+- CRITICAL: NEVER collapse or expand the number of `<br>` tags in a SPACING marker
 
 ### Separate List Groups (LIST_SEPARATOR)
 - CRITICAL: When the IR contains [LIST_SEPARATOR: ...], the list items above and below it MUST be output as SEPARATE <div><table> blocks, NOT combined into one table.
@@ -228,8 +228,8 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
 - Use <br> tags ONLY where the source document has blank lines/spacing between paragraphs
 - CRITICAL: Do NOT add <br> between consecutive paragraphs that have no blank line between them in the source — they should be adjacent <div> elements with nothing between them
 - Each blank line in the source document = one <br> tag between the surrounding <div> elements
-- CRITICAL — SPACING MARKERS: When the IR contains a `[SPACING: N blank lines — output exactly <br>×N]` marker, output EXACTLY the `<br>` tags shown in that marker — no more, no fewer. A `[SPACING: 2 blank lines — output exactly <br><br>]` means output `<br><br>`. Do not collapse or expand these.
-- Single blank lines between paragraphs use the standard `<br>` separator (no explicit marker needed).
+- CRITICAL — SPACING MARKERS: When the IR contains a `[SPACING: N blank lines — output exactly <br>×N]` marker, output EXACTLY the `<br>` tags shown in that marker — no more, no fewer. Do not collapse or expand these.
+- CRITICAL: ALL blank line separations in the letter body are represented by explicit SPACING markers. If there is NO marker between two paragraphs, they are ADJACENT — output them with NO `<br>` between them.
 - Do NOT automatically add <br> before or after mortgagee clause lines, account number lines, or any tightly-grouped block — only add <br> if the source has a blank paragraph there
 - Use <b>...</b> for bold text
 - Use <u>...</u> for underlined text

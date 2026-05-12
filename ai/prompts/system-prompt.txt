@@ -255,7 +255,7 @@ CRITICAL FORMATTING RULES:
 
 ### Closing Signature Section
 - ONLY include elements that actually appear in the source document's closing — do NOT invent or add standard elements
-- The spacing after Sincerely should match the IR — if the IR has a <br> between "Sincerely," and the signer line, include it. If the IR has NO <br> (they are adjacent divs), do NOT add one.
+- ALWAYS put `<br>` between "Sincerely," (or "Regards," or similar closing phrase) and the signer/conditional block that immediately follows — this is standard business letter convention regardless of whether the source document has an explicit blank line there.
 - Common closing elements (include ONLY if present in source):
   - <div>Sincerely,</div>
   - Department or signer name: <div>Tax and Insurance Department</div> or <div>{[plsMatrix.CompanyLongName]}</div>

@@ -57,6 +57,9 @@ Generate HTML templates that:
 
 ### Helper Functions
 - Money: {Money({[TAG]})}
+  - CRITICAL: Money() wraps ONLY the variable tag — any following text (like labels or qualifiers) must come AFTER the closing `}` of Money(), NOT inside it.
+  - CORRECT: `{Money({[M029]})} (Total Monthly Payment)` — text is outside
+  - WRONG: `{Money({[M029]}) (Total Monthly Payment)}` — text is trapped inside Money()
 - Math: {Math({[TAG1]} + {[TAG2]}|Money)} or {Math({[TAG1]} / {[TAG2]}|Money)} for division
   - Supports: + (addition), - (subtraction), * (multiplication), / (division)
   - Example: {Math({[Q178]} / {[Q177]}|Money)} for [Q178E2 ÷ Q177]
@@ -255,7 +258,9 @@ CRITICAL FORMATTING RULES:
 
 ### Closing Signature Section
 - ONLY include elements that actually appear in the source document's closing — do NOT invent or add standard elements
-- ALWAYS put `<br>` between "Sincerely," (or "Regards," or similar closing phrase) and the signer/conditional block that immediately follows — this is standard business letter convention regardless of whether the source document has an explicit blank line there.
+- ALWAYS put `<br>` between "Sincerely," (or "Regards," or similar closing phrase) and the VERY NEXT element — whether that next element is a `<div>` signer name, a `{If()}` conditional block, or anything else. Example:
+  CORRECT: `<div>Sincerely,</div>\n<br>\n{If('{[S002]}' IN ('', NULL))}`
+  WRONG: `<div>Sincerely,</div>\n{If('{[S002]}' IN ('', NULL))}` (missing `<br>`)
 - Common closing elements (include ONLY if present in source):
   - <div>Sincerely,</div>
   - Department or signer name: <div>Tax and Insurance Department</div> or <div>{[plsMatrix.CompanyLongName]}</div>

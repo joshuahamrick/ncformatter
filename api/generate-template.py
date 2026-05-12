@@ -291,38 +291,71 @@ def format_ir_for_prompt(ir):
 			runs = block.get('runs', [])
 			text = ''.join([r.get('text', '') for r in runs]).strip()
 			
-			# Skip empty paragraphs — spacing is handled by template conventions, not blank lines
-			# Exception: preserve empty list items (empty bullet/numbered items are intentional placeholders)
-			# Exception: preserve blank paragraphs between list items (they indicate separate list groups)
-			if not text or len(text) < 3:
-				if block.get('isListItem') and (not text or len(text) < 3):
-					# Empty list item — include it as an explicit empty placeholder
-					list_level = block.get('listLevel', 0) or 0
-					para_counter += 1
-					formatted.append(f"Paragraph {para_counter}: [EMPTY_LIST_ITEM_LEVEL_{list_level}]")
-				else:
-					# Check if this blank paragraph falls between two list items
-					# If so, it signals they should be in SEPARATE list tables
-					prev_is_list = False
-					next_is_list = False
-					for prev_idx in range(idx - 1, max(0, idx - 3), -1):
-						if blocks[prev_idx].get('type') == 'paragraph':
-							prev_runs = blocks[prev_idx].get('runs', [])
-							prev_text = ''.join([r.get('text', '') for r in prev_runs]).strip()
-							if prev_text:
-								prev_is_list = blocks[prev_idx].get('isListItem', False)
-								break
-					for next_idx in range(idx + 1, min(len(blocks), idx + 3)):
-						if blocks[next_idx].get('type') == 'paragraph':
-							next_runs = blocks[next_idx].get('runs', [])
-							next_text = ''.join([r.get('text', '') for r in next_runs]).strip()
-							if next_text:
-								next_is_list = blocks[next_idx].get('isListItem', False)
-								break
-					if prev_is_list and next_is_list:
+		# Handle empty paragraphs
+		if not text or len(text) < 3:
+			if block.get('isListItem') and (not text or len(text) < 3):
+				# Empty list item — include it as an explicit empty placeholder
+				list_level = block.get('listLevel', 0) or 0
+				para_counter += 1
+				formatted.append(f"Paragraph {para_counter}: [EMPTY_LIST_ITEM_LEVEL_{list_level}]")
+			else:
+				# Check if the PREVIOUS block was also an empty non-list paragraph.
+				# If so, this block is part of an already-counted run — skip silently.
+				prev_was_empty = False
+				for prev_idx in range(idx - 1, max(-1, idx - 5), -1):
+					prev_block = blocks[prev_idx]
+					if prev_block.get('type') != 'paragraph':
+						break
+					prev_runs = prev_block.get('runs', [])
+					prev_text = ''.join([r.get('text', '') for r in prev_runs]).strip()
+					if not prev_text or len(prev_text) < 3:
+						if not prev_block.get('isListItem'):
+							prev_was_empty = True
+					break  # Only check immediate predecessor
+
+				if not prev_was_empty:
+					# This is the FIRST block of a consecutive empty run.
+					# Count how many consecutive empty blocks follow (including this one).
+					blank_count = 1
+					for next_idx in range(idx + 1, len(blocks)):
+						nb = blocks[next_idx]
+						if nb.get('type') != 'paragraph':
+							break
+						nb_text = ''.join([r.get('text', '') for r in nb.get('runs', [])]).strip()
+						if (not nb_text or len(nb_text) < 3) and not nb.get('isListItem'):
+							blank_count += 1
+						else:
+							break
+
+					if blank_count >= 2:
+						# Explicit multi-blank-line spacing marker
+						br_tags = '<br>' * blank_count
 						para_counter += 1
-						formatted.append(f"Paragraph {para_counter}: [LIST_SEPARATOR: blank line between list items — these are SEPARATE list groups, output as SEPARATE <div><table> blocks with <br> between them]")
-				continue
+						formatted.append(
+							f"Paragraph {para_counter}: [SPACING: {blank_count} blank lines — output exactly {br_tags}]"
+						)
+					else:
+						# Single blank line: check for list separator
+						prev_is_list = False
+						next_is_list = False
+						for prev_idx in range(idx - 1, max(0, idx - 3), -1):
+							if blocks[prev_idx].get('type') == 'paragraph':
+								prev_runs = blocks[prev_idx].get('runs', [])
+								prev_text_l = ''.join([r.get('text', '') for r in prev_runs]).strip()
+								if prev_text_l:
+									prev_is_list = blocks[prev_idx].get('isListItem', False)
+									break
+						for next_idx in range(idx + 1, min(len(blocks), idx + 3)):
+							if blocks[next_idx].get('type') == 'paragraph':
+								next_runs = blocks[next_idx].get('runs', [])
+								next_text_l = ''.join([r.get('text', '') for r in next_runs]).strip()
+								if next_text_l:
+									next_is_list = blocks[next_idx].get('isListItem', False)
+									break
+						if prev_is_list and next_is_list:
+							para_counter += 1
+							formatted.append(f"Paragraph {para_counter}: [LIST_SEPARATOR: blank line between list items — these are SEPARATE list groups, output as SEPARATE <div><table> blocks with <br> between them]")
+			continue
 			
 			# Allow short text if it looks like a label or contains template markers
 			is_label = (text.strip().endswith(':') or 

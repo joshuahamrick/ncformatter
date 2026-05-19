@@ -2696,7 +2696,7 @@ class handler(BaseHTTPRequestHandler):
 				'success': True,
 				'html': html,
 				'notes': notes,
-				'layoutImageUsed': bool(use_layout_image),
+				'layoutImageUsed': bool(use_layout_images),
 			})
 			
 		except Exception as e:

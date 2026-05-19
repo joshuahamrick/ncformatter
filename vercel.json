@@ -1,21 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/process-doc.py": {
-      "maxDuration": 120
-    },
-    "api/process-pdf.py": {
-      "maxDuration": 60
-    },
-    "api/generate-template.py": {
-      "maxDuration": 120
-    },
-    "api/patch-template.py": {
-      "maxDuration": 90
-    },
-    "api/assistant.py": {
-      "maxDuration": 60
-    }
+    "api/process-doc.py": { "maxDuration": 120 },
+    "api/process-pdf.py": { "maxDuration": 60 },
+    "api/generate-template.py": { "maxDuration": 120 },
+    "api/patch-template.py": { "maxDuration": 90 },
+    "api/assistant.py": { "maxDuration": 60 },
+    "api/*.py": { "maxDuration": 60 }
   },
   "headers": [
     {

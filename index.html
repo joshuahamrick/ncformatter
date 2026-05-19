@@ -82,18 +82,31 @@
                     </div>
                     
                     <div id="previewTab" class="tab-content">
-                        <div id="formattedPreview" class="formatted-preview"></div>
+                        <div class="preview-page-wrapper">
+                            <div id="formattedPreview" class="formatted-preview"></div>
+                        </div>
                     </div>
                     
                     <div id="htmlTab" class="tab-content active">
                         <div class="html-header">
-                            <button id="copyButton" class="copy-btn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                                Copy HTML
-                            </button>
+                            <div class="html-header-left">
+                                <span class="html-code-filename">template.html</span>
+                            </div>
+                            <div class="html-header-actions">
+                                <button id="expandButton" class="expand-btn" title="Expand to full view">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                                    </svg>
+                                    Expand
+                                </button>
+                                <button id="copyButton" class="copy-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                    Copy HTML
+                                </button>
+                            </div>
                         </div>
                         <pre id="htmlCode" class="html-code"></pre>
                     </div>
@@ -131,6 +144,32 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Code expand modal -->
+    <div id="codeModalOverlay" class="code-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="HTML Code Expanded View">
+        <div class="code-modal">
+            <div class="code-modal-header">
+                <div class="code-modal-title">
+                    <span class="code-modal-title-dot"></span>
+                    <span>template.html</span>
+                </div>
+                <div class="code-modal-controls">
+                    <button id="modalZoomOut" class="code-modal-zoom-btn" title="Zoom out (−)">−</button>
+                    <span id="modalZoomLevel" class="code-modal-zoom-label">100%</span>
+                    <button id="modalZoomIn" class="code-modal-zoom-btn" title="Zoom in (+)">+</button>
+                    <button id="modalClose" class="code-modal-close" title="Close (Esc)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="code-modal-body">
+                <pre id="modalCode" class="html-code"></pre>
+            </div>
+        </div>
     </div>
 
     <!-- New Python-powered formatter -->

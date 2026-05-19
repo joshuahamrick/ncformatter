@@ -26,6 +26,16 @@ class WordFormatter {
         this.applyButton = document.getElementById('applyButton');
         this.resetButton = document.getElementById('resetButton');
         
+        // Expand modal elements
+        this.expandButton = document.getElementById('expandButton');
+        this.codeModalOverlay = document.getElementById('codeModalOverlay');
+        this.modalCode = document.getElementById('modalCode');
+        this.modalClose = document.getElementById('modalClose');
+        this.modalZoomIn = document.getElementById('modalZoomIn');
+        this.modalZoomOut = document.getElementById('modalZoomOut');
+        this.modalZoomLevel = document.getElementById('modalZoomLevel');
+        this._modalFontSize = 13;
+
         // State management
         this.lastIr = null;
         this.currentHtml = null;
@@ -63,6 +73,7 @@ class WordFormatter {
         if (this.copyButton) {
             this.copyButton.addEventListener('click', () => this.copyToClipboard());
         }
+        this.setupExpandModal();
         
         // Tab switching
         this.tabButtons.forEach(btn => {
@@ -565,14 +576,14 @@ class WordFormatter {
             this.initialHtml = formattedText;
         }
         
-        // Set the preview content
+        // Set the preview content (letter view with NC token chips)
         if (this.formattedPreview) {
-            this.formattedPreview.innerHTML = formattedText;
+            this.formattedPreview.innerHTML = this.processForPreview(formattedText);
         }
         
-        // Set the HTML code content
+        // Set the HTML code content with syntax highlighting
         if (this.htmlCode) {
-            this.htmlCode.textContent = formattedText;
+            this.htmlCode.innerHTML = this.syntaxHighlightNcHtml(formattedText);
         }
         
         // Show results section
@@ -673,7 +684,7 @@ class WordFormatter {
             return;
         }
         
-        const htmlContent = this.htmlCode.textContent;
+        const htmlContent = this.currentHtml || this.htmlCode.textContent;
         navigator.clipboard.writeText(htmlContent).then(() => {
             // Show feedback
             if (this.copyButton) {
@@ -693,6 +704,193 @@ class WordFormatter {
             console.error('Failed to copy: ', err);
             alert('Failed to copy to clipboard');
         });
+    }
+
+    // ── Syntax highlighting for the HTML code tab ──────────────────────────
+    syntaxHighlightNcHtml(rawText) {
+        function htmlEsc(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function processAttrs(rawAttrs) {
+            const RE = /([a-zA-Z_:][a-zA-Z0-9_.:-]*)\s*=\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g;
+            let out = '';
+            let last = 0;
+            let m;
+            while ((m = RE.exec(rawAttrs)) !== null) {
+                out += htmlEsc(rawAttrs.slice(last, m.index));
+                out += `<span class="hl-attr-name">${m[1]}</span>=<span class="hl-attr-val">${htmlEsc(m[2])}</span>`;
+                last = m.index + m[0].length;
+            }
+            out += htmlEsc(rawAttrs.slice(last));
+            return out;
+        }
+
+        function processTag(raw) {
+            let inner = raw.slice(1, -1);
+            let out = '<span class="hl-tag-punc">&lt;</span>';
+            if (inner.startsWith('/')) {
+                out += '<span class="hl-tag-punc">/</span>';
+                inner = inner.slice(1);
+            }
+            const selfClose = /\s*\/$/.test(inner);
+            if (selfClose) inner = inner.replace(/\s*\/$/, '');
+            const nm = inner.match(/^([a-zA-Z][a-zA-Z0-9]*)([\s\S]*)/);
+            if (nm) {
+                out += `<span class="hl-tag-name">${nm[1]}</span>`;
+                out += processAttrs(nm[2]);
+            } else {
+                out += htmlEsc(inner);
+            }
+            if (selfClose) out += '<span class="hl-tag-punc">/</span>';
+            out += '<span class="hl-tag-punc">&gt;</span>';
+            return out;
+        }
+
+        // Combined tokenizer — order matters (most specific first)
+        const MAIN = new RegExp(
+            // NC conditional: {If(...)} allowing {[...]} and quoted strings inside
+            '(\\{If\\s*\\((?:[^{}\'"]|\'[^\']*\'|"[^"]*"|\\{[^}]*\\})*\\)\\})' +
+            // {Else}
+            '|(\\{Else\\})' +
+            // {End If} or {EndIf}
+            '|(\\{(?:End\\s+If|EndIf)\\})' +
+            // NC function: {FuncName(...)} allowing {[...]} inside
+            '|(\\{[A-Z][a-zA-Z]+\\s*\\((?:[^(){}]|\\{[^}]*\\})*\\)\\})' +
+            // NC field reference: {[...]}
+            '|(\\{\\[[^\\]]*\\]\\})' +
+            // HTML tag
+            '|(<(?:[^<>\'"]*|\'[^\']*\'|"[^"]*")*>)',
+            'g'
+        );
+
+        let out = '';
+        let pos = 0;
+        let m;
+
+        while ((m = MAIN.exec(rawText)) !== null) {
+            if (m.index > pos) out += htmlEsc(rawText.slice(pos, m.index));
+
+            const [full, ifC, elseC, endifC, funcC, fieldC, tagC] = m;
+
+            if (ifC || elseC || endifC) {
+                out += `<span class="hl-nc-cond">${htmlEsc(full)}</span>`;
+            } else if (funcC) {
+                // Highlight function wrapper; re-color inner field refs orange
+                let inner = htmlEsc(full);
+                inner = inner.replace(/\{\[[^\]]*\]\}/g,
+                    f => `<span class="hl-nc-field">${f}</span>`);
+                out += `<span class="hl-nc-func">${inner}</span>`;
+            } else if (fieldC) {
+                out += `<span class="hl-nc-field">${htmlEsc(full)}</span>`;
+            } else if (tagC) {
+                out += processTag(full);
+            } else {
+                out += htmlEsc(full);
+            }
+
+            pos = m.index + full.length;
+        }
+
+        if (pos < rawText.length) out += htmlEsc(rawText.slice(pos));
+        return out;
+    }
+
+    // ── Preview processor: render NC tokens as styled chips in letter view ──
+    processForPreview(rawHtml) {
+        function escTok(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        let html = rawHtml;
+
+        // Standalone conditional lines → block-level chips
+        html = html.replace(
+            /^\s*(\{If\s*\((?:[^{}'"]*|'[^']*'|"[^"]*"|\{[^}]*\})*\)\}|\{Else\}|\{(?:End\s?If|EndIf)\})\s*$/gm,
+            (full, tok) =>
+                `<div class="nc-cond-line"><span class="nc-preview-cond">${escTok(tok)}</span></div>`
+        );
+
+        // Any remaining inline conditionals
+        html = html.replace(
+            /\{If\s*\((?:[^{}'"]*|'[^']*'|"[^"]*"|\{[^}]*\})*\)\}|\{Else\}|\{(?:End\s?If|EndIf)\}/g,
+            tok => `<span class="nc-preview-cond">${escTok(tok)}</span>`
+        );
+
+        // NC function calls
+        html = html.replace(
+            /\{[A-Z][a-zA-Z]+\s*\((?:[^(){}]|\{[^}]*\})*\)\}/g,
+            m => `<span class="nc-preview-func">${escTok(m)}</span>`
+        );
+
+        // NC field references
+        html = html.replace(
+            /\{\[[^\]]*\]\}/g,
+            m => `<span class="nc-preview-field">${escTok(m)}</span>`
+        );
+
+        return html;
+    }
+
+    // ── Expand modal setup ─────────────────────────────────────────────────
+    setupExpandModal() {
+        if (!this.codeModalOverlay) return;
+
+        const openModal = () => {
+            if (!this.currentHtml) return;
+            // Sync content into modal
+            if (this.modalCode && this.htmlCode) {
+                this.modalCode.innerHTML = this.htmlCode.innerHTML;
+                this.modalCode.style.fontSize = this._modalFontSize + 'px';
+            }
+            this.codeModalOverlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            if (this.modalZoomLevel) {
+                this.modalZoomLevel.textContent = Math.round((this._modalFontSize / 13) * 100) + '%';
+            }
+        };
+
+        const closeModal = () => {
+            this.codeModalOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        };
+
+        const zoom = (delta) => {
+            this._modalFontSize = Math.min(24, Math.max(8, this._modalFontSize + delta));
+            if (this.modalCode) this.modalCode.style.fontSize = this._modalFontSize + 'px';
+            if (this.modalZoomLevel) {
+                this.modalZoomLevel.textContent = Math.round((this._modalFontSize / 13) * 100) + '%';
+            }
+        };
+
+        if (this.expandButton) this.expandButton.addEventListener('click', openModal);
+        if (this.modalClose)   this.modalClose.addEventListener('click', closeModal);
+        if (this.modalZoomIn)  this.modalZoomIn.addEventListener('click', () => zoom(1));
+        if (this.modalZoomOut) this.modalZoomOut.addEventListener('click', () => zoom(-1));
+
+        // Close on overlay backdrop click
+        this.codeModalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.codeModalOverlay) closeModal();
+        });
+
+        // Keyboard shortcuts inside modal
+        document.addEventListener('keydown', (e) => {
+            if (this.codeModalOverlay.style.display !== 'none') {
+                if (e.key === 'Escape') closeModal();
+                if (e.key === '=' || e.key === '+') zoom(1);
+                if (e.key === '-') zoom(-1);
+            }
+        });
+
+        // Mouse-wheel zoom inside modal body
+        if (this.codeModalOverlay) {
+            this.codeModalOverlay.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    zoom(e.deltaY < 0 ? 1 : -1);
+                }
+            }, { passive: false });
+        }
     }
 
     static async extractTextFromWord(file) {

@@ -100,7 +100,8 @@ class WordFormatter {
         }
         if (this.chatInput) {
             this.chatInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.ctrlKey) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
                     this.applyChatChange();
                 }
             });

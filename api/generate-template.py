@@ -788,11 +788,14 @@ def format_ir_for_prompt(ir):
 					continue
 				align = row.get('align', 'left')
 				bold_all = all(r.get('bold') for r in row.get('runs', []) if r.get('text','').strip())
+				is_list = row.get('isListItem') or row.get('listType') == 'bullet'
 				hints = []
 				if align in ('center', 'CENTER'):
 					hints.append('ALIGN_CENTER')
 				if bold_all:
 					hints.append('BOLD')
+				if is_list:
+					hints.append('LIST_ITEM')
 				hint_str = f' [FORMATTING: {", ".join(hints)}]' if hints else ''
 				para_counter += 1
 				formatted.append(f'Paragraph {para_counter}: {row_text.strip()[:400]}{hint_str}')
@@ -1044,20 +1047,19 @@ def format_ir_for_prompt(ir):
 		# Subject heading before Loan Number table: force correct style
 		if i == subject_heading_idx:
 			line += ' [NOTE: This is the SUBJECT HEADING — format as: <b><div style="font-size: 11pt">text</div></b> — do NOT add <br> after this before the Loan Number table]'
-		# Loan Number line: force Pattern 3b (colspan=2 with empty 3rd cell)
+		# Loan Number line: force standard 2-column table (Pattern 3a)
 		if i == loan_number_idx:
-			# Extract the loan number variable from the line
 			ln_var_match = re.search(r'(\{?\[?M594\]?\}?)', line)
 			ln_var = ln_var_match.group(1) if ln_var_match else '{[M594]}'
 			line += (
-				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row table using Pattern 3b: '
+				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row 2-column table: '
 				f'<table width="100%"><tbody><tr>'
-				f'<td valign="top" colspan="2">Loan Number: {ln_var}</td>'
-				f'<td></td>'
+				f'<td width="20%" valign="top">Loan Number:</td>'
+				f'<td>{ln_var}</td>'
 				f'</tr><tr>'
-				f'<td width="15%" valign="top">RE:</td>'
+				f'<td width="20%" valign="top">RE:</td>'
 				f'<td>{{Compress(...)}}</td>'
-				f'</tr></tbody></table> — the RE: row uses the Compress() expression from the next paragraph]'
+				f'</tr></tbody></table> — keep exactly 2 columns per row, the RE: row uses Compress() from the next paragraph]'
 			)
 		# Paragraph immediately before first mortgagee clause: suppress trailing <br>
 		if i == pre_mortgagee_idx:
@@ -1710,19 +1712,24 @@ When the document has a thin horizontal line separating the mailing address from
 Detection: If the IR contains `[FORMATTING: BORDER_BOTTOM]` on a paragraph between the mailing address and the document title/body, or a paragraph that is blank with only a bottom border → render as `<hr>`.
 
 **INLINE TEXT BOX — floating Word drawing shape injected at its anchor position:**
-When the IR contains `[INLINE_TEXTBOX_START: fill=#XXXXXX, border=...]` and `[INLINE_TEXTBOX_END]` markers, render ALL content between them inside a bordered table at that exact position in the document:
+When the IR contains `[INLINE_TEXTBOX_START: fill=#XXXXXX, border=...]` and `[INLINE_TEXTBOX_END]` markers, render ALL content between them inside a single bordered table at that exact IR position:
 ```html
 <table width="100%" style="border: 1px solid #000000; border-collapse: collapse; background-color: #E2EFD9;"><tbody><tr>
   <td style="padding: 8pt 10pt;">
-    [paragraph content rendered normally here]
+    <div style="text-align: center"><b>Title</b></div>
+    <div>Body text paragraph here.</div>
+    <ul><li>Bullet item one.</li><li>Bullet item two.</li></ul>
   </td>
 </tr></tbody></table>
 ```
-- Use the `fill=` color for `background-color` on the table (e.g. `fill=#E2EFD9` → `background-color: #E2EFD9`).
+Rules for content INSIDE the textbox:
+- Use the `fill=` hex color for `background-color` (e.g. `fill=#e2efd9` → `background-color: #e2efd9`).
 - Use the `border=` value for the CSS border (e.g. `border=1.0pt #000000` → `border: 1pt solid #000000`).
-- Render each paragraph inside using the same rules as body paragraphs (bold → `<b>`, center → `text-align: center`, bullet → bullet table, etc.).
-- Do NOT emit the `[INLINE_TEXTBOX_START]` / `[INLINE_TEXTBOX_END]` text — they are IR markers only.
-- The text box MUST appear at the position it occurs in the IR, NOT moved to the bottom or top.
+- Paragraphs marked `[FORMATTING: BOLD]` → wrap in `<b>`.
+- Paragraphs marked `[FORMATTING: ALIGN_CENTER]` → add `style="text-align: center"`.
+- Paragraphs marked `LIST_ITEM` or that are bullet points → collect consecutive list items into a single `<ul>` with `<li>` for each.
+- Do NOT insert `<br>` between paragraphs inside the textbox — they flow as tightly-packed divs or list items.
+- The text box table MUST appear exactly at the position it occurs in the IR, NOT moved anywhere else.
 
 **PARAGRAPH BORDER BOX — wrapping consecutive bordered/shaded paragraphs:**
 When the IR contains `[BORDER_BOX_START...]` and `[BORDER_BOX_END]` markers, ALL content between them must be wrapped in a single bordered table (the paragraphs share a paragraph-level border and/or fill extracted from the OOXML). Use this pattern:

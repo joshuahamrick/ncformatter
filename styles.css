@@ -29,7 +29,8 @@ body {
 /* Top Bar */
 .top-bar {
     height: 55.99px;
-    background: linear-gradient(135deg, #346cb0 0%, #2a5a9a 50%, #1e4a7a 100%);
+    background: #ffffff;
+    border-bottom: 3px solid #dc2635;
     display: flex;
     align-items: center;
     position: fixed;
@@ -37,7 +38,7 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
 }
 
 .top-bar-content {
@@ -45,15 +46,16 @@ body {
     height: 100%;
     display: flex;
     align-items: center;
-    padding: 0 0 0 8px;
+    padding: 0 20px;
     margin: 0;
 }
 
 .logo {
-    height: 48.44px;
-    width: 175px;
+    height: 38px;
+    width: auto;
     margin: 0;
     padding: 0;
+    display: block;
 }
 
 /* Header Styles */

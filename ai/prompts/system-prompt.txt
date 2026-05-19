@@ -126,6 +126,15 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
      <td valign="top" width="15%">RE:</td>
      <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>  ← only because IA004 source has M583; use source vars
    </tr></tbody></table>
+3b. Loan Number colspan=2 with empty 3rd cell (e.g. LM001): 3-column table where row 1 spans first two columns, leaving an empty 3rd cell:
+   <table width="100%"><tbody><tr>
+     <td valign="top" colspan="2">Loan Number: {[M594]}</td>
+     <td></td>
+   </tr><tr>
+     <td width="15%" valign="top">RE:</td>
+     <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+   </tr></tbody></table>
+   DETECT: If source has "Loan Number: {[M594]}" as a combined label+value in the first column (not separate columns), use this 3b pattern.
 4. Two-column with custom labels (e.g. LM300): source has "RE: Loan No." and "Property Address:" as separate label rows without an "RE:" parent prefix. Use the EXACT labels from the source:
    <table width="100%"><tbody><tr>
      <td width="20%" valign="top">RE: Loan No.</td>
@@ -137,12 +146,15 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
    CRITICAL: Use the label text EXACTLY as it appears in the source document (e.g. "RE: Loan No." not "RE: Loan Number:"). The second row label is whatever the source says — typically "Property Address:" not "RE:".
    CRITICAL: The Compress() variables must match the source — if the source has no M583, do NOT include M583.
 
-### Bold Text with Custom Font Size — CRITICAL Nesting Rule
-- CRITICAL: When a paragraph is BOTH bold AND has a non-standard font size (e.g. FONT_SIZE_13pt, FONT_SIZE_11pt), the `<b>` tag MUST wrap the outer `<div>`, NOT the text inside. This is required for Summernote to correctly apply the size change.
-  CORRECT: `<b><div style="text-align: center; font-size: 13pt">Notice of Escrow Deficiency</div></b>`
-  WRONG:   `<div style="text-align: center; font-size: 13pt"><b>Notice of Escrow Deficiency</b></div>`
-- For standard-size bold text (no custom font-size), `<b>` goes INSIDE the div as normal: `<div><b>Bold text here.</b></div>`
-- This applies to ALL paragraphs with a custom font size in the FORMATTING hint (FONT_SIZE_Xpt), regardless of alignment.
+### Bold Text — CRITICAL Nesting Rule
+- CRITICAL: When a paragraph is marked BOLD or BOLD_TAGS_ONLY and the entire paragraph is the bold heading, the `<b>` tag MUST wrap the outer `<div>`. This is required for Summernote to correctly apply bold.
+  CORRECT: `<b><div>What happens after I submit my required documentation?</div></b>`
+  CORRECT: `<b><div style="text-align: center; font-size: 11pt">IMPORTANT NOTICE ABOUT</div></b>`
+  CORRECT: `<b><div style="font-size: 11pt">FREQUENTLY ASKED QUESTIONS</div></b>`
+  WRONG:   `<div><b>What happens after I submit my required documentation?</b></div>`
+  WRONG:   `<div style="font-size: 11pt"><b>FREQUENTLY ASKED QUESTIONS</b></div>`
+- The ONLY exception: when bold applies to just a portion of paragraph content (e.g., a bold label followed by non-bold body text), put `<b>` INSIDE: `<div><b>Label:</b> body text here.</div>`
+- FONT_SIZE_11pt: Used for section headings like "FREQUENTLY ASKED QUESTIONS", "FOR ADDITIONAL ASSISTANCE", "IMPORTANT NOTICE ABOUT". Always use <b><div style="font-size: 11pt">text</div></b> pattern.
 
 ### Subject Heading Before Loan Number Table
 - When a bold paragraph appears directly before the Loan Number/RE table (marked [FORMATTING: BOLD] with no ALIGN_CENTER), format it as:
@@ -155,6 +167,16 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
 - When a "Subject:" line has the word "Subject:" bold but the title text underlined (marked PARTIAL_BOLD), format as:
   <div><b>Subject:</b> <u>Title Text Here</u></div>
 - NEVER wrap the entire line in both <b> and <u>: <div><b><u>Subject: Title</u></b></div> is WRONG
+
+### Bold Program Label + Contact Info / URL (PARTIAL_BOLD + phone or URL after label)
+- When a paragraph is marked PARTIAL_BOLD and the non-bold portion is a phone number, URL, or other contact information, format as:
+  `<div><b>{Bold Label}</b><span style="padding-left: 55px">{phone number}<u>{URL}</u></span></div>`
+  Example: `<div><b>HUD Approved Housing Counseling</b><span style="padding-left: 55px">1-800-569-4287<u>www.HUD.gov</u></span></div>`
+- When a paragraph is marked PARTIAL_BOLD + PARTIAL_UNDERLINE + HYPERLINK and the non-bold portion is only a URL (no phone), split into TWO separate divs with the URL indented:
+  `<div><b>{Bold Label}</b></div>`
+  `<div style="padding-left: 55px"><u>{URL}</u></div>`
+  Example: `<div><b>Fannie Mae Assistance Program</b></div>` followed by `<div style="padding-left: 55px"><u>www.knowyouroptions.com</u></div>`
+- NEVER output literal tab characters (\t) in HTML. If you are tempted to insert a tab for visual alignment, use `padding-left: 55px` on a span or div instead.
 
 ### Bold Heading + Body Paragraph (Soft Return Pattern)
 - CRITICAL: When a paragraph contains a bold heading followed by body text (soft-return / Shift+Enter within the same paragraph in Word), they MUST be output as TWO SEPARATE <div> elements, NOT combined in one:
@@ -172,10 +194,48 @@ Four patterns based on source structure — use the labels EXACTLY as they appea
 
 ### Numbered vs Bullet Lists — IR Annotation Format
 - The IR annotates list items in the FORMATTING hints as: LIST_ITEM(type=bullet, level=0) or LIST_ITEM(type=numbered, level=0)
-- When you see LIST_ITEM(type=bullet), use • in the first cell
+- When you see LIST_ITEM(type=bullet) with NO `char=` attribute, use • in the first cell
+- When you see LIST_ITEM(type=bullet, ..., char=X), use X as the bullet character in the first cell (e.g. char={Symbol(ü)} → `{Symbol(ü)}`)
 - When you see LIST_ITEM(type=numbered), use sequential numbers (1., 2., 3., etc.) in the first cell
-- ALWAYS use the table format for lists with margin-left: <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr><td width="3%" valign="top">•</td><td>...</td></tr></tbody></table></div>
-- Group consecutive list items of the same type into a SINGLE table (multiple <tr> rows), NOT separate tables per item
+- ALWAYS use the table format for lists: <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top" style="text-align: center">CHAR</td><td>...</td></tr></tbody></table></div>
+- Group consecutive list items of the same type AND same char into a SINGLE table (multiple <tr> rows), NOT separate tables per item
+- CRITICAL: Each separate list group (separated by [LIST_SEPARATOR]) MUST be in its own <div><table> block
+
+### {Symbol()} Bullet Character
+- CRITICAL: When a list item has `char={Symbol(ü)}` (or any {Symbol(X)} char), use that EXACTLY as the first-cell content
+- Output: `<td width="3%" valign="top" style="text-align: center">{Symbol(ü)}</td>`
+- Do NOT substitute • for {Symbol(X)} — the template system renders it differently
+- Each separate {Symbol()} bullet group must be in its own <div><table> with border-collapse: collapse (no margin-left for top-level)
+
+### LIST_LEVEL_DOWN / LIST_LEVEL_UP — Sub-Level Bullets
+- When the IR contains `[LIST_LEVEL_DOWN: ...]`, the NEXT items are sub-level bullets (level=1)
+- Output them as a SEPARATE `<table width="100%" style="border-collapse: collapse; margin-left: 30px">` with NO <div> wrapper
+- Close the current level-0 <div><table> block BEFORE the [LIST_LEVEL_DOWN] marker
+- Sub-level table rows use the char from `char=` (e.g. `o` for level-1 items)
+- When `[LIST_LEVEL_UP: ...]` appears, close the sub-level table and resume normal level-0 <div><table> blocks
+
+### BETWEEN_TABLES — Separator Between Table Blocks
+- When the IR contains `[BETWEEN_TABLES: ...]`, output `<br>` between the current <div><table> block and the next one
+- This is required when a SUB_ROW paragraph is immediately followed by a new separate bullet group
+
+### SUB_ROW — Indented Continuation Paragraphs After Bullets
+- When a FORMATTING hint contains `SUB_ROW:`, this paragraph is a continuation of the PREVIOUS bullet's table
+- Output it as an ADDITIONAL `<tr>` row in the SAME `<div><table>` block as the preceding bullet
+- The first `<td>` of the sub-row uses a SPACE character (` `) — not the bullet character, not empty
+- The second `<td>` contains the sub-row text with its formatting (bold, italic, underline as indicated)
+- Example: A bullet followed by a SUB_ROW becomes:
+  <div><table width="100%" style="border-collapse: collapse"><tbody><tr>
+    <td width="3%" valign="top" style="text-align: center">{Symbol(ü)}</td>
+    <td><b>Main bullet text here</b></td>
+  </tr><tr>
+    <td width="3%" valign="top" style="text-align: center"> </td>
+    <td><b><i>Sub-row continuation text here</i></b></td>
+  </tr></tbody></table></div>
+
+### HR_SECTION_BREAK — Horizontal Rule Section Divider
+- When the IR contains `[HR_SECTION_BREAK: ...]`, output a `<hr>` tag here — NOT multiple `<br>` tags
+- This typically appears after the closing company name when a new section (like "Additional Modification Information") follows
+- Output exactly: `<hr>`
 - IMPORTANT: If the IR contains [EMPTY_LIST_ITEM_LEVEL_X], this is an empty bullet placeholder — output it as a bullet row with an empty content cell wrapped in a div table:
   <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
     <td width="3%" valign="top">•</td>

@@ -199,6 +199,7 @@ def load_few_shot_examples():
 		'LM300/LM300-formatted.html',       # HUD Pre-Foreclosure Sale: 2-col RE table with custom labels, 2-part Compress (no M583), margin-left bullets, no <br> after Sincerely
 		'CL028/CL028-formatted.html',       # Illinois Affidavit of Defense: 60/40 IMPORTANT NOTICE header, bordered lender/consumer table, grid home table, border-bottom writing lines, dual 50/50 signature tables
 		'ES014/ES014-formatted.html',       # Escrow Cancellation Request: Font() declaration, <hr> divider, Compress title box, account/borrower table, 80%-wide 40/1/20 signature tables, address section table, nested-table double-border warning box, plain TaxEmail at bottom
+		'LM001/LM001-formatted.html',       # Loss Mit Acknowledgement: {Symbol(ü)} Wingdings checkmark bullets, SUB_ROW indented continuation, <hr> after closing, 11pt bold section headings, colspan=2 Loan Number table
 	]
 
 	curated = foundational + recently_trained
@@ -291,6 +292,10 @@ def format_ir_for_prompt(ir):
 	
 	para_counter = 0  # Sequential numbering - no gaps from skipped blanks
 	seen_salutation = False  # Only emit SPACING markers after the Dear/salutation
+	seen_sincerely = False   # Track when we're past the "Sincerely," closing line
+	last_was_list_item = False  # Track whether the previous content block was a list item
+	last_was_sub_row = False   # Track whether the previous content block was a SUB_ROW
+	last_list_level = None     # Track the level of the last list item (for level-change detection)
 	for idx, block in enumerate(blocks):
 		if block.get('type') == 'paragraph':
 			runs = block.get('runs', [])
@@ -300,6 +305,8 @@ def format_ir_for_prompt(ir):
 			# Exception: preserve empty list items (empty bullet/numbered items are intentional placeholders)
 			# Exception: preserve blank paragraphs between list items (they indicate separate list groups)
 			if not text or len(text) < 3:
+				last_was_list_item = False  # Reset: blank paragraph breaks the list-item chain
+				last_was_sub_row = False    # Reset: blank paragraph breaks the sub-row chain
 				if block.get('isListItem') and (not text or len(text) < 3):
 					# Empty list item — include it as an explicit empty placeholder
 					list_level = block.get('listLevel', 0) or 0
@@ -369,11 +376,18 @@ def format_ir_for_prompt(ir):
 												is_preamble_blank = True
 												break
 							if not is_preamble_blank:
-								br_tags = '<br>' * blank_count
-								para_counter += 1
-								formatted.append(
-									f"Paragraph {para_counter}: [SPACING: {blank_count} blank lines — output exactly {br_tags}]"
-								)
+								# After "Sincerely," closing: large gaps (5+) = <hr> section divider
+								if seen_sincerely and blank_count >= 5:
+									para_counter += 1
+									formatted.append(
+										f"Paragraph {para_counter}: [HR_SECTION_BREAK: {blank_count} blank lines after closing — render as <hr> (horizontal rule) here, NOT as multiple <br> tags]"
+									)
+								else:
+									br_tags = '<br>' * blank_count
+									para_counter += 1
+									formatted.append(
+										f"Paragraph {para_counter}: [SPACING: {blank_count} blank lines — output exactly {br_tags}]"
+									)
 				continue
 			
 			# Allow short text if it looks like a label or contains template markers
@@ -556,6 +570,12 @@ def format_ir_for_prompt(ir):
 				r'\1',
 				cleaned_text
 			)
+			# Strip dash-prefixed trailing annotations: "[M594] – No Dash" or "[M594] — Description"
+			cleaned_text = re.sub(
+				r'(\[(?:[A-Z]\d{3}[A-Za-z0-9]*)\])\s*[–—]\s*[A-Za-z][A-Za-z \-]*$',
+				r'\1',
+				cleaned_text
+			)
 			# Convert METADATA annotations to clear directives instead of stripping
 			# e.g. "*METADATA -ONLY PRODUCE LAST 4 DIGITS OF LOAN NUMBER*" → "[USE: {[loanNumberLast4]}]"
 			def _convert_metadata(m):
@@ -631,8 +651,10 @@ def format_ir_for_prompt(ir):
 				if hyperlink_texts:
 					formatting_hints.append(f"HYPERLINK({'; '.join(hyperlink_texts)})")
 			
-			if font_size and (font_size >= 13.0 or font_size <= 8.0):  # Only flag headings/footnotes; skip common body sizes (8–12pt)
-				formatting_hints.append(f"FONT_SIZE_{int(font_size)}pt")
+			if font_size and (font_size >= 11.0 or font_size <= 9.0):  # Flag headings (11pt+) and footnotes; skip 10pt standard body
+				# Round 11–12.9pt down to 11pt — mortgage letter heading standard is 11pt
+				reported_size = 11 if 11.0 <= font_size <= 12.9 else int(font_size)
+				formatting_hints.append(f"FONT_SIZE_{reported_size}pt")
 			if alignment and alignment != 'left':
 				formatting_hints.append(f"ALIGN_{alignment.upper()}")
 			
@@ -645,11 +667,15 @@ def format_ir_for_prompt(ir):
 			if block.get('borderBottom'):
 				formatting_hints.append("BORDER_BOTTOM — this paragraph has a bottom border; render as <hr> if empty, or follow with <hr> if it has text")
 
-			# Add list item indicator with type (CRITICAL for bullet/numbered detection)
+			# Add list item indicator with type and actual bullet character if known
 			if block.get('isListItem'):
 				list_level = block.get('listLevel', 0)
 				list_type = block.get('listType', 'bullet')
-				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level})")
+				bullet_char = block.get('listBulletChar', '')
+				if bullet_char and bullet_char not in ('•', '\u2022'):
+					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char})")
+				else:
+					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level})")
 			
 			# Add left indent if significant (helps with margin-left decisions)
 			left_indent = block.get('leftIndentPt')
@@ -675,11 +701,65 @@ def format_ir_for_prompt(ir):
 				prop_var = re_prop_match.group(1).strip()
 				cleaned_text = f"[RE_TABLE_ROW_2: (empty) | Property Address: | {prop_var}] — 3-COLUMN TABLE second row: <td width=\"3%\" valign=\"top\"></td><td width=\"20%\" valign=\"top\">Property Address:</td><td>{prop_var}</td>"
 			
+			# Detect indented non-list paragraphs that follow a list item
+			# (e.g., "*This ONLY applies..." or a URL continuation after a bullet)
+			# These should be flagged as additional rows in the same table
+			is_indent_sub_row = False
+			cur_is_list = bool(block.get('isListItem'))
+			cur_list_level = block.get('listLevel') if cur_is_list else None
+
+			# Emit level-change markers: level 0→1 means sub-items follow; 1→0 means back to main
+			if cur_is_list and last_was_list_item and cur_list_level != last_list_level:
+				if cur_list_level is not None and last_list_level is not None:
+					if cur_list_level > last_list_level:
+						# Going deeper — sub-items start here
+						para_counter += 1
+						formatted.append(
+							f"Paragraph {para_counter}: [LIST_LEVEL_DOWN: Following are LEVEL-{cur_list_level} sub-items — "
+							f"output as a SEPARATE <table width=\"100%\" style=\"border-collapse: collapse; margin-left: 30px\"> "
+							f"with NO <div> wrapper. Close the current level-{last_list_level} table first.]"
+						)
+					elif cur_list_level < last_list_level:
+						# Going back up — sub-item block ends here
+						para_counter += 1
+						formatted.append(
+							f"Paragraph {para_counter}: [LIST_LEVEL_UP: Returning to LEVEL-{cur_list_level} items — "
+							f"close the level-{last_list_level} sub-table and start a new <div><table> for this item]"
+						)
+
+			# Emit separator when a SUB_ROW paragraph is followed by a new list item
+			# (the new list item needs its own <div><table> block with <br> before it)
+			if cur_is_list and last_was_sub_row:
+				para_counter += 1
+				formatted.append(
+					f"Paragraph {para_counter}: [BETWEEN_TABLES: Close the previous <div><table> block and output <br> here, "
+					f"then start a NEW <div><table> block for the next bullet]"
+				)
+
+			if (last_was_list_item
+					and not cur_is_list
+					and block.get('leftIndentPt') and block.get('leftIndentPt') >= 15):
+				is_indent_sub_row = True
+				formatting_hints.append(
+					"SUB_ROW: This indented paragraph immediately follows a list-item bullet — "
+					"output it as an ADDITIONAL <tr> (with empty first <td>) in the SAME "
+					"<div><table> block as the preceding bullet, do NOT start a new table"
+				)
+				# Rebuild formatting_note with the new hint
+				formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
+
 			para_counter += 1
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 			# Track when we've entered the letter body (past the preamble)
 			if not seen_salutation and re.match(r'Dear\b', cleaned_text, re.IGNORECASE):
 				seen_salutation = True
+			# Track when we've passed "Sincerely," so we can detect hr gaps
+			if seen_salutation and not seen_sincerely and re.match(r'Sincerely\b', cleaned_text, re.IGNORECASE):
+				seen_sincerely = True
+			# Update tracking state for next iteration
+			last_was_list_item = cur_is_list
+			last_was_sub_row = is_indent_sub_row
+			last_list_level = cur_list_level if cur_is_list else last_list_level
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			tbl_borders = block.get('tableBorders')
@@ -896,6 +976,21 @@ def format_ir_for_prompt(ir):
 		# Subject heading before Loan Number table: force correct style
 		if i == subject_heading_idx:
 			line += ' [NOTE: This is the SUBJECT HEADING — format as: <b><div style="font-size: 11pt">text</div></b> — do NOT add <br> after this before the Loan Number table]'
+		# Loan Number line: force Pattern 3b (colspan=2 with empty 3rd cell)
+		if i == loan_number_idx:
+			# Extract the loan number variable from the line
+			ln_var_match = re.search(r'(\{?\[?M594\]?\}?)', line)
+			ln_var = ln_var_match.group(1) if ln_var_match else '{[M594]}'
+			line += (
+				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row table using Pattern 3b: '
+				f'<table width="100%"><tbody><tr>'
+				f'<td valign="top" colspan="2">Loan Number: {ln_var}</td>'
+				f'<td></td>'
+				f'</tr><tr>'
+				f'<td width="15%" valign="top">RE:</td>'
+				f'<td>{{Compress(...)}}</td>'
+				f'</tr></tbody></table> — the RE: row uses the Compress() expression from the next paragraph]'
+			)
 		# Paragraph immediately before first mortgagee clause: suppress trailing <br>
 		if i == pre_mortgagee_idx:
 			line += " [NOTE: Mortgagee clause lines follow IMMEDIATELY after this paragraph — do NOT add <br> between this paragraph and the mortgagee lines]"

@@ -432,13 +432,45 @@ def _extract_table_ir(table):
 	}
 
 
+def _wingdings_to_symbol(char, font_name):
+	"""
+	Map a Wingdings/Symbol private-use-area character to the {Symbol(X)} notation
+	used by NcConnect templates.
+	
+	Word stores Wingdings characters in the Unicode private use area (U+F0xx).
+	The actual character displayed depends on the font, but for NcConnect's
+	{Symbol(X)} function, X is the Latin-1 equivalent (subtract 0xF000).
+	"""
+	if not char:
+		return None
+	c = char[0]
+	code = ord(c)
+	# Wingdings private use area: U+F000–U+F0FF maps to Latin-1 equivalent
+	if 0xF000 <= code <= 0xF0FF:
+		latin1_char = chr(code - 0xF000)
+		return '{Symbol(' + latin1_char + ')}'
+	# Already a standard symbol character
+	standard_bullets = {'\u2022', '\u25cf', '\u25cb', '\u25a0', '\u25aa', '\u2013', '\u2014'}
+	if c in standard_bullets:
+		return '{Symbol(' + c + ')}'
+	# Plain text marker (e.g. 'o', '-', '*')
+	if c.isascii() and not c.isdigit():
+		return c
+	return None
+
+
 def _resolve_list_types(doc, blocks):
-	"""Resolve whether list items are bullet or numbered by reading numbering.xml definitions."""
+	"""
+	Resolve whether list items are bullet or numbered by reading numbering.xml.
+	Also extracts the actual bullet character (e.g. {Symbol(ü)} for Wingdings ü)
+	and stores it in listBulletChar on each block.
+	"""
 	import zipfile
 	import re as _re
-	
+
+	# Characters that always mean 'bullet' regardless of numFmt
 	bullet_chars = {'\uf0b7', '\u2022', '\u25cf', '\u25cb', '\u25a0', '\u25aa', '-', '\u2013', '\u2014'}
-	
+
 	try:
 		numbering_xml = None
 		temp = io.BytesIO()
@@ -448,67 +480,105 @@ def _resolve_list_types(doc, blocks):
 			if 'word/numbering.xml' in z.namelist():
 				with z.open('word/numbering.xml') as f:
 					numbering_xml = f.read().decode('utf-8')
-		
+
 		if not numbering_xml:
 			for b in blocks:
 				if b.get('type') == 'paragraph' and b.get('isListItem'):
 					b['listType'] = 'bullet'
 			return
-		
+
 		num_to_abstract = {}
-		for m in _re.finditer(r'<w:num\s+w:numId="(\d+)"[^>]*>.*?<w:abstractNumId\s+w:val="(\d+)"', numbering_xml, _re.DOTALL):
+		for m in _re.finditer(
+			r'<w:num\s+w:numId="(\d+)"[^>]*>.*?<w:abstractNumId\s+w:val="(\d+)"',
+			numbering_xml, _re.DOTALL
+		):
 			num_to_abstract[m.group(1)] = m.group(2)
-		
-		abstract_fmt = {}
-		for m in _re.finditer(r'<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>(.*?)</w:abstractNum>', numbering_xml, _re.DOTALL):
+
+		# Per-abstractNum, per-level: store (fmt, lvlText, font)
+		# Key: (abs_id, ilvl_str)  Value: dict with fmt/lvlText/font
+		abstract_level_info = {}
+		for m in _re.finditer(
+			r'<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>(.*?)</w:abstractNum>',
+			numbering_xml, _re.DOTALL
+		):
 			abs_id = m.group(1)
 			body = m.group(2)
-			lvl_match = _re.search(r'<w:lvl\s+w:ilvl="0"[^>]*>(.*?)</w:lvl>', body, _re.DOTALL)
-			if lvl_match:
-				lvl_body = lvl_match.group(1)
-				fmt_match = _re.search(r'<w:numFmt\s+w:val="([^"]+)"', lvl_body)
-				if fmt_match:
-					abstract_fmt[abs_id] = fmt_match.group(1)
-				txt_match = _re.search(r'<w:lvlText\s+w:val="([^"]*)"', lvl_body)
-				if txt_match and txt_match.group(1) in bullet_chars:
-					abstract_fmt[abs_id] = 'bullet'
-		
-		# Build a map from paragraph XML element to numId
+			for lvl_m in _re.finditer(r'<w:lvl\s+w:ilvl="(\d+)"[^>]*>(.*?)</w:lvl>', body, _re.DOTALL):
+				ilvl = lvl_m.group(1)
+				lvl_body = lvl_m.group(2)
+
+				fmt_m = _re.search(r'<w:numFmt\s+w:val="([^"]+)"', lvl_body)
+				fmt = fmt_m.group(1) if fmt_m else ''
+
+				txt_m = _re.search(r'<w:lvlText\s+w:val="([^"]*)"', lvl_body)
+				lvl_text = txt_m.group(1) if txt_m else ''
+
+				# Font override for the level (rFonts inside lvl/pPr or lvl/rPr)
+				font_m = _re.search(r'<w:rFonts[^/]*/?>.*?(?=</w:)', lvl_body, _re.DOTALL)
+				if not font_m:
+					font_m = _re.search(r'<w:rFonts\s+[^>]+>', lvl_body)
+				lvl_font = ''
+				if font_m:
+					fn_m = _re.search(r'w:ascii="([^"]+)"', font_m.group(0))
+					if fn_m:
+						lvl_font = fn_m.group(1)
+
+				# If lvlText is a symbol character, override numFmt to 'bullet'
+				if lvl_text and lvl_text[0] in bullet_chars:
+					fmt = 'bullet'
+				elif lvl_text and ord(lvl_text[0]) >= 0xF000:
+					# Private-use-area (Wingdings/Symbol) → treat as bullet
+					fmt = 'bullet'
+
+				abstract_level_info[(abs_id, ilvl)] = {
+					'fmt': fmt,
+					'lvlText': lvl_text,
+					'font': lvl_font,
+				}
+
+		# Re-scan doc paragraphs to map text → (numId, ilvl)
 		from docx.oxml.ns import qn
-		para_numids = {}
-		for b in blocks:
-			if b.get('type') != 'paragraph' or not b.get('isListItem'):
-				continue
-			# We need the raw paragraph element to get numId
-			# Since we don't store it, re-scan from doc paragraphs
-		
-		# Re-scan doc paragraphs to get numId mapping
-		para_texts_to_numid = {}
+		para_texts_to_numinfo = {}
 		for para in doc.paragraphs:
 			pPr = para._p.find(qn('w:pPr'))
 			if pPr is not None:
 				numPr = pPr.find(qn('w:numPr'))
 				if numPr is not None:
 					numId_elem = numPr.find(qn('w:numId'))
+					ilvl_elem = numPr.find(qn('w:ilvl'))
 					if numId_elem is not None:
 						num_id = numId_elem.get(qn('w:val'), '')
+						ilvl = ilvl_elem.get(qn('w:val'), '0') if ilvl_elem is not None else '0'
 						text = ''.join(run.text for run in para.runs if run.text)
-						para_texts_to_numid[text.strip()] = num_id
-		
+						para_texts_to_numinfo[text.strip()] = (num_id, ilvl)
+
 		for b in blocks:
 			if b.get('type') != 'paragraph' or not b.get('isListItem'):
 				continue
 			text = ''.join(r.get('text', '') for r in b.get('runs', [])).strip()
-			num_id = para_texts_to_numid.get(text, '')
+			num_id, ilvl = para_texts_to_numinfo.get(text, ('', '0'))
+			info = None
 			if num_id and num_id in num_to_abstract:
 				abs_id = num_to_abstract[num_id]
-				fmt = abstract_fmt.get(abs_id, '')
-				if fmt == 'bullet':
+				info = abstract_level_info.get((abs_id, ilvl))
+				# Fall back to level 0 info if exact level not found
+				if info is None:
+					info = abstract_level_info.get((abs_id, '0'))
+
+			if info:
+				fmt = info['fmt']
+				lvl_text = info['lvlText']
+				lvl_font = info['font']
+
+				if fmt == 'bullet' or fmt not in ('decimal', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'):
 					b['listType'] = 'bullet'
-				elif fmt in ('decimal', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'):
-					b['listType'] = 'numbered'
 				else:
-					b['listType'] = 'bullet'
+					b['listType'] = 'numbered'
+
+				# Determine the actual bullet character for the template
+				bullet_char = _wingdings_to_symbol(lvl_text, lvl_font)
+				if bullet_char:
+					b['listBulletChar'] = bullet_char
 			else:
 				b['listType'] = 'bullet'
 	except Exception:

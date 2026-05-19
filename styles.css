@@ -1676,7 +1676,8 @@ body {
 .refine-float {
     position: fixed;
     right: 24px;
-    top: 80px;
+    top: 50%;
+    transform: translateY(-50%);
     width: 300px;
     background: #161b22;
     border: 1px solid #30363d;

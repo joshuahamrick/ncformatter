@@ -26,7 +26,7 @@ class WordFormatter {
         this.applyButton = document.getElementById('applyButton');
         this.resetButton = document.getElementById('resetButton');
         
-        // Expand modal elements
+        // Code expand modal elements
         this.expandButton = document.getElementById('expandButton');
         this.codeModalOverlay = document.getElementById('codeModalOverlay');
         this.modalCode = document.getElementById('modalCode');
@@ -35,6 +35,16 @@ class WordFormatter {
         this.modalZoomOut = document.getElementById('modalZoomOut');
         this.modalZoomLevel = document.getElementById('modalZoomLevel');
         this._modalFontSize = 13;
+
+        // Letter preview expand modal elements
+        this.expandPreviewButton = document.getElementById('expandPreviewButton');
+        this.letterModalOverlay = document.getElementById('letterModalOverlay');
+        this.letterModalPreview = document.getElementById('letterModalPreview');
+        this.letterModalClose = document.getElementById('letterModalClose');
+        this.letterModalZoomIn = document.getElementById('letterModalZoomIn');
+        this.letterModalZoomOut = document.getElementById('letterModalZoomOut');
+        this.letterModalZoomLevel = document.getElementById('letterModalZoomLevel');
+        this._letterModalZoom = 1;
 
         // State management
         this.lastIr = null;
@@ -577,8 +587,13 @@ class WordFormatter {
         }
         
         // Set the preview content (letter view with NC token chips)
+        const previewHtml = this.processForPreview(formattedText);
         if (this.formattedPreview) {
-            this.formattedPreview.innerHTML = this.processForPreview(formattedText);
+            this.formattedPreview.innerHTML = previewHtml;
+        }
+        // Sync letter modal if it is open
+        if (this.letterModalPreview && this.letterModalOverlay && this.letterModalOverlay.style.display !== 'none') {
+            this.letterModalPreview.innerHTML = previewHtml;
         }
         
         // Set the HTML code content with syntax highlighting
@@ -882,7 +897,7 @@ class WordFormatter {
             }
         });
 
-        // Mouse-wheel zoom inside modal body
+        // Mouse-wheel zoom inside code modal body
         if (this.codeModalOverlay) {
             this.codeModalOverlay.addEventListener('wheel', (e) => {
                 if (e.ctrlKey || e.metaKey) {
@@ -891,6 +906,63 @@ class WordFormatter {
                 }
             }, { passive: false });
         }
+
+        // ── Letter preview modal ──────────────────────────────────────────
+        if (!this.letterModalOverlay) return;
+
+        const openLetterModal = () => {
+            if (!this.currentHtml) return;
+            if (this.letterModalPreview && this.formattedPreview) {
+                this.letterModalPreview.innerHTML = this.formattedPreview.innerHTML;
+                this.letterModalPreview.style.zoom = this._letterModalZoom;
+            }
+            this.letterModalOverlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            if (this.letterModalZoomLevel) {
+                this.letterModalZoomLevel.textContent = Math.round(this._letterModalZoom * 100) + '%';
+            }
+        };
+
+        const closeLetterModal = () => {
+            this.letterModalOverlay.style.display = 'none';
+            if (this.codeModalOverlay.style.display === 'none') {
+                document.body.style.overflow = '';
+            }
+        };
+
+        const zoomLetter = (delta) => {
+            this._letterModalZoom = Math.min(2, Math.max(0.4, +(this._letterModalZoom + delta * 0.1).toFixed(2)));
+            if (this.letterModalPreview) this.letterModalPreview.style.zoom = this._letterModalZoom;
+            if (this.letterModalZoomLevel) {
+                this.letterModalZoomLevel.textContent = Math.round(this._letterModalZoom * 100) + '%';
+            }
+        };
+
+        if (this.expandPreviewButton) this.expandPreviewButton.addEventListener('click', openLetterModal);
+        if (this.letterModalClose)   this.letterModalClose.addEventListener('click', closeLetterModal);
+        if (this.letterModalZoomIn)  this.letterModalZoomIn.addEventListener('click', () => zoomLetter(1));
+        if (this.letterModalZoomOut) this.letterModalZoomOut.addEventListener('click', () => zoomLetter(-1));
+
+        this.letterModalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.letterModalOverlay) closeLetterModal();
+        });
+
+        // Ctrl+scroll zoom in letter modal
+        this.letterModalOverlay.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                zoomLetter(e.deltaY < 0 ? 1 : -1);
+            }
+        }, { passive: false });
+
+        // Keyboard: Escape closes whichever modal is open
+        document.addEventListener('keydown', (e) => {
+            if (this.letterModalOverlay.style.display !== 'none') {
+                if (e.key === 'Escape') closeLetterModal();
+                if (e.key === '=' || e.key === '+') zoomLetter(1);
+                if (e.key === '-') zoomLetter(-1);
+            }
+        });
     }
 
     static async extractTextFromWord(file) {

@@ -1627,3 +1627,107 @@ body {
     height: 100%;
     min-height: 100%;
 }
+
+/* Letter preview modal overrides */
+.letter-modal {
+    max-width: 960px;
+}
+
+.letter-modal-body {
+    overflow-y: auto;
+    padding: 0 !important;
+}
+
+.letter-modal-body .preview-page-wrapper {
+    min-height: 100%;
+    border-radius: 0;
+}
+
+.letter-modal-body .formatted-preview {
+    transition: zoom 0.15s ease;
+}
+
+/* Preview tab header (matches html-header styling) */
+.preview-header {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.preview-header + .preview-page-wrapper {
+    border-radius: 0 0 8px 8px;
+}
+
+/* Generation meta / layout PDF as subtle pills */
+.generation-meta-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 10px;
+    padding: 7px 11px;
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    font-size: 11.5px;
+    color: #8b949e;
+    line-height: 1.4;
+}
+
+.generation-meta-pill::before {
+    content: "ⓘ";
+    flex-shrink: 0;
+    color: #484f58;
+    font-size: 13px;
+    margin-top: 0.5px;
+}
+
+.layout-pdf-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 10px;
+    padding: 7px 11px;
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    font-size: 11.5px;
+    color: #8b949e;
+    line-height: 1.4;
+}
+
+.layout-pdf-pill::before {
+    content: "ⓘ";
+    flex-shrink: 0;
+    color: #484f58;
+    font-size: 13px;
+    margin-top: 0.5px;
+}
+
+.layout-pdf-pill a {
+    color: #58a6ff;
+    text-decoration: none;
+}
+
+.layout-pdf-pill a:hover {
+    text-decoration: underline;
+}
+
+/* Policy info icon — sits inline in the subtitle */
+.policy-info-icon {
+    font-size: 14px;
+    vertical-align: middle;
+    margin-left: 5px;
+    color: #6e7681;
+}
+
+.policy-info-icon .info-tooltip {
+    width: 320px;
+    text-align: left;
+    font-size: 12px;
+    line-height: 1.5;
+}

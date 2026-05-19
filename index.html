@@ -17,12 +17,16 @@
     <div class="container">
         <header class="header">
             <h1>Template HTML Formatter</h1>
-            <p>Drag and drop your Word document to convert it to formatted HTML</p>
+            <p>Drag and drop your Word document to convert it to formatted HTML
+                <span class="info-icon policy-info-icon" tabindex="0" aria-label="AI Usage Policy">
+                    &#9432;
+                    <span class="info-tooltip">
+                        <strong>AI Usage Policy — Newcourse Communications V1.0</strong><br><br>
+                        Only template documents may be processed. Documents containing real customer PII (names, SSNs, account numbers, addresses) will be automatically blocked.
+                    </span>
+                </span>
+            </p>
 			<div id="healthStatus" style="margin-top:8px;font-size:13px;opacity:.85;"></div>
-            <div style="margin-top:10px;padding:8px 16px;background:#f0f4f8;border:1px solid #d0d9e3;border-radius:6px;font-size:11px;color:#4a5568;text-align:center;">
-                <strong>AI Usage Policy:</strong> Only template documents may be processed. Documents containing real customer PII (names, SSNs, account numbers, addresses) will be automatically blocked.
-                <span style="color:#718096;">— Newcourse Communications AI Usage Policy V1.0</span>
-            </div>
         </header>
 
         <main class="main-content">
@@ -74,14 +78,27 @@
             <!-- Results Section -->
             <div id="resultsSection" class="results-section" style="display: none;">
                 <div class="output-container">
-                    <div id="generationMeta" class="generation-meta" style="display:none;margin-bottom:10px;padding:10px 12px;font-size:12px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#e5e7eb;line-height:1.45" role="status"></div>
-                    <div id="layoutPdfBanner" style="display:none;margin-bottom:12px;padding:10px 12px;font-size:13px;background:#f0f4f8;border:1px solid #d0d9e3;border-radius:6px;color:#2d3748"></div>
+                    <div id="generationMeta" class="generation-meta-pill" style="display:none;" role="status"></div>
+                    <div id="layoutPdfBanner" class="layout-pdf-pill" style="display:none;"></div>
                     <div class="tabs">
                         <button class="tab-btn" data-tab="preview">Preview</button>
                         <button class="tab-btn active" data-tab="html">HTML Code</button>
                     </div>
                     
                     <div id="previewTab" class="tab-content">
+                        <div class="preview-header">
+                            <div class="preview-header-left">
+                                <span class="html-code-filename">letter preview</span>
+                            </div>
+                            <div class="html-header-actions">
+                                <button id="expandPreviewButton" class="expand-btn" title="Expand letter view">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                                    </svg>
+                                    Expand
+                                </button>
+                            </div>
+                        </div>
                         <div class="preview-page-wrapper">
                             <div id="formattedPreview" class="formatted-preview"></div>
                         </div>
@@ -144,6 +161,34 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Letter preview expand modal -->
+    <div id="letterModalOverlay" class="code-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Letter Preview Expanded View">
+        <div class="code-modal letter-modal">
+            <div class="code-modal-header">
+                <div class="code-modal-title">
+                    <span class="code-modal-title-dot"></span>
+                    <span>letter preview</span>
+                </div>
+                <div class="code-modal-controls">
+                    <button id="letterModalZoomOut" class="code-modal-zoom-btn" title="Zoom out">−</button>
+                    <span id="letterModalZoomLevel" class="code-modal-zoom-label">100%</span>
+                    <button id="letterModalZoomIn" class="code-modal-zoom-btn" title="Zoom in">+</button>
+                    <button id="letterModalClose" class="code-modal-close" title="Close (Esc)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="code-modal-body letter-modal-body">
+                <div class="preview-page-wrapper">
+                    <div id="letterModalPreview" class="formatted-preview"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Code expand modal -->

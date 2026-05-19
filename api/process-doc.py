@@ -824,6 +824,16 @@ def _build_ir_document(doc):
 					break
 	# Resolve list types (bullet vs numbered) from numbering definitions
 	_resolve_list_types(doc, blocks)
+
+	# Remove from meta.textBoxes any text boxes already injected inline,
+	# so the AI doesn't receive duplicate/conflicting placement instructions.
+	if seen_inline_textbox_texts:
+		filtered_tb = []
+		for tb in text_box_blocks:
+			first_text = ''.join(r.get('text','') for r in tb.get('rows',[{}])[0].get('runs',[])).strip()
+			if first_text not in seen_inline_textbox_texts:
+				filtered_tb.append(tb)
+		text_box_blocks = filtered_tb
 	
 	# Extract document-level default font and size
 	# Check docDefaults first, then fall back to "Body Text" and "Normal" paragraph styles

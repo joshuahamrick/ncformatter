@@ -1683,7 +1683,7 @@ body {
     border: 1px solid #30363d;
     border-radius: 10px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.45);
-    z-index: 500;
+    z-index: 10001;
     overflow: hidden;
 }
 

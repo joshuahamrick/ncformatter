@@ -784,9 +784,10 @@ def format_ir_for_prompt(ir):
 			bg_style = f'background-color: {fill}; ' if fill else ''
 			table_style = f'border: {bwid} solid {bclr}; border-collapse: collapse; {bg_style}'.strip().rstrip(';')
 
-			# Build inner HTML for the cell
+			# Build inner HTML for the cell, merging consecutive list items into one <ul>
 			inner_lines = []
 			list_items = []
+
 			def flush_list():
 				if list_items:
 					inner_lines.append('<ul>' + ''.join(f'<li>{li}</li>' for li in list_items) + '</ul>')
@@ -795,7 +796,6 @@ def format_ir_for_prompt(ir):
 			for row in block.get('rows', []):
 				row_text = ''.join(r.get('text', '') for r in row.get('runs', []))
 				if not row_text.strip():
-					flush_list()
 					continue
 				align = row.get('align', 'left')
 				bold_all = all(r.get('bold') for r in row.get('runs', []) if r.get('text','').strip())
@@ -804,7 +804,6 @@ def format_ir_for_prompt(ir):
 				if bold_all:
 					row_html = f'<b>{row_html}</b>'
 				if is_list:
-					flush_list()  # flush any preceding list? no — accumulate
 					list_items.append(row_html)
 				else:
 					flush_list()

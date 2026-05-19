@@ -742,21 +742,21 @@ def _build_ir_document(doc):
 							except Exception:
 								pass
 					runs_out.append({'text': t_text, 'bold': is_bold, 'italic': False, 'underline': False, 'fontSizePt': font_sz, 'fontFamily': None, 'isHyperlink': False})
-			if runs_out:
-				# Detect list items inside the text box
-				is_list = False
-				list_level = None
-				if pPr_e is not None:
-					numPr = pPr_e.find(qn('w:numPr'))
-					if numPr is not None:
-						is_list = True
-						ilvl = numPr.find(qn('w:ilvl'))
-						if ilvl is not None:
-							try:
-								list_level = int(ilvl.get(qn('w:val'), 0))
-							except Exception:
-								list_level = 0
-				rows.append({'type': 'paragraph', 'runs': runs_out, 'align': align, 'leadingSpaces': None, 'styleName': None, 'isListItem': is_list, 'listLevel': list_level, 'listMarker': None, 'listType': 'bullet' if is_list else None, 'spacingBeforePt': None, 'spacingAfterPt': None, 'lineHeightMultiple': None, 'leftIndentPt': None, 'firstLineIndentPt': None, 'hangingIndentPt': None})
+				# Detect list items and append row for THIS paragraph
+				if runs_out:
+					is_list = False
+					list_level = None
+					if pPr_e is not None:
+						numPr = pPr_e.find(qn('w:numPr'))
+						if numPr is not None:
+							is_list = True
+							ilvl = numPr.find(qn('w:ilvl'))
+							if ilvl is not None:
+								try:
+									list_level = int(ilvl.get(qn('w:val'), 0))
+								except Exception:
+									list_level = 0
+					rows.append({'type': 'paragraph', 'runs': runs_out, 'align': align, 'leadingSpaces': None, 'styleName': None, 'isListItem': is_list, 'listLevel': list_level, 'listMarker': None, 'listType': 'bullet' if is_list else None, 'spacingBeforePt': None, 'spacingAfterPt': None, 'lineHeightMultiple': None, 'leftIndentPt': None, 'firstLineIndentPt': None, 'hangingIndentPt': None})
 
 		if not rows:
 			return None

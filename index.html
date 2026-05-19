@@ -198,10 +198,9 @@
                     <ul>
                         <li><code>{[FieldCode]}</code> — field reference</li>
                         <li><code>{Money({[M010]})}</code> — format as currency</li>
-                        <li><code>{Compress(a|b|c)}</code> — suppress blank segments</li>
-                        <li><code>{If('{[X]}' NOT IN ('', '0', '.00', NULL))}</code> — conditional</li>
+                        <li><code>{Compress({[F1]}|{[F2]}|{[F3]})}</code> — stacks values inside a single element with no line breaks between them; null/blank values are silently dropped. Use for address blocks or any sequence where some fields may be absent instead of stacking separate divs.</li>
+                        <li><code>{If('{[X]}' NOT IN ('', NULL))}</code> — standard conditional (only add <code>'0'</code> or <code>'.00'</code> to the list when the template explicitly requires it)</li>
                         <li><code>{Else}</code> / <code>{End If}</code> — conditional branches</li>
-                        <li><code>{Insert(TagName)}</code> — insert shared block</li>
                     </ul>
                 </section>
             </div>

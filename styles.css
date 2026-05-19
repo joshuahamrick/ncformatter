@@ -1839,26 +1839,27 @@ body {
     resize: vertical;
 }
 
-/* Top bar Info & Resources button */
-.top-bar-info-btn {
-    margin-left: auto;
-    background: none;
-    border: 1px solid rgba(255,255,255,0.18);
-    color: rgba(255,255,255,0.7);
-    font-family: inherit;
-    font-size: 12.5px;
-    padding: 5px 13px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
+/* Page footer */
+.page-footer {
+    text-align: center;
+    padding: 18px 0 28px;
 }
 
-.top-bar-info-btn:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-    border-color: rgba(255,255,255,0.35);
+/* Footer info link */
+.footer-info-link {
+    background: none;
+    border: none;
+    color: #484f58;
+    font-family: inherit;
+    font-size: 11.5px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
 }
+
+.footer-info-link:hover { color: #8b949e; }
 
 /* Info & Resources modal */
 .info-modal {

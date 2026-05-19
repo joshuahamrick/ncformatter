@@ -1,0 +1,82 @@
+<div>{[tagHeader]}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[M594]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div><b>Subject: Notice of FHA Coverage Termination</b></div>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<div>We are writing to inform you that your mortgage loan is no longer covered under the Federal Housing Administration (FHA) insurance program, effective {[O009]}.</div>
+<br>
+<div><b>What This Means for You</b></div>
+<br>
+<div>This change does not affect the terms of your loan agreement or your obligation to continue making timely payments on your mortgage loan. Please note your loan may no longer be subject to certain FHA protections or servicing requirements.</div>
+<br>
+<div>At the time your loan was finalized, an upfront mortgage insurance premium of {Money({[U254]})} was added to the loan amount. This premium, along with {Money({[U255]})} in interest that accrued as a result of its inclusion in the loan, was applied to reduce your principal balance. These transactions will be reflected in the monthly billing statements. Monthly mortgage insurance premium amounts refunded by FHA will be deposited to your escrow account. Your total mortgage payment has been reduced as the monthly mortgage insurance has been removed effective {[O009]}.</div>
+<br>
+<table width="100%" style="border-collapse: collapse;"><tbody><tr>
+  <td style="padding: 4px;"></td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">Before {[O009]}</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">After {[O009]}</td>
+</tr><tr>
+  <td style="border: 1px solid black; padding: 4px;">Principal and Interest</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[M023]})}</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[M023]})}</td>
+</tr><tr>
+  <td style="border: 1px solid black; padding: 4px;">Homeowner's Insurance</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[U249]})}</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[M050]})}</td>
+</tr><tr>
+  <td style="border: 1px solid black; padding: 4px;">Property Tax</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[U250]})}</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Math({[M048]} + {[M049]}|Money)}</td>
+</tr><tr>
+  <td style="border: 1px solid black; padding: 4px;">Mortgage Insurance</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[U251]})}</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">$0.00</td>
+</tr><tr>
+  <td style="border: 1px solid black; padding: 4px;">Additional Escrow (if applicable)</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[U252]})}</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[M271]})}</td>
+</tr><tr>
+  <td style="border: 1px solid black; padding: 4px;"><b>Total Monthly Amount Due</b></td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[U253]})}</td>
+  <td style="border: 1px solid black; padding: 4px; text-align: right;">{Money({[M029]})}</td>
+</tr></tbody></table>
+<br>
+<div>If you have any questions or would like to discuss this change further, please contact us at {[plsMatrix.CSPhoneNumber]} or via email at {[plsMatrix.CSEmail]}. We're available {[plsMatrix.HoursOfOperation]}. You may also contact FHA Resource Center (HUD's National Servicing Center).</div>
+<br>
+<table width="100%"><tbody><tr>
+  <td colspan="2">FHA Resource Center (HUD's National Servicing Center)</td>
+</tr><tr>
+  <td>Phone:</td>
+  <td>1-800-225-5342</td>
+</tr><tr>
+  <td>Hours:</td>
+  <td>Monday–Friday, 8:00 a.m. – 8:00 p.m. ET</td>
+</tr><tr>
+  <td>Online:</td>
+  <td>https://www.hud.gov/FHAFAQ</td>
+</tr><tr>
+  <td valign="top">Address:</td>
+  <td>U.S. Department of Housing and Urban Development<br>451 7th Street S.W.<br>Washington, DC 20410</td>
+</tr></tbody></table>
+<br>
+<div>Sincerely,</div>
+<br>
+<div>Customer Care Department</div>
+<div>{[plsMatrix.CompanyLongName]}</div>
+<div>{[plsMatrix.CSPhoneNumber]}</div>
+<div>{[plsMatrix.CSEmail]}</div>
+<div>{[plsMatrix.CompanyReturnAddr1]}</div>
+<div>{[plsMatrix.CompanyReturnAddr2]}</div>
+<div>{[plsMatrix.CompanyReturnAddr3]}</div>

@@ -11,6 +11,7 @@
     <div class="top-bar">
         <div class="top-bar-content">
             <img src="newcourse-logo.webp" alt="NewCourse Logo" class="logo">
+            <button id="infoModalBtn" class="top-bar-info-btn">Info &amp; Resources</button>
         </div>
     </div>
     
@@ -18,7 +19,6 @@
         <header class="header">
             <h1>Template HTML Formatter</h1>
             <p>Drag and drop your Word document to convert it to formatted HTML</p>
-            <div id="healthStatus" style="margin-top:8px;font-size:13px;opacity:.85;"></div>
         </header>
 
         <main class="main-content">
@@ -30,7 +30,7 @@
                         <span class="advanced-option-text">Advanced</span>
                     </label>
                     <span class="info-icon" tabindex="0" aria-label="Advanced option details">
-                        &#9432;
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                         <span class="info-tooltip">
                             Sends the model a <strong>first-page layout snapshot</strong> (PNG) alongside the document for better table and alignment accuracy.<br><br>
                             <strong>PDF:</strong> rasterized automatically on the server.<br>
@@ -119,15 +119,6 @@
                         </div>
                     </div>
 
-                    <!-- Refine bar -->
-                    <div id="refineBar" class="refine-bar">
-                        <div class="refine-bar-row">
-                            <textarea id="chatInput" class="refine-input" placeholder="Describe a change to the template…" rows="1"></textarea>
-                            <button id="applyButton" class="refine-apply-btn">Apply</button>
-                            <button id="resetButton" class="refine-reset-btn" title="Reset to original output">Reset</button>
-                        </div>
-                        <div id="refineStatus" class="refine-status" aria-live="polite"></div>
-                    </div>
                 </div>
 
                 <!-- Error Message -->
@@ -147,6 +138,74 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Floating refine panel -->
+    <div id="refineBar" class="refine-float" style="display:none;">
+        <div class="refine-float-header" id="refineFloatHeader">
+            <span class="refine-float-title">Need changes?</span>
+            <button class="refine-float-toggle" id="refineFloatToggle" title="Minimize">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18,15 12,9 6,15"/></svg>
+            </button>
+        </div>
+        <div class="refine-float-body" id="refineFloatBody">
+            <textarea id="chatInput" class="refine-input" placeholder="Describe a change to the template…" rows="3"></textarea>
+            <div class="refine-float-actions">
+                <button id="applyButton" class="refine-apply-btn">Apply</button>
+                <button id="resetButton" class="refine-reset-btn">Reset</button>
+            </div>
+            <div id="refineStatus" class="refine-status" aria-live="polite"></div>
+        </div>
+    </div>
+
+    <!-- Info & Resources modal -->
+    <div id="infoModalOverlay" class="code-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Info and Resources">
+        <div class="code-modal info-modal">
+            <div class="code-modal-header">
+                <div class="code-modal-title">
+                    <span class="code-modal-title-dot"></span>
+                    <span>Info &amp; Resources</span>
+                </div>
+                <div class="code-modal-controls">
+                    <button id="infoModalClose" class="code-modal-close" title="Close">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="code-modal-body info-modal-body">
+                <section class="info-section">
+                    <h3>AI Usage Policy</h3>
+                    <p>Only <strong>template documents</strong> may be processed through this tool. Documents containing real customer PII — including names, Social Security numbers, account numbers, or mailing addresses — will be automatically detected and blocked.</p>
+                    <p>This policy is enforced by Newcourse Communications AI Usage Policy V1.0. Questions should be directed to your supervisor or IT.</p>
+                </section>
+                <section class="info-section">
+                    <h3>How It Works</h3>
+                    <p>Upload a Word (.docx) or PDF template document. The formatter extracts the document structure and uses AI to generate NcFormatter-compatible HTML, preserving conditional logic, field tags, and layout.</p>
+                    <p>After generation, use the <strong>Need changes?</strong> panel to describe adjustments in plain language. Click <strong>Reset</strong> to revert to the original AI output at any time.</p>
+                </section>
+                <section class="info-section">
+                    <h3>Advanced Mode &amp; Layout Images</h3>
+                    <p>Enabling <strong>Advanced</strong> before uploading sends the model a first-page layout snapshot for improved table and column accuracy.</p>
+                    <ul>
+                        <li><strong>PDF uploads</strong> — rasterized automatically on the server.</li>
+                        <li><strong>Word uploads</strong> — requires a print-accurate PDF conversion. Set the <code>GOTENBERG_URL</code> environment variable to a running <a href="https://gotenberg.dev/" target="_blank" rel="noopener noreferrer">Gotenberg</a> instance, or upload a PDF exported directly from Word.</li>
+                    </ul>
+                </section>
+                <section class="info-section">
+                    <h3>NcFormatter Quick Reference</h3>
+                    <ul>
+                        <li><code>{[FieldCode]}</code> — field reference</li>
+                        <li><code>{Money({[M010]})}</code> — format as currency</li>
+                        <li><code>{Compress(a|b|c)}</code> — suppress blank segments</li>
+                        <li><code>{If('{[X]}' NOT IN ('', '0', '.00', NULL))}</code> — conditional</li>
+                        <li><code>{Else}</code> / <code>{End If}</code> — conditional branches</li>
+                        <li><code>{Insert(TagName)}</code> — insert shared block</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
     </div>
 
     <!-- Letter preview expand modal -->

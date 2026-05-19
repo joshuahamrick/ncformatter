@@ -1,0 +1,3923 @@
+{
+  "blocks": [
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[H002]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "Company Address Line 1)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(IF {[H003]} = \u2018*\u2019 or \u2018NULL'; then suppress print of line; else produce:)",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[H003]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "Company Address Line 2)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[H004]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "Company Address Line 3)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[L001E8]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": " (System Date)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M558]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(New Bill Line 1/ Mortgagor Name)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M559]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (New Bill Line 2/Second Mortgagor)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M560]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (New Bill Line 3/Third Mortgagor)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M561]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Additional Mailing Address)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M562]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Mailing Street Address)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M563]} {[M564]} {[M565]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[M566]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(Mailing City), (State), (5-Digit Zip)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", (4-Digit Zip)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "\u201cOR\u201d",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " If ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[M956]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Foreign Address Indicator = 1))",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M928]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Foreign Country Code)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[M929]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Foreign Postal Code)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": -0.65,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(see \u201cAdditional Borrowers/Co-Borrowers\u201d on Letter Library Business Rules for Additional Addresses in BKFS)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Name 1",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Name",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " 2",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Address Line 1",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Address Line 2",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower Street",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Co-borrower City, Co-borrower State, Co-borrower Zip Code, Co-borrower Zip Code Suffix",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Loan Number: ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "[M594]",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "Loan Number \u2013 ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "No Dash",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ")",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "*METADATA ONLY PRINT LAST 4 DIGITS OF LOAN #*",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 10.0,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "RE: ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "                   ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "[M567]",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "New Property Line 1/Street Address",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ")",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "      ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "                    ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "[M583]",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "New Property Unit Number",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ")",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": 26,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "       ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "                  ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "M568]",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "New Property Line 2/City State and Zip Code",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ")",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": 26,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[M558]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Mortgagor Name) ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[M559]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Second Mortgagor),",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H567]} ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H568]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H567]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H568]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ",",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H581]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H582]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H581]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H582]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H595]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H596]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H595]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H596]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H609]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H610]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H609]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H610]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H623]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H624]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H623]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H624]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H637]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H638]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H637]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H638]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H651]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H652]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H651]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H652]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H665]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H666]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H665]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H666]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "or",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " if ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H679]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and/or ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H680]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " present)",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Dear ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H679]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " and ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[H680]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Notice of",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 13.5,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": " Escrow Deficiency",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": 13.5,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "center",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "This letter is being sent to you for informational purposes only. There is no action required by you at this time. ",
+          "bold": true,
+          "italic": false,
+          "underline": true,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "We are writing to you about your mortgage account ending in",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "[M594]}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " (Loan Number \u2013 ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "No Dash",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ")",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " *METADATA ONLY PRINT LAST 4 DIGITS OF LOAN #*",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ", for the property located at ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "[M567]",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "New Property Line 1/Street Address",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "), ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "[M583]",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "New Property Unit Number",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "), ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "M568]",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "}",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "(",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "New Property Line 2/City State and Zip Code",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ").",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Here\u2019s why you are receiving this letter. ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "W",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "e ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "are notifying",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": " you ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "that",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": " activity from your escrow account ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "has ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "c",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": "aused",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        },
+        {
+          "text": " a negative balance in your escrow account.  ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Here\u2019s how your escrow account can get a negative balance.",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "When we get a bill for your property taxes, insurance premium or any other bill that is paid from your escrow account, there is a chance the amount due is more than what is available in your escrow account. To make sure your bill is paid in full, we advance the money to your escrow account. You can see which payment from your escrow account caused this to happen by looking at your Mortgage Statement or by viewing the history online. ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Contact us if you have any questions. ",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": "Calibri",
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "If you have questions, please contact us at ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "{[",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "CSPhoneNumber",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ".  Our office is open",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": " {[",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "HoursofOperation",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": ".",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "No Spacing",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "Sincerely,   ",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "ServicingName",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [
+        {
+          "text": "{[",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "CompanyLongName",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        },
+        {
+          "text": "]}",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "fontSizePt": null,
+          "fontFamily": null,
+          "isHyperlink": false
+        }
+      ],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "justify",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    },
+    {
+      "type": "paragraph",
+      "runs": [],
+      "align": "left",
+      "leadingSpaces": null,
+      "styleName": "Normal",
+      "isListItem": false,
+      "listLevel": null,
+      "listMarker": null,
+      "spacingBeforePt": null,
+      "spacingAfterPt": null,
+      "lineHeightMultiple": null,
+      "leftIndentPt": null,
+      "firstLineIndentPt": null,
+      "hangingIndentPt": null,
+      "borderBottom": null
+    }
+  ],
+  "source": "docx",
+  "confidence": 1.0,
+  "images": [],
+  "meta": {
+    "headerTexts": [],
+    "textBoxes": [],
+    "defaultFont": null,
+    "defaultFontSizePt": null
+  }
+}

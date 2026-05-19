@@ -19,12 +19,14 @@ class WordFormatter {
         this.layoutPdfBanner = document.getElementById('layoutPdfBanner');
         this.generationMeta = document.getElementById('generationMeta');
         
-        // Refine bar elements
+        // Refine float panel elements
         this.refineBar = document.getElementById('refineBar');
         this.refineStatus = document.getElementById('refineStatus');
         this.chatInput = document.getElementById('chatInput');
         this.applyButton = document.getElementById('applyButton');
         this.resetButton = document.getElementById('resetButton');
+        this.refineFloatToggle = document.getElementById('refineFloatToggle');
+        this.refineFloatHeader = document.getElementById('refineFloatHeader');
         
         // Code expand modal elements
         this.expandButton = document.getElementById('expandButton');
@@ -90,7 +92,7 @@ class WordFormatter {
             btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
         });
         
-        // Chat panel event listeners
+        // Refine float panel events
         if (this.applyButton) {
             this.applyButton.addEventListener('click', () => this.applyChatChange());
         }
@@ -104,9 +106,31 @@ class WordFormatter {
                     this.applyChatChange();
                 }
             });
-            this.chatInput.addEventListener('input', () => {
-                this.chatInput.style.height = 'auto';
-                this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
+        }
+        if (this.refineFloatHeader) {
+            this.refineFloatHeader.addEventListener('click', () => {
+                if (this.refineBar) this.refineBar.classList.toggle('collapsed');
+            });
+        }
+
+        // Info & Resources modal
+        const infoBtn = document.getElementById('infoModalBtn');
+        const infoOverlay = document.getElementById('infoModalOverlay');
+        const infoClose = document.getElementById('infoModalClose');
+        if (infoBtn && infoOverlay) {
+            infoBtn.addEventListener('click', () => { infoOverlay.style.display = 'flex'; });
+        }
+        if (infoClose && infoOverlay) {
+            infoClose.addEventListener('click', () => { infoOverlay.style.display = 'none'; });
+        }
+        if (infoOverlay) {
+            infoOverlay.addEventListener('click', (e) => {
+                if (e.target === infoOverlay) infoOverlay.style.display = 'none';
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && infoOverlay.style.display !== 'none') {
+                    infoOverlay.style.display = 'none';
+                }
             });
         }
     }
@@ -617,10 +641,10 @@ class WordFormatter {
             this.resultsSection.style.display = 'block';
             this.resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
-        
-        // Auto-resize refine input
-        if (this.chatInput) {
-            this.chatInput.style.height = 'auto';
+
+        // Reveal floating refine panel when results first appear
+        if (this.refineBar && this.refineBar.style.display === 'none') {
+            this.refineBar.style.display = 'block';
         }
 
         if (this.generationMeta) {
@@ -1054,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		} catch {
 			window.NcStyleMap = {};
 		}
-		// Health status
+		// Health check (result not shown in UI)
 		try {
 			const hr = await fetch('/api/health', { cache: 'no-store' });
 			let text = 'API: ';
@@ -1067,11 +1091,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			} else {
 				text += 'Unavailable';
 			}
-			const el = document.getElementById('healthStatus');
-			if (el) el.textContent = text;
+			// Status logged to console only; not shown in UI
+			console.debug('[health]', text);
 		} catch (e) {
-			const el = document.getElementById('healthStatus');
-			if (el) el.textContent = 'API: Unavailable';
+			console.debug('[health] API: Unavailable');
 		}
     new WordFormatter();
 	})();

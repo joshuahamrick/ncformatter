@@ -1672,20 +1672,79 @@ body {
 
 #layoutPdfBanner a:hover { text-decoration: underline; }
 
-/* Refine bar — compact adjustment strip below output */
-.refine-bar {
-    margin-top: 12px;
+/* Floating refine panel — fixed right side */
+.refine-float {
+    position: fixed;
+    right: 24px;
+    top: 80px;
+    width: 300px;
     background: #161b22;
     border: 1px solid #30363d;
-    border-radius: 8px;
-    padding: 12px 14px;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+    z-index: 500;
+    overflow: hidden;
 }
 
-.refine-bar-row {
+.refine-float-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #30363d;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.refine-float-header:hover { background: #1c2128; }
+
+.refine-float-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f0f6fc;
+    letter-spacing: 0.01em;
+}
+
+.refine-float-toggle {
+    background: none;
+    border: none;
+    color: #6e7681;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: color 0.15s, transform 0.2s;
+}
+
+.refine-float.collapsed .refine-float-toggle {
+    transform: rotate(180deg);
+}
+
+.refine-float-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: max-height 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+    max-height: 400px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.refine-float.collapsed .refine-float-body {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.refine-float-actions {
     display: flex;
     gap: 8px;
-    align-items: flex-end;
 }
+
+/* Shared refine input / button styles used by both old bar and float panel */
 
 .refine-input {
     flex: 1;
@@ -1772,3 +1831,103 @@ body {
 .refine-status.success { color: #3fb950; }
 .refine-status.error   { color: #f85149; }
 .refine-status.fading  { opacity: 0; }
+
+/* Refine textarea fills full width in float panel */
+.refine-float .refine-input {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Top bar Info & Resources button */
+.top-bar-info-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.7);
+    font-family: inherit;
+    font-size: 12.5px;
+    padding: 5px 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.top-bar-info-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border-color: rgba(255,255,255,0.35);
+}
+
+/* Info & Resources modal */
+.info-modal {
+    max-width: 680px;
+}
+
+.info-modal-body {
+    padding: 28px 32px;
+    overflow-y: auto;
+}
+
+.info-section {
+    margin-bottom: 28px;
+}
+
+.info-section:last-child { margin-bottom: 0; }
+
+.info-section h3 {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #21262d;
+}
+
+.info-section p {
+    font-size: 13px;
+    color: #8b949e;
+    line-height: 1.65;
+    margin-bottom: 8px;
+}
+
+.info-section p:last-child { margin-bottom: 0; }
+
+.info-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0;
+}
+
+.info-section ul li {
+    font-size: 13px;
+    color: #8b949e;
+    line-height: 1.65;
+    padding: 3px 0 3px 14px;
+    position: relative;
+}
+
+.info-section ul li::before {
+    content: '–';
+    position: absolute;
+    left: 0;
+    color: #484f58;
+}
+
+.info-section code {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 11.5px;
+    color: #e0af68;
+    font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+}
+
+.info-section a {
+    color: #58a6ff;
+    text-decoration: none;
+}
+
+.info-section a:hover { text-decoration: underline; }

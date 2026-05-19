@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CL028 Compare: Wrong vs Correct</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 10pt; margin: 0; }
+  .wrap { display: flex; gap: 0; }
+  .col { width: 50%; padding: 20px; box-sizing: border-box; }
+  .col-wrong { background: #fff8f8; border-right: 3px solid #c00; }
+  .col-right { background: #f8fff8; }
+  h2 { margin: 0 0 12px; font-size: 11pt; }
+  .wrong-label { color: #c00; }
+  .right-label { color: #060; }
+  hr.divider { border: none; border-top: 2px solid #999; margin: 8px 0; }
+</style>
+</head>
+<body>
+<div style="display:flex; background:#222; color:#fff; padding:8px 20px; gap:0">
+  <div style="width:50%; font-weight:bold" class="wrong-label">❌ FORMATTER OUTPUT (wrong)</div>
+  <div style="width:50%; font-weight:bold; padding-left:20px" class="right-label">✅ CORRECT VERSION</div>
+</div>
+<div class="wrap">
+
+<!-- ===== WRONG COLUMN ===== -->
+<div class="col col-wrong">
+<div>[tagHeader]</div>
+<br>
+<div>SPOC Name Line<br>SPOC Address Line</div>
+<div>SPOC More Address</div>
+<table width="100%"><tbody><tr>
+  <td width="50%" valign="top">Lender (Lienholder) Name and Address</td>
+  <td width="50%" valign="top">Consumer Name and Address</td>
+</tr><tr>
+  <td width="50%" valign="top">New Course Credit Corporation<br>123 Main Street<br>Suite 100<br>Chicago, IL 60601</td>
+  <td width="50%" valign="top">John &amp; Jane Borrower<br>456 Oak Avenue<br>Springfield, IL 62701
+  <br>
+  Loan Number: 1234567890</td>
+</tr><tr>
+  <td width="50%" valign="top"></td>
+  <td width="50%" valign="top"></td>
+</tr></tbody></table>
+<br>
+<div style="text-align: justify">On December 10, 2025, New Course Credit Corporation repossessed the Manufactured Home described below because you defaulted in the terms of your Security Agreement (Promissory Note and Security Agreement or Retail Installment Contract) dated March 1, 2018.</div>
+<br>
+<table width="100%"><tbody><tr>
+  <td colspan="5"><b>Description of the Manufactured Home:</b></td>
+</tr><tr>
+  <td width="20%"><b>YEAR</b></td>
+  <td width="20%"><b>MAKE</b></td>
+  <td width="20%"><b>MODEL</b></td>
+  <td width="20%"><b>SIZE</b></td>
+  <td width="20%"><b>SERIAL #</b></td>
+</tr><tr>
+  <td width="20%">2008</td>
+  <td width="20%">Fleetwood</td>
+  <td width="20%">Harmony</td>
+  <td width="20%">16 X 76</td>
+  <td width="20%">IL2008A12345</td>
+</tr></tbody></table>
+<br>
+<div style="text-align: justify">Please provide any defense you wish to claim regarding your default in the space provided below (should you need additional space, please attach another sheet):</div>
+<br>
+<table width="100%"><tbody><tr>
+  <td>&nbsp;</td>
+</tr><tr>
+  <td>&nbsp;</td>
+</tr><tr>
+  <td>&nbsp;</td>
+</tr><tr>
+  <td>&nbsp;</td>
+</tr><tr>
+  <td>&nbsp;</td>
+</tr></tbody></table>
+<br>
+<div style="text-align: center"><b>This notice must be received by New Course Credit Corporation no later than 21 days after the date of mailing or delivery of this Affidavit to you.</b></div>
+<br>
+<div style="text-align: justify">By signing this Affidavit of Defense, I understand that I may be liable to New Course Credit Corporation for fees, charges and costs incurred in establishing the insufficiency or invalidity of my defense.</div>
+<br>
+<table width="100%"><tbody><tr>
+  <td width="40%" style="border-bottom: 1px solid black">&nbsp;</td>
+  <td width="20%">&nbsp;</td>
+  <td width="40%" style="border-bottom: 1px solid black">&nbsp;</td>
+</tr><tr>
+  <td width="40%" style="border-top: 1px solid black">Consumer's Name</td>
+  <td width="20%">&nbsp;</td>
+  <td width="40%" style="border-top: 1px solid black">Date Signed</td>
+</tr><tr>
+  <td width="40%" style="border-bottom: 1px solid black">&nbsp;</td>
+  <td width="20%">&nbsp;</td>
+  <td width="40%" style="border-bottom: 1px solid black">&nbsp;</td>
+</tr><tr>
+  <td width="40%" style="border-top: 1px solid black">Consumer's Name</td>
+  <td width="20%">&nbsp;</td>
+  <td width="40%" style="border-top: 1px solid black">Date Signed</td>
+</tr></tbody></table>
+</div>
+
+<!-- ===== CORRECT COLUMN ===== -->
+<div class="col col-right">
+<table width="100%"><tbody><tr>
+  <td width="60%"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=" alt="" style="max-height:50px"><br><span style="font-size:9pt">New Course Credit Corporation<br>123 Main St, Chicago IL 60601</span></td>
+  <td width="40%" style="font-size: 16pt; font-weight: bold; text-align: center; font-family: Arial Black; vertical-align: middle">IMPORTANT<br>NOTICE</td>
+</tr></tbody></table>
+<br>
+<div>January 15, 2026</div>
+<div>John &amp; Jane Borrower<br>456 Oak Avenue<br>Springfield, IL 62701</div>
+<br><br><br><br><br>
+<div style="border: 2px solid rgba(0,0,0,1)">
+  <table width="100%" style="border-collapse: collapse">
+    <tbody>
+      <tr>
+        <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px; text-align: center; font-weight: bold">Lender (Lienholder) Name and Address</td>
+        <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px; text-align: center; font-weight: bold">Consumer Name and Address</td>
+      </tr>
+      <tr>
+        <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px">New Course Credit Corporation<br>123 Main Street<br>Suite 100<br>Chicago, IL 60601</td>
+        <td width="50%" valign="top" style="border: 1px solid rgba(0,0,0,1); padding: 6px 8px">John &amp; Jane Borrower<br>456 Oak Avenue<br>Springfield, IL 62701<br>Loan Number: 1234567890</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<br>
+<div>On December 10, 2025, New Course Credit Corporation repossessed the Manufactured Home described below because you defaulted in the terms of your Security Agreement (Promissory Note and Security Agreement or Retail Installment Contract) dated March 1, 2018.&nbsp;</div>
+<br>
+<div style="font-weight: bold">Description of the Manufactured Home:</div>
+<table width="100%" style="border-collapse: collapse; border: 1px solid rgba(0,0,0,1)"><tbody>
+  <tr>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center"><b>YEAR</b></td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center"><b>MAKE</b></td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center"><b>MODEL</b></td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center"><b>SIZE</b></td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center"><b>SERIAL #</b></td>
+  </tr>
+  <tr>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center">2008</td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center">Fleetwood</td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center">Harmony</td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center">16 X 76</td>
+    <td width="20%" style="border: 1px solid rgba(0,0,0,1); padding: 4px; text-align: center">IL2008A12345</td>
+  </tr>
+</tbody></table>
+<br>
+<div>Please provide any defense you wish to claim regarding your default in the space provided below (should you need additional space, please attach another sheet):</div>
+<br>
+<div style="border-bottom: 1px solid rgba(0,0,0,1); padding-top: 22px; margin-bottom: 4px"></div>
+<div style="border-bottom: 1px solid rgba(0,0,0,1); padding-top: 22px; margin-bottom: 4px"></div>
+<div style="border-bottom: 1px solid rgba(0,0,0,1); padding-top: 22px; margin-bottom: 4px"></div>
+<div style="border-bottom: 1px solid rgba(0,0,0,1); padding-top: 22px; margin-bottom: 4px"></div>
+<div style="border-bottom: 1px solid rgba(0,0,0,1); padding-top: 22px; margin-bottom: 4px"></div>
+<br>
+<div style="text-align: center"><b>This notice must be received by New Course Credit Corporation no later than 21 days after the date of mailing or delivery of this Affidavit to you.</b></div>
+<br>
+<div>By signing this Affidavit of Defense, I understand that I may be liable to New Course Credit Corporation for fees, charges and costs incurred in establishing the insufficiency or invalidity of my defense.</div>
+<br>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Consumer's Name</td>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Date Signed</td>
+</tr></tbody></table>
+<br>
+<table width="100%" style="border-collapse: collapse"><tbody><tr>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Consumer's Name</td>
+  <td width="50%" style="border-top: 1px solid rgba(0,0,0,1); padding-top: 2px; font-size: 8pt">Date Signed</td>
+</tr></tbody></table>
+</div>
+
+</div><!-- end wrap -->
+</body>
+</html>

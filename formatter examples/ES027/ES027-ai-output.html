@@ -1,0 +1,37 @@
+<div>{Insert(H003 TagHeader)}</div>
+<br>
+<div>{[L001]}</div>
+<div>{[mailingAddress]}</div>
+<br><br><br><br><br>
+<table width="100%"><tbody><tr>
+  <td width="20%" valign="top">Loan Number:</td>
+  <td>{[loanNumberLast4]}</td>
+</tr><tr>
+  <td width="20%" valign="top">RE:</td>
+  <td>{Compress({[M567]}|{[M583]}|{[M568]})}</td>
+</tr></tbody></table>
+<br>
+<div>Dear {[Salutation]},</div>
+<br>
+<b><div style="text-align: center; font-size: 13pt">Notice of Escrow Deficiency</div></b>
+<br>
+<div><b><u>This letter is being sent to you for informational purposes only. There is no action required by you at this time.</u></b></div>
+<br>
+<div>We are writing to you about your mortgage account ending in {[loanNumberLast4]}, for the property located at {[M567]}{If('{[M583]}' &lt;&gt; '')}, {[M583]}{End If}, {[M568]}.</div>
+<br><br>
+<div><b>Here's why you are receiving this letter.</b></div>
+<br>
+<div>We are notifying you that activity from your escrow account has caused a negative balance in your escrow account.</div>
+<br>
+<div><b>Here's how your escrow account can get a negative balance.</b></div>
+<br>
+<div>When we get a bill for your property taxes, insurance premium or any other bill that is paid from your escrow account, there is a chance the amount due is more than what is available in your escrow account. To make sure your bill is paid in full, we advance the money to your escrow account. You can see which payment from your escrow account caused this to happen by looking at your Mortgage Statement or by viewing the history online.</div>
+<br>
+<div><b>Contact us if you have any questions.</b></div>
+<br>
+<div>If you have questions, please contact us at {[plsMatrix.CSPhoneNumber]}. Our office is open {[plsMatrix.HoursOfOperation]}.</div>
+<br><br>
+<div>Sincerely,</div>
+<br>
+<div>{[plsMatrix.ServicingName]}</div>
+<div>{[plsMatrix.CompanyLongName]}</div>

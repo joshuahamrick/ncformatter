@@ -30,12 +30,13 @@ except ImportError:
 		try_convert_docx_to_pdf = None
 
 try:
-	from api.layout_raster import try_pdf_first_page_png
+	from api.layout_raster import try_pdf_first_page_png, try_pdf_all_pages_png_list
 except ImportError:
 	try:
-		from layout_raster import try_pdf_first_page_png
+		from layout_raster import try_pdf_first_page_png, try_pdf_all_pages_png_list
 	except ImportError:
 		try_pdf_first_page_png = None
+		try_pdf_all_pages_png_list = None
 
 
 def _align_to_str(alignment):
@@ -822,17 +823,32 @@ class handler(BaseHTTPRequestHandler):
 			# Optional layout PDF (for browser screenshot / multimodal compare). Runs after PII gate.
 			if data.get('includeLayoutPdf') and try_convert_docx_to_pdf is not None:
 				pdf_bytes, pdf_err = try_convert_docx_to_pdf(file_bytes, file_name)
-				if pdf_bytes is not None:
-					payload['layoutPdfBase64'] = base64.b64encode(pdf_bytes).decode('ascii')
-					payload['layoutPdfMime'] = 'application/pdf'
-					if try_pdf_first_page_png is not None:
-						png_bytes, png_err = try_pdf_first_page_png(pdf_bytes)
-						if png_bytes is not None:
-							payload['layoutPngBase64'] = base64.b64encode(png_bytes).decode('ascii')
-						elif png_err:
-							payload['layoutPngError'] = png_err
-				else:
-					payload['layoutPdfError'] = pdf_err or 'unknown conversion error'
+			if pdf_bytes is not None:
+				payload['layoutPdfBase64'] = base64.b64encode(pdf_bytes).decode('ascii')
+				payload['layoutPdfMime'] = 'application/pdf'
+				# Multi-page PNG list for advanced vision — all pages
+				if try_pdf_all_pages_png_list is not None:
+					png_pages, pages_err = try_pdf_all_pages_png_list(pdf_bytes)
+					if png_pages:
+						payload['layoutPngPages'] = [
+							base64.b64encode(p).decode('ascii') for p in png_pages
+						]
+						payload['layoutPngPageCount'] = len(png_pages)
+						# Keep single-page fallback for backwards compat
+						payload['layoutPngBase64'] = payload['layoutPngPages'][0]
+					elif pages_err:
+						payload['layoutPngError'] = pages_err
+				elif try_pdf_first_page_png is not None:
+					# Fallback: single page only
+					png_bytes, png_err = try_pdf_first_page_png(pdf_bytes)
+					if png_bytes is not None:
+						payload['layoutPngBase64'] = base64.b64encode(png_bytes).decode('ascii')
+						payload['layoutPngPages'] = [payload['layoutPngBase64']]
+						payload['layoutPngPageCount'] = 1
+					elif png_err:
+						payload['layoutPngError'] = png_err
+			else:
+				payload['layoutPdfError'] = pdf_err or 'unknown conversion error'
 
 			return self._send(200, payload)
 		except Exception as e:

@@ -55,6 +55,7 @@ class WordFormatter {
         this._layoutPdfError = null;
         this._layoutPdfObjectUrl = null;
         this._layoutPngBase64 = null;
+        this._layoutPngPages = null;   // array of base64 strings, one per page
         this._layoutPngError = null;
         this._lastLayoutImageUsed = null;
 
@@ -215,6 +216,7 @@ class WordFormatter {
             this._layoutPdfBase64 = null;
             this._layoutPdfError = null;
             this._layoutPngBase64 = null;
+            this._layoutPngPages = null;
             this._layoutPngError = null;
             this._lastLayoutImageUsed = null;
 
@@ -272,6 +274,7 @@ class WordFormatter {
 				this._layoutPdfBase64 = result.layoutPdfBase64 || null;
 				this._layoutPdfError = result.layoutPdfError || null;
 				this._layoutPngBase64 = result.layoutPngBase64 || null;
+				this._layoutPngPages = Array.isArray(result.layoutPngPages) && result.layoutPngPages.length ? result.layoutPngPages : null;
 				this._layoutPngError = result.layoutPngError || null;
 
 				// Client-side PII pre-check before sending to AI
@@ -320,30 +323,32 @@ class WordFormatter {
 								ir = json.ir;
 							}
 							if (includeLayoutPdf && json) {
-								this._layoutPdfBase64 = json.layoutPdfBase64 || null;
-								this._layoutPdfError = json.layoutPdfError || null;
-								this._layoutPngBase64 = json.layoutPngBase64 || null;
-								this._layoutPngError = json.layoutPngError || null;
-							}
+						this._layoutPdfBase64 = json.layoutPdfBase64 || null;
+							this._layoutPdfError = json.layoutPdfError || null;
+							this._layoutPngBase64 = json.layoutPngBase64 || null;
+							this._layoutPngPages = Array.isArray(json.layoutPngPages) && json.layoutPngPages.length ? json.layoutPngPages : null;
+							this._layoutPngError = json.layoutPngError || null;
 						}
-					} catch (e) {
-						console.warn('PDF server fallback failed:', e);
 					}
-				} else if (includeLayoutPdf) {
-					// Client-side IR is fine; still ask server for layout PDF/PNG (no LibreOffice needed).
-					try {
-						const resp = await fetch('/api/process-pdf', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ fileData: base64String, fileName: file.name, includeLayoutPdf: true })
-						});
-						if (resp.ok) {
-							const json = await resp.json();
-							if (json) {
-								this._layoutPdfBase64 = json.layoutPdfBase64 || null;
-								this._layoutPdfError = json.layoutPdfError || null;
-								this._layoutPngBase64 = json.layoutPngBase64 || null;
-								this._layoutPngError = json.layoutPngError || null;
+				} catch (e) {
+					console.warn('PDF server fallback failed:', e);
+				}
+			} else if (includeLayoutPdf) {
+				// Client-side IR is fine; still ask server for layout PDF/PNG (no LibreOffice needed).
+				try {
+					const resp = await fetch('/api/process-pdf', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ fileData: base64String, fileName: file.name, includeLayoutPdf: true })
+					});
+					if (resp.ok) {
+						const json = await resp.json();
+						if (json) {
+							this._layoutPdfBase64 = json.layoutPdfBase64 || null;
+							this._layoutPdfError = json.layoutPdfError || null;
+							this._layoutPngBase64 = json.layoutPngBase64 || null;
+							this._layoutPngPages = Array.isArray(json.layoutPngPages) && json.layoutPngPages.length ? json.layoutPngPages : null;
+							this._layoutPngError = json.layoutPngError || null;
 							}
 						}
 					} catch (e) {
@@ -403,7 +408,9 @@ class WordFormatter {
                 userInstruction: userInstruction,
                 chatHistory: this.chatHistoryData
             };
-            if (this._layoutPngBase64) {
+            if (this._layoutPngPages && this._layoutPngPages.length) {
+                genBody.layoutPngPages = this._layoutPngPages;
+            } else if (this._layoutPngBase64) {
                 genBody.layoutPngBase64 = this._layoutPngBase64;
             }
             const response = await fetch(apiUrl, {
@@ -498,7 +505,9 @@ class WordFormatter {
                 instruction: instruction,
                 ir: this.lastIr
             };
-            if (this._layoutPngBase64) {
+            if (this._layoutPngPages && this._layoutPngPages.length) {
+                patchBody.layoutPngPages = this._layoutPngPages;
+            } else if (this._layoutPngBase64) {
                 patchBody.layoutPngBase64 = this._layoutPngBase64;
             }
             const response = await fetch(apiUrl, {

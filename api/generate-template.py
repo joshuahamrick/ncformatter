@@ -2502,14 +2502,26 @@ class handler(BaseHTTPRequestHandler):
 			content_length = int(self.headers.get('Content-Length', '0'))
 			post_data = self.rfile.read(content_length)
 			
-			data = json.loads(post_data.decode('utf-8') or '{}')
-			ir = data.get('ir')
-			doc_meta = data.get('docMeta', {})
-			user_instruction = data.get('userInstruction')
-			chat_history = data.get('chatHistory', [])
-			layout_png_b64 = data.get('layoutPngBase64')
-			if isinstance(layout_png_b64, str) and 'base64,' in layout_png_b64:
-				layout_png_b64 = layout_png_b64.split('base64,', 1)[-1].strip()
+		data = json.loads(post_data.decode('utf-8') or '{}')
+		ir = data.get('ir')
+		doc_meta = data.get('docMeta', {})
+		user_instruction = data.get('userInstruction')
+		chat_history = data.get('chatHistory', [])
+
+		# Support multi-page PNG list (preferred) or single-page fallback
+		raw_pages = data.get('layoutPngPages')  # list of base64 strings
+		layout_png_b64 = data.get('layoutPngBase64')   # single-page fallback
+
+		layout_png_pages: list = []
+		if isinstance(raw_pages, list) and raw_pages:
+			for p in raw_pages:
+				if isinstance(p, str) and len(p) > 200:
+					cleaned = p.split('base64,', 1)[-1].strip() if 'base64,' in p else p.strip()
+					layout_png_pages.append(cleaned)
+		elif isinstance(layout_png_b64, str) and len(layout_png_b64) > 200:
+			# Fall back to single page
+			cleaned = layout_png_b64.split('base64,', 1)[-1].strip() if 'base64,' in layout_png_b64 else layout_png_b64.strip()
+			layout_png_pages = [cleaned]
 			
 			if not ir:
 				return self._send(400, {'success': False, 'error': 'No IR data provided'})
@@ -2600,36 +2612,44 @@ class handler(BaseHTTPRequestHandler):
 				else:
 					max_tokens = 8000   # Standard documents
 
-				use_layout_image = (
-					isinstance(layout_png_b64, str)
-					and len(layout_png_b64) > 200
+			use_layout_images = len(layout_png_pages) > 0
+			if use_layout_images:
+				max_tokens = min(max_tokens + 4000, 16000)
+
+			print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}, layoutPages={len(layout_png_pages)}")
+
+			if use_layout_images:
+				n_pages = len(layout_png_pages)
+				layout_note = (
+					f"The {n_pages} image{'s' if n_pages > 1 else ''} above show{'s' if n_pages == 1 else ''} "
+					f"all {n_pages} page{'s' if n_pages > 1 else ''} of the source Word document as rendered (PDF raster). "
+					"Use them to supplement the IR text below. Specifically, look for:\n"
+					"  1. TABLE STRUCTURE — exact number of columns, visible borders (or no borders), "
+					"column width proportions (e.g. narrow first column for a bullet symbol, wide content column)\n"
+					"  2. INDENTATION — any section visually indented (approximate pixel offset → use padding-left or margin-left)\n"
+					"  3. TAB STOPS — within a line, where text jumps horizontally after a bold label "
+					"(use <span style=\"padding-left: 55px\"> for the indented portion)\n"
+					"  4. TEXT ALIGNMENT — centered, left, justified per section\n"
+					"  5. HORIZONTAL RULES — visible dividing lines between sections\n"
+					"  6. SPACING — blank lines / extra whitespace between paragraphs or after the closing\n"
+					"All wording and merge field variables MUST still come from the Document Content / IR text below. "
+					"The images are visual reference only — do not invent text from them.\n\n"
 				)
-				if use_layout_image:
-					max_tokens = min(max_tokens + 4000, 16000)
-
-				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}, layoutImage={bool(use_layout_image)}")
-
-				if use_layout_image:
-					layout_note = (
-						"The first image is page 1 of the source document as rendered (PDF raster). "
-						"Use it to match table grid, borders, column widths, cell alignment, and spacing. "
-						"Preserve bold/italic/underline from the IR run formatting below; use the image to confirm structure and alignment. "
-						"All wording and merge fields must still come from the Document Content / IR text below, not from the image.\n\n"
-					)
-					user_blocks = [
-						{
-							"type": "image",
-							"source": {
-								"type": "base64",
-								"media_type": "image/png",
-								"data": layout_png_b64.strip(),
-							},
+				user_blocks = []
+				for idx, page_b64 in enumerate(layout_png_pages):
+					user_blocks.append({"type": "text", "text": f"[Page {idx + 1} of {n_pages}]"})
+					user_blocks.append({
+						"type": "image",
+						"source": {
+							"type": "base64",
+							"media_type": "image/png",
+							"data": page_b64,
 						},
-						{"type": "text", "text": layout_note + user_message},
-					]
-					messages = [{"role": "user", "content": user_blocks}]
-				else:
-					messages = [{"role": "user", "content": user_message}]
+					})
+				user_blocks.append({"type": "text", "text": layout_note + user_message})
+				messages = [{"role": "user", "content": user_blocks}]
+			else:
+				messages = [{"role": "user", "content": user_message}]
 
 				if messages_create_with_retries is not None:
 					response = messages_create_with_retries(

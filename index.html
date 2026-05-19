@@ -17,146 +17,132 @@
     <div class="container">
         <header class="header">
             <h1>Template HTML Formatter</h1>
-            <p>Drag and drop your Word document to convert it to formatted HTML
-                <span class="info-icon policy-info-icon" tabindex="0" aria-label="AI Usage Policy">
-                    &#9432;
-                    <span class="info-tooltip">
-                        <strong>AI Usage Policy — Newcourse Communications V1.0</strong><br><br>
-                        Only template documents may be processed. Documents containing real customer PII (names, SSNs, account numbers, addresses) will be automatically blocked.
-                    </span>
-                </span>
-            </p>
-			<div id="healthStatus" style="margin-top:8px;font-size:13px;opacity:.85;"></div>
+            <p>Drag and drop your Word document to convert it to formatted HTML</p>
+            <div id="healthStatus" style="margin-top:8px;font-size:13px;opacity:.85;"></div>
         </header>
 
         <main class="main-content">
-            <div class="content-wrapper">
-                <div class="main-panel">
-            <!-- Advanced option above drop zone -->
-            <div class="advanced-option-row">
-                <label class="advanced-option-label">
-                    <input type="checkbox" id="includeLayoutPdf">
-                    <span class="advanced-option-text">Advanced</span>
-                </label>
-                <span class="info-icon" tabindex="0" aria-label="Advanced option details">
-                    &#9432;
-                    <span class="info-tooltip">
-                        Sends the model a <strong>first-page layout snapshot</strong> (PNG) alongside the document for better table and alignment accuracy.<br><br>
-                        <strong>PDF:</strong> rasterized automatically on the server.<br>
-                        <strong>Word:</strong> requires print-accurate PDF conversion — uses local LibreOffice/Word if available, or set the <code>GOTENBERG_URL</code> environment variable to a <a href="https://gotenberg.dev/" target="_blank" rel="noopener noreferrer">Gotenberg</a> instance (LibreOffice in Docker).
+            <div class="main-panel">
+                <!-- Advanced option above drop zone -->
+                <div class="advanced-option-row">
+                    <label class="advanced-option-label">
+                        <input type="checkbox" id="includeLayoutPdf">
+                        <span class="advanced-option-text">Advanced</span>
+                    </label>
+                    <span class="info-icon" tabindex="0" aria-label="Advanced option details">
+                        &#9432;
+                        <span class="info-tooltip">
+                            Sends the model a <strong>first-page layout snapshot</strong> (PNG) alongside the document for better table and alignment accuracy.<br><br>
+                            <strong>PDF:</strong> rasterized automatically on the server.<br>
+                            <strong>Word:</strong> requires print-accurate PDF conversion — uses local LibreOffice/Word if available, or set the <code>GOTENBERG_URL</code> environment variable to a <a href="https://gotenberg.dev/" target="_blank" rel="noopener noreferrer">Gotenberg</a> instance (LibreOffice in Docker).
+                        </span>
                     </span>
-                </span>
-            </div>
-
-            <!-- Upload Area -->
-            <div class="upload-section">
-                <div id="dropZone" class="drop-zone">
-                    <div class="drop-zone-content">
-                        <div class="upload-icon">
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7,10 12,15 17,10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                        </div>
-                        <h3>Drop your Word or PDF document here</h3>
-                        <p>Or click to browse files</p>
-                        <input type="file" id="fileInput" accept=".doc,.docx,.pdf" hidden>
-                        <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
-                            Browse Files
-                        </button>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Processing Status -->
-            <div id="processing" class="processing-status" style="display: none;">
-                <div class="spinner"></div>
-                <p>Processing document...</p>
-            </div>
-
-            <!-- Results Section -->
-            <div id="resultsSection" class="results-section" style="display: none;">
-                <div class="output-container">
-                    <div id="generationMeta" class="generation-meta-pill" style="display:none;" role="status"></div>
-                    <div id="layoutPdfBanner" class="layout-pdf-pill" style="display:none;"></div>
-                    <div class="tabs">
-                        <button class="tab-btn" data-tab="preview">Preview</button>
-                        <button class="tab-btn active" data-tab="html">HTML Code</button>
-                    </div>
-                    
-                    <div id="previewTab" class="tab-content">
-                        <div class="preview-header">
-                            <div class="preview-header-left">
-                                <span class="html-code-filename">letter preview</span>
+                <!-- Upload Area -->
+                <div class="upload-section">
+                    <div id="dropZone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <div class="upload-icon">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7,10 12,15 17,10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
                             </div>
-                            <div class="html-header-actions">
-                                <button id="expandPreviewButton" class="expand-btn" title="Expand letter view">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                                    </svg>
-                                    Expand
-                                </button>
-                            </div>
-                        </div>
-                        <div class="preview-page-wrapper">
-                            <div id="formattedPreview" class="formatted-preview"></div>
-                        </div>
-                    </div>
-                    
-                    <div id="htmlTab" class="tab-content active">
-                        <div class="html-header">
-                            <div class="html-header-left">
-                                <span class="html-code-filename">template.html</span>
-                            </div>
-                            <div class="html-header-actions">
-                                <button id="expandButton" class="expand-btn" title="Expand to full view">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                                    </svg>
-                                    Expand
-                                </button>
-                                <button id="copyButton" class="copy-btn">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                    </svg>
-                                    Copy HTML
-                                </button>
-                            </div>
-                        </div>
-                        <pre id="htmlCode" class="html-code"></pre>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Error Message -->
-            <div id="errorMessage" class="error-message" style="display: none;">
-                <div class="error-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
-                </div>
-                <div class="error-content">
-                    <h3>Error Processing Document</h3>
-                    <p id="errorText"></p>
-                    <button class="retry-btn" onclick="resetUpload()">Try Again</button>
+                            <h3>Drop your Word or PDF document here</h3>
+                            <p>Or click to browse files</p>
+                            <input type="file" id="fileInput" accept=".doc,.docx,.pdf" hidden>
+                            <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
+                                Browse Files
+                            </button>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Chat Panel -->
-                <div id="chatPanel" class="chat-panel" style="display: none;">
-                    <div class="chat-header">
-                        <h3>Adjust Output</h3>
-                        <button id="resetButton" class="reset-btn" title="Reset to initial output">Reset</button>
+
+                <!-- Processing Status -->
+                <div id="processing" class="processing-status" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Processing document...</p>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="results-section" style="display: none;">
+                    <div class="output-container">
+                        <div id="layoutPdfBanner" style="display:none;"></div>
+                        <div class="tabs">
+                            <button class="tab-btn" data-tab="preview">Preview</button>
+                            <button class="tab-btn active" data-tab="html">HTML Code</button>
+                        </div>
+                        
+                        <div id="previewTab" class="tab-content">
+                            <div class="preview-header">
+                                <div class="preview-header-left">
+                                    <span class="html-code-filename">letter preview</span>
+                                </div>
+                                <div class="html-header-actions">
+                                    <button id="expandPreviewButton" class="expand-btn" title="Expand letter view">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                                        </svg>
+                                        Expand
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="preview-page-wrapper">
+                                <div id="formattedPreview" class="formatted-preview"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="htmlTab" class="tab-content active">
+                            <div class="html-header">
+                                <div class="html-header-left">
+                                    <span class="html-code-filename">template.html</span>
+                                </div>
+                                <div class="html-header-actions">
+                                    <button id="expandButton" class="expand-btn" title="Expand to full view">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                                        </svg>
+                                        Expand
+                                    </button>
+                                    <button id="copyButton" class="copy-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                        </svg>
+                                        Copy HTML
+                                    </button>
+                                </div>
+                            </div>
+                            <pre id="htmlCode" class="html-code"></pre>
+                        </div>
                     </div>
-                    <div id="chatHistory" class="chat-history"></div>
-                    <div class="chat-input-container">
-                        <textarea id="chatInput" class="chat-input" placeholder="Describe the change you want..."></textarea>
-                        <button id="applyButton" class="apply-btn">Apply Change</button>
+
+                    <!-- Refine bar -->
+                    <div id="refineBar" class="refine-bar">
+                        <div class="refine-bar-row">
+                            <textarea id="chatInput" class="refine-input" placeholder="Describe a change to the template…" rows="1"></textarea>
+                            <button id="applyButton" class="refine-apply-btn">Apply</button>
+                            <button id="resetButton" class="refine-reset-btn" title="Reset to original output">Reset</button>
+                        </div>
+                        <div id="refineStatus" class="refine-status" aria-live="polite"></div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="error-message" style="display: none;">
+                    <div class="error-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="error-content">
+                        <h3>Error Processing Document</h3>
+                        <p id="errorText"></p>
+                        <button class="retry-btn" onclick="resetUpload()">Try Again</button>
                     </div>
                 </div>
             </div>
@@ -222,7 +208,6 @@
 
     <!-- Formatting Assistant Bot -->
     <div id="assistantWidget">
-        <!-- Chat panel (comes first in DOM so it renders above the launcher in the flex column) -->
         <div id="assistantPanel">
             <div id="assistantHeader">
                 <div id="assistantHeaderLeft">
@@ -246,8 +231,6 @@
                 </button>
             </div>
         </div>
-
-        <!-- Launcher button (last in DOM = anchored at bottom of the fixed widget) -->
         <button id="assistantLauncher" title="Formatting Assistant">
             <svg id="assistantIconChat" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -295,7 +278,6 @@
             appendMessage('assistant', GREETING);
         });
 
-        // Auto-resize textarea
         input.addEventListener('input', () => {
             input.style.height = 'auto';
             input.style.height = Math.min(input.scrollHeight, 120) + 'px';
@@ -318,7 +300,6 @@
             bubble.innerHTML = renderMarkdown(text);
             wrap.appendChild(bubble);
 
-            // Copy buttons for code blocks
             wrap.querySelectorAll('pre code').forEach(block => {
                 const btn = document.createElement('button');
                 btn.className = 'ast-copy-code';
@@ -390,51 +371,28 @@
             input.focus();
         }
 
-        // Simple markdown renderer (bold, inline code, fenced code blocks)
         function renderMarkdown(text) {
-            // Escape HTML first
             let html = text
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
 
-            // Fenced code blocks
             html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
                 return `<pre><code class="lang-${lang}">${code.trimEnd()}</code></pre>`;
             });
-
-            // Inline code
             html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-
-            // Bold
             html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-            // Italic
             html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-            // Headers
             html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
             html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
             html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
-
-            // Horizontal rule
             html = html.replace(/^---$/gm, '<hr>');
-
-            // Bullet lists
             html = html.replace(/^[*\-] (.+)$/gm, '<li>$1</li>');
             html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-
-            // Numbered lists
             html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-
-            // Paragraphs (double newline)
             html = html.replace(/\n{2,}/g, '</p><p>');
             html = '<p>' + html + '</p>';
-
-            // Single newlines inside paragraphs
             html = html.replace(/\n/g, '<br>');
-
-            // Clean up empty paragraphs
             html = html.replace(/<p><\/p>/g, '');
             html = html.replace(/<p>(<(?:pre|ul|h[2-4]|hr))/g, '$1');
             html = html.replace(/(<\/(?:pre|ul|h[2-4]|hr)>)<\/p>/g, '$1');

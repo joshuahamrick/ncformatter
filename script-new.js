@@ -19,9 +19,9 @@ class WordFormatter {
         this.layoutPdfBanner = document.getElementById('layoutPdfBanner');
         this.generationMeta = document.getElementById('generationMeta');
         
-        // Chat panel elements
-        this.chatPanel = document.getElementById('chatPanel');
-        this.chatHistory = document.getElementById('chatHistory');
+        // Refine bar elements
+        this.refineBar = document.getElementById('refineBar');
+        this.refineStatus = document.getElementById('refineStatus');
         this.chatInput = document.getElementById('chatInput');
         this.applyButton = document.getElementById('applyButton');
         this.resetButton = document.getElementById('resetButton');
@@ -67,8 +67,7 @@ class WordFormatter {
             htmlCode: !!this.htmlCode,
             copyButton: !!this.copyButton,
             processingDiv: !!this.processingDiv,
-            tabButtons: this.tabButtons.length,
-            chatPanel: !!this.chatPanel
+            tabButtons: this.tabButtons.length
         });
     }
 
@@ -104,6 +103,10 @@ class WordFormatter {
                     e.preventDefault();
                     this.applyChatChange();
                 }
+            });
+            this.chatInput.addEventListener('input', () => {
+                this.chatInput.style.height = 'auto';
+                this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
             });
         }
     }
@@ -488,8 +491,6 @@ class WordFormatter {
         }
         
         try {
-            // Add user message to chat history
-            this.addChatMessage('user', instruction);
             this.chatHistoryData.push({ role: 'user', content: instruction });
             
             // Clear input
@@ -547,17 +548,16 @@ class WordFormatter {
             this.currentHtml = result.html;
             this.displayResult(result.html);
             
-            // Add system message
-            this.addChatMessage('system', 'Change applied successfully');
-            
+            this.showRefineStatus('success', '✓ Applied');
+
         } catch (error) {
             console.error('Chat error:', error);
-            this.addChatMessage('system', `Error: ${error.message}`);
+            this.showRefineStatus('error', '✗ ' + error.message);
         } finally {
             // Re-enable button
             if (this.applyButton) {
                 this.applyButton.disabled = false;
-                this.applyButton.textContent = 'Apply Change';
+                this.applyButton.textContent = 'Apply';
             }
         }
     }
@@ -566,22 +566,23 @@ class WordFormatter {
         if (this.initialHtml) {
             this.currentHtml = this.initialHtml;
             this.displayResult(this.initialHtml);
-            this.chatHistoryData = [];
-            if (this.chatHistory) {
-                this.chatHistory.innerHTML = '';
-            }
-            this.addChatMessage('system', 'Reset to initial output');
+        this.chatHistoryData = [];
+        this.showRefineStatus('success', '✓ Reset to original');
         }
     }
     
-    addChatMessage(type, message) {
-        if (!this.chatHistory) return;
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${type}`;
-        messageDiv.textContent = message;
-        this.chatHistory.appendChild(messageDiv);
-        this.chatHistory.scrollTop = this.chatHistory.scrollHeight;
+    showRefineStatus(type, message) {
+        if (!this.refineStatus) return;
+        clearTimeout(this._refineStatusTimer);
+        this.refineStatus.textContent = message;
+        this.refineStatus.className = `refine-status visible ${type}`;
+        this._refineStatusTimer = setTimeout(() => {
+            this.refineStatus.classList.add('fading');
+            setTimeout(() => {
+                this.refineStatus.textContent = '';
+                this.refineStatus.className = 'refine-status';
+            }, 420);
+        }, 3000);
     }
 
     displayResult(formattedText) {
@@ -617,9 +618,9 @@ class WordFormatter {
             this.resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
         
-        // Show chat panel
-        if (this.chatPanel) {
-            this.chatPanel.style.display = 'flex';
+        // Auto-resize refine input
+        if (this.chatInput) {
+            this.chatInput.style.height = 'auto';
         }
 
         if (this.generationMeta) {
@@ -687,7 +688,6 @@ class WordFormatter {
             errorText.textContent = message;
             errorDiv.style.display = 'block';
             if (this.resultsSection) this.resultsSection.style.display = 'none';
-            if (this.chatPanel) this.chatPanel.style.display = 'none';
         } else {
             alert('Error: ' + message);
         }

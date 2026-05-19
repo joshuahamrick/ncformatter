@@ -12,6 +12,9 @@
     },
     "api/patch-template.py": {
       "maxDuration": 90
+    },
+    "api/assistant.py": {
+      "maxDuration": 60
     }
   },
   "headers": [

@@ -86,7 +86,12 @@ Generate HTML templates that:
 - CRITICAL: Use {Else If(...)} syntax for multiple conditions, NOT nested {Else}{If(...)}{End If}
 - CORRECT: {If('{[M009]}' &lt;&gt; ',')}...{Else If('{[M009]}' = ',')}...{End If}
 - WRONG: {If('{[M009]}' != ',')}...{Else}{If('{[M009]}' = ',')}...{End If}{End If} ← Nested conditionals are wrong
-- CRITICAL DATE COMPARISONS: For date comparisons in IF functions, dates must be in numeric format (yyyyMMdd) to be evaluated correctly, otherwise they will be compared as strings or interpreted as math. The Date() function's second parameter is for format. Example: {If((Date({[M065]}|yyyyMMdd) &gt;= 19990729))} - NO QUOTES around the date value, NO DASHES (to avoid subtraction)
+- CRITICAL DATE COMPARISONS: Date variables like M065 are stored as human-readable strings (e.g. `"April 29, 2020"` or `"04/29/2020"`). To compare them numerically in an {If()}, you MUST use `{Date({[TAG]}|yyyyMMdd)}` as a tag expression to parse and reformat the value to yyyyMMdd first. Without this, the comparison would be a string comparison (wrong) or interpreted as math (wrong).
+  - CORRECT syntax: `{If({Date({[M065]}|yyyyMMdd)} &gt;= 19990729)}` — Date() is wrapped in `{}` as a tag, single parens on If()
+  - WRONG syntax: `{If((Date({[M065]}|yyyyMMdd) &gt;= 19990729))}` — do NOT use double parens, do NOT omit the `{}` around Date()
+  - `"April 29, 2020"` → `{Date({[M065]}|yyyyMMdd)}` → `20200429` → correctly compares &gt;= `19990729`
+  - NO QUOTES around the comparison value, NO DASHES in the date literal (use `19990729` not `'1999-07-29'` — dashes would cause subtraction)
+  - ALWAYS use `{Date({[TAG]}|yyyyMMdd)}` (with outer curly braces) before any numeric date comparison in an {If()}
 
 ### Tables
 - Bordered: <table width="100%" style="border-collapse: collapse">

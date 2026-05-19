@@ -135,5 +135,229 @@
 
     <!-- New Python-powered formatter -->
     <script src="script-new.js"></script>
+
+    <!-- Formatting Assistant Bot -->
+    <div id="assistantWidget">
+        <!-- Launcher button -->
+        <button id="assistantLauncher" title="Formatting Assistant">
+            <svg id="assistantIconChat" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <svg id="assistantIconClose" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <!-- Chat panel -->
+        <div id="assistantPanel">
+            <div id="assistantHeader">
+                <div id="assistantHeaderLeft">
+                    <div id="assistantDot"></div>
+                    <span>Formatting Assistant</span>
+                </div>
+                <button id="assistantClearBtn" title="Clear conversation">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="assistantMessages"></div>
+            <div id="assistantInputRow">
+                <textarea id="assistantInput" placeholder="Ask about functions, formatting rules, or paste a code block..." rows="1"></textarea>
+                <button id="assistantSendBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const widget     = document.getElementById('assistantWidget');
+        const launcher   = document.getElementById('assistantLauncher');
+        const panel      = document.getElementById('assistantPanel');
+        const messages   = document.getElementById('assistantMessages');
+        const input      = document.getElementById('assistantInput');
+        const sendBtn    = document.getElementById('assistantSendBtn');
+        const clearBtn   = document.getElementById('assistantClearBtn');
+        const iconChat   = document.getElementById('assistantIconChat');
+        const iconClose  = document.getElementById('assistantIconClose');
+
+        let history = [];
+        let isOpen  = false;
+        let isTyping = false;
+
+        const GREETING = "Hi! I'm your NcFormatter assistant. Ask me anything about template functions, formatting rules, conditional syntax, or paste a code block and I'll tell you what's wrong.";
+
+        function togglePanel() {
+            isOpen = !isOpen;
+            panel.classList.toggle('open', isOpen);
+            iconChat.style.display  = isOpen ? 'none' : 'block';
+            iconClose.style.display = isOpen ? 'block' : 'none';
+            if (isOpen && messages.children.length === 0) {
+                appendMessage('assistant', GREETING);
+            }
+            if (isOpen) setTimeout(() => input.focus(), 150);
+        }
+
+        launcher.addEventListener('click', togglePanel);
+        clearBtn.addEventListener('click', () => {
+            history = [];
+            messages.innerHTML = '';
+            appendMessage('assistant', GREETING);
+        });
+
+        // Auto-resize textarea
+        input.addEventListener('input', () => {
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        sendBtn.addEventListener('click', sendMessage);
+
+        function appendMessage(role, text) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ast-msg ast-msg-' + role;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'ast-bubble';
+            bubble.innerHTML = renderMarkdown(text);
+            wrap.appendChild(bubble);
+
+            // Copy buttons for code blocks
+            wrap.querySelectorAll('pre code').forEach(block => {
+                const btn = document.createElement('button');
+                btn.className = 'ast-copy-code';
+                btn.textContent = 'Copy';
+                btn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(block.textContent).then(() => {
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+                    });
+                });
+                block.parentNode.style.position = 'relative';
+                block.parentNode.appendChild(btn);
+            });
+
+            messages.appendChild(wrap);
+            messages.scrollTop = messages.scrollHeight;
+            return wrap;
+        }
+
+        function appendTyping() {
+            const wrap = document.createElement('div');
+            wrap.className = 'ast-msg ast-msg-assistant';
+            wrap.id = 'ast-typing';
+            wrap.innerHTML = '<div class="ast-bubble ast-typing"><span></span><span></span><span></span></div>';
+            messages.appendChild(wrap);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function removeTyping() {
+            const t = document.getElementById('ast-typing');
+            if (t) t.remove();
+        }
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text || isTyping) return;
+
+            appendMessage('user', text);
+            history.push({ role: 'user', content: text });
+            input.value = '';
+            input.style.height = 'auto';
+
+            isTyping = true;
+            sendBtn.disabled = true;
+            appendTyping();
+
+            try {
+                const res = await fetch('/api/assistant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: history })
+                });
+                const data = await res.json();
+                removeTyping();
+
+                if (data.error) {
+                    appendMessage('assistant', '⚠️ Error: ' + data.error);
+                } else {
+                    appendMessage('assistant', data.reply);
+                    history.push({ role: 'assistant', content: data.reply });
+                }
+            } catch (err) {
+                removeTyping();
+                appendMessage('assistant', '⚠️ Could not reach the assistant. Check your connection.');
+            }
+
+            isTyping = false;
+            sendBtn.disabled = false;
+            input.focus();
+        }
+
+        // Simple markdown renderer (bold, inline code, fenced code blocks)
+        function renderMarkdown(text) {
+            // Escape HTML first
+            let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            // Fenced code blocks
+            html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+                return `<pre><code class="lang-${lang}">${code.trimEnd()}</code></pre>`;
+            });
+
+            // Inline code
+            html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Headers
+            html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+
+            // Horizontal rule
+            html = html.replace(/^---$/gm, '<hr>');
+
+            // Bullet lists
+            html = html.replace(/^[*\-] (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+            // Numbered lists
+            html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+            // Paragraphs (double newline)
+            html = html.replace(/\n{2,}/g, '</p><p>');
+            html = '<p>' + html + '</p>';
+
+            // Single newlines inside paragraphs
+            html = html.replace(/\n/g, '<br>');
+
+            // Clean up empty paragraphs
+            html = html.replace(/<p><\/p>/g, '');
+            html = html.replace(/<p>(<(?:pre|ul|h[2-4]|hr))/g, '$1');
+            html = html.replace(/(<\/(?:pre|ul|h[2-4]|hr)>)<\/p>/g, '$1');
+
+            return html;
+        }
+    })();
+    </script>
 </body>
 </html>

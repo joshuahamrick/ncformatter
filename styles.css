@@ -1423,13 +1423,13 @@ body {
    SYNTAX HIGHLIGHTING — HTML code view tokens
    ============================================================ */
 
-.hl-tag-punc { color: #6e7681; }
-.hl-tag-name  { color: #6996b8; }
-.hl-attr-name { color: #5f9e76; }
-.hl-attr-val  { color: #6e9fb5; }
-.hl-nc-cond   { color: #b86b67; font-weight: 600; }
-.hl-nc-func   { color: #9b7ec0; }
-.hl-nc-field  { color: #b8895a; }
+.hl-tag-punc { color: #565f89; }
+.hl-tag-name  { color: #7aa2f7; }
+.hl-attr-name { color: #9ece6a; }
+.hl-attr-val  { color: #9aa5ce; }
+.hl-nc-cond   { color: #f7768e; font-weight: 600; }
+.hl-nc-func   { color: #bb9af7; }
+.hl-nc-field  { color: #e0af68; }
 
 /* Updated HTML code block + header */
 .html-header {

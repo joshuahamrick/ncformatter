@@ -776,30 +776,51 @@ def format_ir_for_prompt(ir):
 			last_was_sub_row = is_indent_sub_row
 			last_list_level = cur_list_level if cur_is_list else last_list_level
 		elif block.get('type') == 'textbox' and block.get('anchoredInline'):
-			# Floating text box injected at its anchor position — render with styling info
+			# Pre-render the textbox as complete HTML and embed verbatim.
+			# This avoids AI grouping errors with START/END markers.
 			fill  = block.get('fillColor') or ''
 			bclr  = block.get('borderColor') or '#000000'
-			bwid  = block.get('borderWidth') or '1px'
-			style_hint = f'fill={fill}, border={bwid} {bclr}' if fill else f'border={bwid} {bclr}'
-			formatted.append(f'[INLINE_TEXTBOX_START: {style_hint}]')
+			bwid  = (block.get('borderWidth') or '1px').replace('pt', 'pt').strip()
+			bg_style = f'background-color: {fill}; ' if fill else ''
+			table_style = f'border: {bwid} solid {bclr}; border-collapse: collapse; {bg_style}'.strip().rstrip(';')
+
+			# Build inner HTML for the cell
+			inner_lines = []
+			list_items = []
+			def flush_list():
+				if list_items:
+					inner_lines.append('<ul>' + ''.join(f'<li>{li}</li>' for li in list_items) + '</ul>')
+					list_items.clear()
+
 			for row in block.get('rows', []):
 				row_text = ''.join(r.get('text', '') for r in row.get('runs', []))
 				if not row_text.strip():
+					flush_list()
 					continue
 				align = row.get('align', 'left')
 				bold_all = all(r.get('bold') for r in row.get('runs', []) if r.get('text','').strip())
 				is_list = row.get('isListItem') or row.get('listType') == 'bullet'
-				hints = []
-				if align in ('center', 'CENTER'):
-					hints.append('ALIGN_CENTER')
+				row_html = row_text.strip()
 				if bold_all:
-					hints.append('BOLD')
+					row_html = f'<b>{row_html}</b>'
 				if is_list:
-					hints.append('LIST_ITEM')
-				hint_str = f' [FORMATTING: {", ".join(hints)}]' if hints else ''
-				para_counter += 1
-				formatted.append(f'Paragraph {para_counter}: {row_text.strip()[:400]}{hint_str}')
-			formatted.append('[INLINE_TEXTBOX_END]')
+					flush_list()  # flush any preceding list? no — accumulate
+					list_items.append(row_html)
+				else:
+					flush_list()
+					div_style = ' style="text-align: center"' if align in ('center', 'CENTER') else ''
+					inner_lines.append(f'<div{div_style}>{row_html}</div>')
+			flush_list()
+
+			cell_html = '\n    '.join(inner_lines)
+			tb_html = (
+				f'<table width="100%" style="{table_style};"><tbody><tr>\n'
+				f'  <td style="padding: 8pt 10pt;">\n'
+				f'    {cell_html}\n'
+				f'  </td>\n'
+				f'</tr></tbody></table>'
+			)
+			formatted.append(f'[VERBATIM_HTML: copy the following HTML exactly as-is to your output]\n{tb_html}\n[END_VERBATIM_HTML]')
 
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
@@ -1711,25 +1732,12 @@ When the document has a thin horizontal line separating the mailing address from
 ```
 Detection: If the IR contains `[FORMATTING: BORDER_BOTTOM]` on a paragraph between the mailing address and the document title/body, or a paragraph that is blank with only a bottom border → render as `<hr>`.
 
-**INLINE TEXT BOX — floating Word drawing shape injected at its anchor position:**
-When the IR contains `[INLINE_TEXTBOX_START: fill=#XXXXXX, border=...]` and `[INLINE_TEXTBOX_END]` markers, render ALL content between them inside a single bordered table at that exact IR position:
-```html
-<table width="100%" style="border: 1px solid #000000; border-collapse: collapse; background-color: #E2EFD9;"><tbody><tr>
-  <td style="padding: 8pt 10pt;">
-    <div style="text-align: center"><b>Title</b></div>
-    <div>Body text paragraph here.</div>
-    <ul><li>Bullet item one.</li><li>Bullet item two.</li></ul>
-  </td>
-</tr></tbody></table>
-```
-Rules for content INSIDE the textbox:
-- Use the `fill=` hex color for `background-color` (e.g. `fill=#e2efd9` → `background-color: #e2efd9`).
-- Use the `border=` value for the CSS border (e.g. `border=1.0pt #000000` → `border: 1pt solid #000000`).
-- Paragraphs marked `[FORMATTING: BOLD]` → wrap in `<b>`.
-- Paragraphs marked `[FORMATTING: ALIGN_CENTER]` → add `style="text-align: center"`.
-- Paragraphs marked `LIST_ITEM` or that are bullet points → collect consecutive list items into a single `<ul>` with `<li>` for each.
-- Do NOT insert `<br>` between paragraphs inside the textbox — they flow as tightly-packed divs or list items.
-- The text box table MUST appear exactly at the position it occurs in the IR, NOT moved anywhere else.
+**VERBATIM HTML BLOCKS — pre-rendered content (text boxes, special shapes):**
+When the IR contains `[VERBATIM_HTML: copy the following HTML exactly as-is to your output]` followed by HTML and then `[END_VERBATIM_HTML]`:
+- Copy EVERY LINE of the HTML between those markers to your output EXACTLY as written — do not change, reformat, move, or omit any part of it.
+- Place it at the exact position it appears in the IR (between the surrounding paragraphs).
+- Do NOT emit the `[VERBATIM_HTML:]` or `[END_VERBATIM_HTML]` marker text itself — only the HTML between them.
+- Do NOT add `<br>` before or after the verbatim block unless the IR spacing markers say to.
 
 **PARAGRAPH BORDER BOX — wrapping consecutive bordered/shaded paragraphs:**
 When the IR contains `[BORDER_BOX_START...]` and `[BORDER_BOX_END]` markers, ALL content between them must be wrapped in a single bordered table (the paragraphs share a paragraph-level border and/or fill extracted from the OOXML). Use this pattern:

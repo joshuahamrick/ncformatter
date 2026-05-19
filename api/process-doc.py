@@ -689,8 +689,115 @@ def _build_ir_document(doc):
 				'rows': rows
 			})
 	
+	# Helper: extract a floating text box drawing from a paragraph element.
+	# Returns a textbox IR block (with fill/border) or None.
+	def _extract_inline_textbox(para_p):
+		WPD_NS  = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing'
+		WPS_NS  = 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape'
+		A_NS    = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+		VML_NS  = 'urn:schemas-microsoft-com:vml'
+
+		drawing = para_p.find('.//{%s}drawing' % 'http://schemas.openxmlformats.org/wordprocessingml/2006/main')
+		if drawing is None:
+			return None
+		# Only handle anchor (floating) drawings — inline drawings are logos/images
+		anchor = drawing.find('{%s}anchor' % WPD_NS)
+		if anchor is None:
+			return None
+
+		# ── Collect text paragraphs from wps:txbx ──
+		rows = []
+		seen = set()
+		for txbx in drawing.iter('{%s}txbx' % WPS_NS):
+			for p_elem in txbx.iter(qn('w:p')):
+				text = ''.join(t.text or '' for t in p_elem.iter(qn('w:t'))).strip()
+				if not text or text in seen:
+					continue
+				seen.add(text)
+				# paragraph alignment
+				pPr_e = p_elem.find(qn('w:pPr'))
+				align = 'left'
+				is_bold_all = False
+				if pPr_e is not None:
+					jc = pPr_e.find(qn('w:jc'))
+					if jc is not None:
+						align = jc.get(qn('w:val'), 'left')
+				runs_out = []
+				for r_elem in p_elem.iter(qn('w:r')):
+					t_text = ''.join(t.text or '' for t in r_elem.iter(qn('w:t')))
+					if not t_text:
+						continue
+					rPr = r_elem.find(qn('w:rPr'))
+					is_bold = False
+					font_sz = None
+					if rPr is not None:
+						b = rPr.find(qn('w:b'))
+						if b is not None:
+							val = b.get(qn('w:val'))
+							is_bold = val is None or val.lower() in ('true', '1', 'on')
+						sz = rPr.find(qn('w:sz'))
+						if sz is not None:
+							try:
+								font_sz = int(sz.get(qn('w:val'), '0')) / 2
+							except Exception:
+								pass
+					runs_out.append({'text': t_text, 'bold': is_bold, 'italic': False, 'underline': False, 'fontSizePt': font_sz, 'fontFamily': None, 'isHyperlink': False})
+				if runs_out:
+					rows.append({'type': 'paragraph', 'runs': runs_out, 'align': align, 'leadingSpaces': None, 'styleName': None, 'isListItem': False, 'listLevel': None, 'listMarker': None, 'spacingBeforePt': None, 'spacingAfterPt': None, 'lineHeightMultiple': None, 'leftIndentPt': None, 'firstLineIndentPt': None, 'hangingIndentPt': None})
+
+		if not rows:
+			return None
+
+		# ── Extract fill color ──
+		# The VML fallback shape is at: p > r > mc:AlternateContent > mc:Fallback > w:pict > v:shape
+		# It is NOT inside w:drawing, so we must search the whole paragraph element.
+		# VML fillcolor is the resolved hex (avoids scheme-color ambiguity).
+		fill_color = None
+		VML_NS2 = 'urn:schemas-microsoft-com:vml'
+		for shape in para_p.iter('{%s}shape' % VML_NS2):
+			fc = (shape.get('fillcolor') or '').strip()
+			if fc and fc.startswith('#'):
+				fill_color = fc.split(' ')[0]  # strip " [NNN]" theme-index suffix
+				break
+		if not fill_color:
+			# WPS modern spPr — use DIRECT child solidFill only (not border fill inside a:ln)
+			for spPr in drawing.iter('{%s}spPr' % WPS_NS):
+				direct_fill = spPr.find('{%s}solidFill' % A_NS)
+				if direct_fill is not None:
+					srgb = direct_fill.find('{%s}srgbClr' % A_NS)
+					if srgb is not None:
+						fill_color = '#' + srgb.get('val', '')
+						break
+
+		# ── Extract border color/width ──
+		border_color = '#000000'
+		border_width = '1px'
+		for spPr in drawing.iter('{%s}spPr' % WPS_NS):
+			ln = spPr.find('{%s}ln' % A_NS)
+			if ln is not None:
+				w_emu = ln.get('w')
+				if w_emu:
+					try:
+						border_width = f'{int(w_emu) / 9525:.1f}pt'
+					except Exception:
+						pass
+				ln_clr = ln.find('.//{%s}solidFill/{%s}srgbClr' % (A_NS, A_NS))
+				if ln_clr is not None:
+					border_color = '#' + ln_clr.get('val', '000000')
+			break
+
+		return {
+			'type': 'textbox',
+			'rows': rows,
+			'fillColor': fill_color,
+			'borderColor': border_color,
+			'borderWidth': border_width,
+			'anchoredInline': True,  # position determined by anchor paragraph
+		}
+
 	# Iterate block items in document order: paragraphs and tables
 	# python-docx doesn't provide a direct unified iterator; iterate through document._body
+	seen_inline_textbox_texts = set()
 	for element in doc.element.body.iterchildren():
 		tag = element.tag.rsplit('}', 1)[-1]
 		if tag == 'p':
@@ -698,6 +805,17 @@ def _build_ir_document(doc):
 			for para in doc.paragraphs:
 				if para._p is element:
 					blocks.append(_extract_paragraph_ir(para))
+					# Inject any floating text box anchored to this paragraph
+					try:
+						tb = _extract_inline_textbox(para._p)
+						if tb:
+							# Deduplicate by first row text
+							key = ''.join(r.get('text','') for r in tb['rows'][0].get('runs',[]))
+							if key not in seen_inline_textbox_texts:
+								seen_inline_textbox_texts.add(key)
+								blocks.append(tb)
+					except Exception:
+						pass
 					break
 		elif tag == 'tbl':
 			for tbl in doc.tables:

@@ -775,6 +775,29 @@ def format_ir_for_prompt(ir):
 			last_was_list_item = cur_is_list
 			last_was_sub_row = is_indent_sub_row
 			last_list_level = cur_list_level if cur_is_list else last_list_level
+		elif block.get('type') == 'textbox' and block.get('anchoredInline'):
+			# Floating text box injected at its anchor position — render with styling info
+			fill  = block.get('fillColor') or ''
+			bclr  = block.get('borderColor') or '#000000'
+			bwid  = block.get('borderWidth') or '1px'
+			style_hint = f'fill={fill}, border={bwid} {bclr}' if fill else f'border={bwid} {bclr}'
+			formatted.append(f'[INLINE_TEXTBOX_START: {style_hint}]')
+			for row in block.get('rows', []):
+				row_text = ''.join(r.get('text', '') for r in row.get('runs', []))
+				if not row_text.strip():
+					continue
+				align = row.get('align', 'left')
+				bold_all = all(r.get('bold') for r in row.get('runs', []) if r.get('text','').strip())
+				hints = []
+				if align in ('center', 'CENTER'):
+					hints.append('ALIGN_CENTER')
+				if bold_all:
+					hints.append('BOLD')
+				hint_str = f' [FORMATTING: {", ".join(hints)}]' if hints else ''
+				para_counter += 1
+				formatted.append(f'Paragraph {para_counter}: {row_text.strip()[:400]}{hint_str}')
+			formatted.append('[INLINE_TEXTBOX_END]')
+
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			tbl_borders = block.get('tableBorders')
@@ -1140,21 +1163,22 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 
 	ir_content = header_directive + font_directive + gap_directive + ir_content
 	
-	# Append text box content if present (floating text boxes are not in body flow)
+	# Append any remaining floating text boxes from meta that were NOT already injected
+	# inline (i.e., legacy title/warning boxes that have no anchor paragraph).
 	text_boxes = ir.get('meta', {}).get('textBoxes', [])
 	if text_boxes:
-		ir_content += "\n\n=== FLOATING TEXT BOXES (visually prominent boxes floating in document layout) ===\n"
-		ir_content += "PLACEMENT RULES — read the content to decide where each box belongs:\n"
-		ir_content += "  - SHORT TITLE box (1-3 words, e.g. 'Escrow Cancellation Request', 'Loan Summary') → place AFTER mailing address, centered. Use {Compress(Part1|Part2)} to split the title across two lines at a natural word boundary (e.g. 'Escrow Cancellation Request' → {Compress(Escrow Cancellation|Request)})\n"
-		ir_content += "  - WARNING/NOTICE box (long sentence starting with 'If you do not...', 'You must...', 'IMPORTANT:') → place at the VERY BOTTOM of the document, AFTER return address and fax/email lines\n"
-		ir_content += "  - LOAN/PROPERTY INFO box (Loan Number, Property Address, RE:) → place after mailing address, before salutation\n"
+		# Collect text keys already emitted inline so we don't duplicate
+		import re as _re_tb
+		ir_content += "\n\n=== ADDITIONAL FLOATING TEXT BOXES ===\n"
+		ir_content += "PLACEMENT RULES:\n"
+		ir_content += "  - SHORT TITLE box (1-3 words) → place AFTER mailing address, centered\n"
+		ir_content += "  - WARNING/NOTICE box ('If you do not…', 'IMPORTANT:') → place at VERY BOTTOM\n"
+		ir_content += "  - LOAN/PROPERTY INFO box → place after mailing address, before salutation\n"
 		for i, tb in enumerate(text_boxes):
 			tb_text = ' '.join(
 				''.join(r.get('text','') for r in row.get('runs',[])).strip()
 				for row in tb.get('rows',[])
 			).strip()
-			# Classify this text box so Claude knows where to place it
-			import re as _re_tb
 			if len(tb_text.split()) <= 6 and not _re_tb.search(r'If you|must|required|payment|IMPORTANT', tb_text, _re_tb.IGNORECASE):
 				tb_role = "TITLE (place after mailing address, centered)"
 			elif _re_tb.search(r'If you|must|required|payment will|escrow payment', tb_text, _re_tb.IGNORECASE):
@@ -1684,6 +1708,21 @@ When the document has a thin horizontal line separating the mailing address from
 <div style="text-align: center">...
 ```
 Detection: If the IR contains `[FORMATTING: BORDER_BOTTOM]` on a paragraph between the mailing address and the document title/body, or a paragraph that is blank with only a bottom border → render as `<hr>`.
+
+**INLINE TEXT BOX — floating Word drawing shape injected at its anchor position:**
+When the IR contains `[INLINE_TEXTBOX_START: fill=#XXXXXX, border=...]` and `[INLINE_TEXTBOX_END]` markers, render ALL content between them inside a bordered table at that exact position in the document:
+```html
+<table width="100%" style="border: 1px solid #000000; border-collapse: collapse; background-color: #E2EFD9;"><tbody><tr>
+  <td style="padding: 8pt 10pt;">
+    [paragraph content rendered normally here]
+  </td>
+</tr></tbody></table>
+```
+- Use the `fill=` color for `background-color` on the table (e.g. `fill=#E2EFD9` → `background-color: #E2EFD9`).
+- Use the `border=` value for the CSS border (e.g. `border=1.0pt #000000` → `border: 1pt solid #000000`).
+- Render each paragraph inside using the same rules as body paragraphs (bold → `<b>`, center → `text-align: center`, bullet → bullet table, etc.).
+- Do NOT emit the `[INLINE_TEXTBOX_START]` / `[INLINE_TEXTBOX_END]` text — they are IR markers only.
+- The text box MUST appear at the position it occurs in the IR, NOT moved to the bottom or top.
 
 **PARAGRAPH BORDER BOX — wrapping consecutive bordered/shaded paragraphs:**
 When the IR contains `[BORDER_BOX_START...]` and `[BORDER_BOX_END]` markers, ALL content between them must be wrapped in a single bordered table (the paragraphs share a paragraph-level border and/or fill extracted from the OOXML). Use this pattern:

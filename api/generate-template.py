@@ -681,7 +681,22 @@ def format_ir_for_prompt(ir):
 			left_indent = block.get('leftIndentPt')
 			if left_indent and left_indent > 10:
 				formatting_hints.append(f"INDENT_LEFT_{int(left_indent)}pt")
-			
+
+			# Add paragraph border / shading hints extracted directly from OOXML
+			has_border = block.get('hasBorder')
+			border_color = block.get('borderColor')
+			shading_fill = block.get('shadingFill')
+			if has_border:
+				sides = set(has_border.keys())
+				if sides >= {'top', 'bottom', 'left', 'right'}:
+					bc = f"_COLOR_{border_color}" if border_color else ""
+					formatting_hints.append(f"PARA_BORDER_BOX{bc}")
+				else:
+					for s in sorted(sides):
+						formatting_hints.append(f"PARA_BORDER_{s.upper()}")
+			if shading_fill:
+				formatting_hints.append(f"PARA_SHADING_#{shading_fill}")
+
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
 			
@@ -888,6 +903,36 @@ def format_ir_for_prompt(ir):
 		text = re.sub(r'#([A-Z]\d{3}\w{0,3})#', hash_to_bracket, text)
 		return text
 	formatted = [normalize_vars(line) for line in formatted]
+
+	# Post-process step 0b: Insert BORDER_BOX_START / BORDER_BOX_END around consecutive
+	# paragraphs that all carry [FORMATTING: PARA_BORDER_BOX...].  This lets Claude know
+	# they belong inside a single bordered (and optionally shaded) wrapper element.
+	_BORDER_RE = re.compile(r'\[FORMATTING:[^\]]*PARA_BORDER_BOX([^\]]*)\]')
+	_SHADE_RE  = re.compile(r'PARA_SHADING_(#[0-9A-Fa-f]{6})')
+	_grouped: list[str] = []
+	_in_box = False
+	_box_attrs: str = ''
+	for _line in formatted:
+		_m = _BORDER_RE.search(_line)
+		if _m:
+			_attrs = _m.group(1)  # may contain _COLOR_XXXXXX
+			# Collect shading color if present
+			_sm = _SHADE_RE.search(_line)
+			_shade = _sm.group(1) if _sm else ''
+			_attr_str = (_attrs or '') + (_shade or '')
+			if not _in_box:
+				_in_box = True
+				_box_attrs = _attr_str
+				_grouped.append(f'[BORDER_BOX_START{_box_attrs}]')
+			_grouped.append(_line)
+		else:
+			if _in_box:
+				_in_box = False
+				_grouped.append('[BORDER_BOX_END]')
+			_grouped.append(_line)
+	if _in_box:
+		_grouped.append('[BORDER_BOX_END]')
+	formatted = _grouped
 
 	# Post-process step 1: Merge continuation lines
 	# Word sometimes splits a single sentence across multiple paragraphs (soft returns).
@@ -1639,6 +1684,20 @@ When the document has a thin horizontal line separating the mailing address from
 <div style="text-align: center">...
 ```
 Detection: If the IR contains `[FORMATTING: BORDER_BOTTOM]` on a paragraph between the mailing address and the document title/body, or a paragraph that is blank with only a bottom border → render as `<hr>`.
+
+**PARAGRAPH BORDER BOX — wrapping consecutive bordered/shaded paragraphs:**
+When the IR contains `[BORDER_BOX_START...]` and `[BORDER_BOX_END]` markers, ALL content between them must be wrapped in a single bordered table (the paragraphs share a paragraph-level border and/or fill extracted from the OOXML). Use this pattern:
+```html
+<table width="100%" style="border: 1px solid #000; border-collapse: collapse;"><tbody><tr>
+  <td style="padding: 8pt 10pt;">
+    [all paragraph content rendered normally inside here]
+  </td>
+</tr></tbody></table>
+```
+- If the marker contains a shading color (e.g. `[BORDER_BOX_START#E2EFDA]`), add `background-color: #E2EFDA` to the `<table>` style.
+- If a border color is specified (e.g. `_COLOR_FF0000`), use that color for the border instead of `#000`.
+- Render each paragraph inside the box as its own element (div, bullet sub-table, etc.) just as you would outside a box — the box is ONLY the outer wrapper.
+- Do NOT emit the `[BORDER_BOX_START]` / `[BORDER_BOX_END]` text in the output — they are IR markers only.
 
 **CENTERED TITLE BOX with {Compress()} for multi-line titles:**
 When a document has a large centered title in a bordered box where the title spans two lines (e.g. "Escrow Cancellation / Request"), use `{Compress()}` to split it across lines inside the box — do NOT use `font-weight: bold` unless the document explicitly shows bold:

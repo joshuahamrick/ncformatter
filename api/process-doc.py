@@ -821,6 +821,8 @@ class handler(BaseHTTPRequestHandler):
 			payload = {'success': True, 'fileName': file_name, 'ir': ir}
 
 			# Optional layout PDF (for browser screenshot / multimodal compare). Runs after PII gate.
+			pdf_bytes = None
+			pdf_err = None
 			if data.get('includeLayoutPdf') and try_convert_docx_to_pdf is not None:
 				pdf_bytes, pdf_err = try_convert_docx_to_pdf(file_bytes, file_name)
 			if pdf_bytes is not None:

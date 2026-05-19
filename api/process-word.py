@@ -280,6 +280,9 @@ def extract_paragraph_formatting(paragraph):
         'indentLeft': 0,
         'spaceBefore': 0,
         'spaceAfter': 0,
+        'hasBorder': None,    # dict of side→style when paragraph has pBdr
+        'borderColor': None,  # hex color string (no #) when non-black, else None
+        'shadingFill': None,  # hex color string (no #) when paragraph has a fill color
     }
     
     # Extract list/numbering info from XML
@@ -302,7 +305,30 @@ def extract_paragraph_formatting(paragraph):
                 para_data['indentLeft'] = int(left_val)
             except (ValueError, TypeError):
                 pass
-    
+
+        # Extract paragraph borders (pBdr) — indicates bordered/boxed paragraphs
+        pBdr = pPr.find(qn('w:pBdr'))
+        if pBdr is not None:
+            sides = {}
+            for side in ('top', 'bottom', 'left', 'right'):
+                el = pBdr.find(qn(f'w:{side}'))
+                if el is not None:
+                    val = el.get(qn('w:val'), 'none')
+                    if val and val != 'none':
+                        sides[side] = val
+                        color = el.get(qn('w:color'), 'auto')
+                        if color and color not in ('auto', '000000', 'Auto'):
+                            para_data['borderColor'] = color
+            if sides:
+                para_data['hasBorder'] = sides
+
+        # Extract paragraph shading / background fill
+        shd = pPr.find(qn('w:shd'))
+        if shd is not None:
+            fill = shd.get(qn('w:fill'), 'auto')
+            if fill and fill.upper() not in ('AUTO', 'FFFFFF', 'NONE', ''):
+                para_data['shadingFill'] = fill.upper()
+
     # Extract paragraph spacing
     pf = paragraph.paragraph_format
     if pf.space_before is not None:

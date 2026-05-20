@@ -790,10 +790,10 @@ def format_ir_for_prompt(ir):
 
 			def flush_bullets():
 				if bullet_rows:
-			trs = ''.join(
-					f'<tr><td width="3%" valign="top" style="text-align: center">&#8226;</td><td>{r}</td></tr>'
-					for r in bullet_rows
-				)
+					trs = ''.join(
+						f'<tr><td width="3%" valign="top" style="text-align: center">&#8226;</td><td>{r}</td></tr>'
+						for r in bullet_rows
+					)
 					inner_lines.append(
 						f'<div><table width="100%" style="border-collapse: collapse">'
 						f'<tbody>{trs}</tbody></table></div>'

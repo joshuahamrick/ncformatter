@@ -149,23 +149,30 @@
             <!-- ── Version Update Section (new) ── -->
             <div class="page-section" id="updateSection">
                 <div class="upd-upload-row">
-                    <!-- Zone 1: Current HTML Template -->
+                    <!-- Zone 1: Current HTML Template (paste area) -->
                     <div class="upd-zone-wrap">
                         <div class="upd-zone-label">
                             <span class="upd-zone-badge">1</span>
                             Current HTML Template
+                            <span class="upd-zone-label-hint">paste your HTML below</span>
                         </div>
-                        <div class="upd-drop-zone" id="updHtmlZone" role="button" tabindex="0" aria-label="Drop current HTML template here">
-                            <div class="upd-zone-icon" id="updHtmlIcon">
-                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <polyline points="16 18 22 12 16 6"/>
-                                    <polyline points="8 6 2 12 8 18"/>
-                                </svg>
+                        <div class="upd-paste-wrap">
+                            <textarea
+                                id="updHtmlPaste"
+                                class="upd-paste-area"
+                                placeholder="Paste the current HTML template here…"
+                                spellcheck="false"
+                                autocomplete="off"
+                            ></textarea>
+                            <div class="upd-paste-footer">
+                                <span class="upd-paste-char-count" id="updHtmlCharCount"></span>
+                                <button class="upd-paste-clear" id="updHtmlClear" style="display:none;" title="Clear">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                    Clear
+                                </button>
                             </div>
-                            <h4 id="updHtmlTitle">Drop current .html file here</h4>
-                            <p id="updHtmlSub">The existing on-file template</p>
-                            <button class="upd-browse-btn" id="updHtmlBrowseBtn">Browse Files</button>
-                            <input type="file" id="updHtmlFileInput" accept=".html,text/html" hidden>
                         </div>
                         <div class="upd-zone-status" id="updHtmlStatus"></div>
                     </div>

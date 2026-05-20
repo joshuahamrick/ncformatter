@@ -2156,6 +2156,102 @@ body {
     white-space: nowrap;
 }
 
+/* HTML paste area */
+.upd-zone-label-hint {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: #484f58;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 2px;
+}
+
+.upd-paste-wrap {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    background: #1a1f27;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.upd-paste-wrap:focus-within {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+}
+
+.upd-paste-wrap.has-content {
+    border-color: #238636;
+}
+
+.upd-paste-wrap.has-content:focus-within {
+    border-color: #2ea043;
+    box-shadow: 0 0 0 3px rgba(35, 134, 54, 0.12);
+}
+
+.upd-paste-area {
+    width: 100%;
+    min-height: 160px;
+    max-height: 260px;
+    padding: 12px 14px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #c9d1d9;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    resize: vertical;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+.upd-paste-area::placeholder {
+    color: #3d444d;
+    font-family: inherit;
+    font-style: italic;
+}
+
+.upd-paste-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-top: 1px solid #21262d;
+    background: rgba(0,0,0,0.15);
+}
+
+.upd-paste-char-count {
+    font-size: 0.72rem;
+    color: #484f58;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.upd-paste-char-count.has-content {
+    color: #2ea043;
+}
+
+.upd-paste-clear {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: #6e7681;
+    font-size: 0.72rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s ease, background 0.15s ease;
+    font-family: inherit;
+}
+
+.upd-paste-clear:hover {
+    color: #f85149;
+    background: rgba(248, 81, 73, 0.1);
+}
+
 /* Context notes */
 .upd-context-row {
     margin-bottom: 22px;

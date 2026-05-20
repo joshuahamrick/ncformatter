@@ -4041,13 +4041,11 @@ class UpdateManager {
 	}
 
 	_initElements() {
-		this.htmlZone       = document.getElementById('updHtmlZone');
-		this.htmlFileInput  = document.getElementById('updHtmlFileInput');
-		this.htmlBrowseBtn  = document.getElementById('updHtmlBrowseBtn');
+		this.htmlPaste      = document.getElementById('updHtmlPaste');
+		this.htmlCharCount  = document.getElementById('updHtmlCharCount');
+		this.htmlClear      = document.getElementById('updHtmlClear');
+		this.htmlPasteWrap  = this.htmlPaste ? this.htmlPaste.closest('.upd-paste-wrap') : null;
 		this.htmlStatus     = document.getElementById('updHtmlStatus');
-		this.htmlTitle      = document.getElementById('updHtmlTitle');
-		this.htmlSub        = document.getElementById('updHtmlSub');
-		this.htmlIcon       = document.getElementById('updHtmlIcon');
 
 		this.wordZone       = document.getElementById('updWordZone');
 		this.wordFileInput  = document.getElementById('updWordFileInput');
@@ -4087,10 +4085,18 @@ class UpdateManager {
 	}
 
 	_setupEvents() {
-		this._bindDropZone(
-			this.htmlZone, this.htmlFileInput, this.htmlBrowseBtn,
-			(content, filename) => this._setCurrentHtml(content, filename)
-		);
+		// HTML paste area
+		if (this.htmlPaste) {
+			this.htmlPaste.addEventListener('input', () => this._onHtmlPasteInput());
+			this.htmlPaste.addEventListener('paste', () => {
+				// Give the paste a tick to land, then process
+				setTimeout(() => this._onHtmlPasteInput(), 0);
+			});
+		}
+		if (this.htmlClear) {
+			this.htmlClear.addEventListener('click', () => this._clearHtmlPaste());
+		}
+
 		this._bindDropZone(
 			this.wordZone, this.wordFileInput, this.wordBrowseBtn,
 			(base64, filename) => this._setWordDoc(base64, filename)
@@ -4164,15 +4170,31 @@ class UpdateManager {
 		}
 	}
 
-	_setCurrentHtml(content, filename) {
-		this.currentHtml = content;
-		this.currentHtmlFilename = filename;
-		this.htmlZone.classList.add('loaded');
-		if (this.htmlTitle) this.htmlTitle.textContent = filename;
-		if (this.htmlSub)   this.htmlSub.textContent   = `${Math.round(content.length / 1024)} KB`;
-		if (this.htmlIcon)  this.htmlIcon.innerHTML = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>`;
-		if (this.htmlStatus) { this.htmlStatus.textContent = `✓ ${filename} loaded`; this.htmlStatus.className = 'upd-zone-status loaded'; }
+	_onHtmlPasteInput() {
+		const val = this.htmlPaste ? this.htmlPaste.value : '';
+		const trimmed = val.trim();
+		this.currentHtml = trimmed || null;
+		this.currentHtmlFilename = trimmed ? 'pasted-template.html' : null;
+
+		const len = trimmed.length;
+		const hasContent = len > 0;
+
+		if (this.htmlPasteWrap) this.htmlPasteWrap.classList.toggle('has-content', hasContent);
+		if (this.htmlCharCount) {
+			this.htmlCharCount.textContent = hasContent ? `${len.toLocaleString()} chars` : '';
+			this.htmlCharCount.className = 'upd-paste-char-count' + (hasContent ? ' has-content' : '');
+		}
+		if (this.htmlClear) this.htmlClear.style.display = hasContent ? '' : 'none';
+		if (this.htmlStatus) {
+			this.htmlStatus.textContent = hasContent ? `✓ ${Math.round(len / 1024)} KB of HTML ready` : '';
+			this.htmlStatus.className = 'upd-zone-status' + (hasContent ? ' loaded' : '');
+		}
 		this._checkReady();
+	}
+
+	_clearHtmlPaste() {
+		if (this.htmlPaste) this.htmlPaste.value = '';
+		this._onHtmlPasteInput();
 	}
 
 	_setWordDoc(base64, filename) {
@@ -4417,14 +4439,13 @@ class UpdateManager {
 		this.chatHistory         = [];
 		this.resultHtml          = null;
 
-		const htmlSvg = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
 		const wordSvg = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
 
-		if (this.htmlZone)   this.htmlZone.classList.remove('loaded');
-		if (this.htmlTitle)  this.htmlTitle.textContent = 'Drop current .html file here';
-		if (this.htmlSub)    this.htmlSub.textContent   = 'The existing on-file template';
-		if (this.htmlIcon)   this.htmlIcon.innerHTML    = htmlSvg;
-		if (this.htmlStatus) { this.htmlStatus.textContent = ''; this.htmlStatus.className = 'upd-zone-status'; }
+		if (this.htmlPaste)     this.htmlPaste.value = '';
+		if (this.htmlPasteWrap) this.htmlPasteWrap.classList.remove('has-content');
+		if (this.htmlCharCount) { this.htmlCharCount.textContent = ''; this.htmlCharCount.className = 'upd-paste-char-count'; }
+		if (this.htmlClear)     this.htmlClear.style.display = 'none';
+		if (this.htmlStatus)    { this.htmlStatus.textContent = ''; this.htmlStatus.className = 'upd-zone-status'; }
 
 		if (this.wordZone)   this.wordZone.classList.remove('loaded');
 		if (this.wordTitle)  this.wordTitle.textContent = 'Drop new .docx file here';

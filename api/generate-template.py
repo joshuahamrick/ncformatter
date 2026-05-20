@@ -780,45 +780,64 @@ def format_ir_for_prompt(ir):
 			# This avoids AI grouping errors with START/END markers.
 			fill  = block.get('fillColor') or ''
 			bclr  = block.get('borderColor') or '#000000'
-			bwid  = (block.get('borderWidth') or '1px').replace('pt', 'pt').strip()
-			bg_style = f'background-color: {fill}; ' if fill else ''
-			table_style = f'border: {bwid} solid {bclr}; border-collapse: collapse; {bg_style}'.strip().rstrip(';')
+			bwid  = (block.get('borderWidth') or '1pt').rstrip('px').rstrip('pt') + 'pt'
 
-			# Build inner HTML for the cell, merging consecutive list items into one <ul>
+			# Build inner HTML — list items → bullet <table>, others → <div>
 			inner_lines = []
-			list_items = []
+			bullet_rows = []
 
-			def flush_list():
-				if list_items:
-					inner_lines.append('<ul>' + ''.join(f'<li>{li}</li>' for li in list_items) + '</ul>')
-					list_items.clear()
+			def flush_bullets():
+				if bullet_rows:
+					trs = ''.join(
+						f'<tr><td width="3%" valign="top" style="text-align: center">\u2022</td><td>{r}</td></tr>'
+						for r in bullet_rows
+					)
+					inner_lines.append(
+						f'<div><table width="100%" style="border-collapse: collapse">'
+						f'<tbody>{trs}</tbody></table></div>'
+					)
+					bullet_rows.clear()
 
 			for row in block.get('rows', []):
-				row_text = ''.join(r.get('text', '') for r in row.get('runs', []))
-				if not row_text.strip():
+				runs = row.get('runs', [])
+				if not any(r.get('text', '').strip() for r in runs):
 					continue
 				align = row.get('align', 'left')
-				bold_all = all(r.get('bold') for r in row.get('runs', []) if r.get('text','').strip())
+				bold_all = all(r.get('bold') for r in runs if r.get('text','').strip())
 				is_list = row.get('isListItem') or row.get('listType') == 'bullet'
-				row_html = row_text.strip()
+
+				# Build cell HTML respecting per-run hyperlink underline
+				cell_parts = []
+				for r in runs:
+					rt = r.get('text', '')
+					if not rt:
+						continue
+					if r.get('isHyperlink') or r.get('underline'):
+						cell_parts.append(f'<u>{rt}</u>')
+					else:
+						cell_parts.append(rt)
+				row_html = ''.join(cell_parts).strip()
 				if bold_all:
 					row_html = f'<b>{row_html}</b>'
+
 				if is_list:
-					list_items.append(row_html)
+					bullet_rows.append(row_html)
 				else:
-					flush_list()
+					flush_bullets()
 					div_style = ' style="text-align: center"' if align in ('center', 'CENTER') else ''
 					inner_lines.append(f'<div{div_style}>{row_html}</div>')
-			flush_list()
+			flush_bullets()
 
-			cell_html = '\n    '.join(inner_lines)
-			tb_html = (
-				f'<table width="100%" style="{table_style};"><tbody><tr>\n'
-				f'  <td style="padding: 8pt 10pt;">\n'
-				f'    {cell_html}\n'
-				f'  </td>\n'
-				f'</tr></tbody></table>'
-			)
+			cell_html = '\n  '.join(inner_lines)
+			div_style_parts = [
+				'font-family: Times New Roman',
+				'font-size: 12pt',
+				f'border: {bwid} solid {bclr}',
+				f'background-color: {fill}' if fill else '',
+				'padding: 8pt 10pt',
+			]
+			div_style = '; '.join(p for p in div_style_parts if p)
+			tb_html = f'<div style="{div_style}">\n  {cell_html}\n</div>'
 			formatted.append(f'[VERBATIM_HTML: copy the following HTML exactly as-is to your output]\n{tb_html}\n[END_VERBATIM_HTML]')
 
 		elif block.get('type') == 'table':

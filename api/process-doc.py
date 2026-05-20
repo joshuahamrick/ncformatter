@@ -741,8 +741,12 @@ def _build_ir_document(doc):
 								font_sz = int(sz.get(qn('w:val'), '0')) / 2
 							except Exception:
 								pass
-					runs_out.append({'text': t_text, 'bold': is_bold, 'italic': False, 'underline': False, 'fontSizePt': font_sz, 'fontFamily': None, 'isHyperlink': False})
-				# Detect list items and append row for THIS paragraph
+					# Detect if run is inside a w:hyperlink (underline it)
+					is_hyperlink = False
+					r_parent = r_elem.getparent()
+					if r_parent is not None and r_parent is not p_elem and r_parent.tag == qn('w:hyperlink'):
+						is_hyperlink = True
+					runs_out.append({'text': t_text, 'bold': is_bold, 'italic': False, 'underline': is_hyperlink, 'fontSizePt': font_sz, 'fontFamily': None, 'isHyperlink': is_hyperlink})
 				if runs_out:
 					is_list = False
 					list_level = None

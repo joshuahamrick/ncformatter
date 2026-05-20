@@ -711,12 +711,12 @@ def format_ir_for_prompt(ir):
 			re_loan_match = re.match(r'^RE:\s*Loan Number:\s*(\{?\[.*?\]\}?)(.*)$', cleaned_text)
 			if re_loan_match:
 				loan_var = re_loan_match.group(1).strip()
-				cleaned_text = f"[RE_TABLE_ROW_1: RE: | Loan Number: | {loan_var}] — USE 3-COLUMN TABLE: <td width=\"3%\" valign=\"top\">RE:</td><td width=\"20%\" valign=\"top\">Loan Number:</td><td>{loan_var}</td>"
+				cleaned_text = f"Loan Number: {loan_var}"
 			# Transform "RE: {Compress(...)}" or "Property Address: ..." into 3-column second row
-			re_prop_match = re.match(r'^(?:RE:\s*)?(?:Property Address:\s*)?(\{Compress\([^)]+\)\})', cleaned_text)
+			re_prop_match = re.match(r'^(?:RE:\s*|Property Address:\s*)(\{Compress\(.*\)\}|\{?\[M\d+\]\}?)\s*$', cleaned_text)
 			if re_prop_match and not re_loan_match:
 				prop_var = re_prop_match.group(1).strip()
-				cleaned_text = f"[RE_TABLE_ROW_2: (empty) | Property Address: | {prop_var}] — 3-COLUMN TABLE second row: <td width=\"3%\" valign=\"top\"></td><td width=\"20%\" valign=\"top\">Property Address:</td><td>{prop_var}</td>"
+				cleaned_text = f"RE: {prop_var}"
 			
 			# Detect indented non-list paragraphs that follow a list item
 			# (e.g., "*This ONLY applies..." or a URL continuation after a bullet)
@@ -1057,7 +1057,8 @@ def format_ir_for_prompt(ir):
 	mailing_addr_indices = set()
 	for i, line in enumerate(formatted):
 		# Detect mailing address M-code lines (M558–M566 are borrower mailing address fields)
-		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line):
+		# Exclude signature lines that reuse M558/M559 with Dated:/underscores context
+		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line) and not re.search(r'_{4,}|Dated:', line):
 			mailing_addr_indices.add(i)
 
 	# Detect which address variables exist in the RAW IR blocks (not the filtered list,

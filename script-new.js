@@ -1096,7 +1096,22 @@ document.addEventListener('DOMContentLoaded', () => {
 		} catch (e) {
 			console.debug('[health] API: Unavailable');
 		}
-    new WordFormatter();
+		new WordFormatter();
+		new UpdateManager();
+
+		// Page-level navigation
+		const pageNavBtns = document.querySelectorAll('.page-nav-btn');
+		const pageSections = document.querySelectorAll('.page-section');
+		pageNavBtns.forEach(btn => {
+			btn.addEventListener('click', () => {
+				const target = btn.dataset.page;
+				pageNavBtns.forEach(b => b.classList.remove('active'));
+				pageSections.forEach(s => s.classList.remove('active'));
+				btn.classList.add('active');
+				const section = document.getElementById(target === 'formatter' ? 'formatterSection' : 'updateSection');
+				if (section) section.classList.add('active');
+			});
+		});
 	})();
 });
 
@@ -4001,5 +4016,485 @@ function trimParagraphTrailingWhitespace(para) {
 		}
 		run.text = trimmed;
 		break;
+	}
+}
+
+// ============================================================
+// UpdateManager — Version Update Tab
+// ============================================================
+
+class UpdateManager {
+	constructor() {
+		this.currentHtml = null;
+		this.currentHtmlFilename = null;
+		this.wordDocBase64 = null;
+		this.wordDocFilename = null;
+		this.wordDocIR = null;
+		this.proposedChanges = [];
+		this.changesSummary = '';
+		this.chatHistory = [];
+		this.isBusy = false;
+		this.resultHtml = null;
+
+		this._initElements();
+		this._setupEvents();
+	}
+
+	_initElements() {
+		this.htmlZone       = document.getElementById('updHtmlZone');
+		this.htmlFileInput  = document.getElementById('updHtmlFileInput');
+		this.htmlBrowseBtn  = document.getElementById('updHtmlBrowseBtn');
+		this.htmlStatus     = document.getElementById('updHtmlStatus');
+		this.htmlTitle      = document.getElementById('updHtmlTitle');
+		this.htmlSub        = document.getElementById('updHtmlSub');
+		this.htmlIcon       = document.getElementById('updHtmlIcon');
+
+		this.wordZone       = document.getElementById('updWordZone');
+		this.wordFileInput  = document.getElementById('updWordFileInput');
+		this.wordBrowseBtn  = document.getElementById('updWordBrowseBtn');
+		this.wordStatus     = document.getElementById('updWordStatus');
+		this.wordTitle      = document.getElementById('updWordTitle');
+		this.wordSub        = document.getElementById('updWordSub');
+		this.wordIcon       = document.getElementById('updWordIcon');
+
+		this.contextInput     = document.getElementById('updContextNotes');
+		this.analyzeBtn       = document.getElementById('updAnalyzeBtn');
+		this.processingDiv    = document.getElementById('updProcessing');
+		this.processingMsg    = document.getElementById('updProcessingMsg');
+
+		this.errorDiv         = document.getElementById('updError');
+		this.errorText        = document.getElementById('updErrorText');
+
+		this.changesSection   = document.getElementById('updChangesSection');
+		this.changesCount     = document.getElementById('updChangesCount');
+		this.changesSummaryEl = document.getElementById('updChangesSummary');
+		this.changesList      = document.getElementById('updChangesList');
+
+		this.approveBtn       = document.getElementById('updApproveBtn');
+		this.resetBtn         = document.getElementById('updResetBtn');
+
+		this.chatMessages     = document.getElementById('updChatMessages');
+		this.chatInput        = document.getElementById('updChatInput');
+		this.chatSend         = document.getElementById('updChatSend');
+
+		this.resultSection    = document.getElementById('updResultSection');
+		this.resultPreview    = document.getElementById('updFormattedPreview');
+		this.resultHtmlCode   = document.getElementById('updHtmlCode');
+		this.resultCopyBtn    = document.getElementById('updCopyBtn');
+		this.startOverBtn     = document.getElementById('updStartOverBtn');
+
+		this.resultTabBtns    = document.querySelectorAll('#updResultSection .upd-tab-btn');
+	}
+
+	_setupEvents() {
+		this._bindDropZone(
+			this.htmlZone, this.htmlFileInput, this.htmlBrowseBtn,
+			(content, filename) => this._setCurrentHtml(content, filename)
+		);
+		this._bindDropZone(
+			this.wordZone, this.wordFileInput, this.wordBrowseBtn,
+			(base64, filename) => this._setWordDoc(base64, filename)
+		);
+
+		if (this.analyzeBtn)  this.analyzeBtn.addEventListener('click',  () => this._analyze());
+		if (this.approveBtn)  this.approveBtn.addEventListener('click',  () => this._approve());
+		if (this.resetBtn)    this.resetBtn.addEventListener('click',    () => this._resetToUpload());
+		if (this.startOverBtn) this.startOverBtn.addEventListener('click', () => this._fullReset());
+		if (this.chatSend)    this.chatSend.addEventListener('click',    () => this._sendChat());
+
+		if (this.chatInput) {
+			this.chatInput.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._sendChat(); }
+			});
+			this.chatInput.addEventListener('input', () => {
+				this.chatInput.style.height = 'auto';
+				this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
+			});
+		}
+
+		if (this.resultTabBtns && this.resultTabBtns.length) {
+			this.resultTabBtns.forEach(btn => {
+				btn.addEventListener('click', () => this._switchResultTab(btn.dataset.tab));
+			});
+		}
+		if (this.resultCopyBtn) {
+			this.resultCopyBtn.addEventListener('click', () => this._copyResult());
+		}
+	}
+
+	_bindDropZone(zone, fileInput, browseBtn, onFile) {
+		if (!zone) return;
+		zone.addEventListener('dragover',  (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+		zone.addEventListener('dragleave', ()  => zone.classList.remove('dragover'));
+		zone.addEventListener('drop', (e) => {
+			e.preventDefault();
+			zone.classList.remove('dragover');
+			const file = e.dataTransfer.files[0];
+			if (file) this._readFile(file, onFile);
+		});
+		zone.addEventListener('click', (e) => {
+			if (browseBtn && (e.target === browseBtn || browseBtn.contains(e.target))) return;
+			fileInput.click();
+		});
+		if (browseBtn) {
+			browseBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+		}
+		zone.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+		});
+		fileInput.addEventListener('change', (e) => {
+			const file = e.target.files[0];
+			if (file) this._readFile(file, onFile);
+			fileInput.value = '';
+		});
+	}
+
+	_readFile(file, callback) {
+		const isHtml = file.name.toLowerCase().endsWith('.html') || file.type === 'text/html';
+		if (isHtml) {
+			const reader = new FileReader();
+			reader.onload  = (e) => callback(e.target.result, file.name);
+			reader.onerror = ()  => this._showError('Failed to read the file.');
+			reader.readAsText(file);
+		} else {
+			const reader = new FileReader();
+			reader.onload  = (e) => callback(e.target.result.split(',')[1], file.name);
+			reader.onerror = ()  => this._showError('Failed to read the file.');
+			reader.readAsDataURL(file);
+		}
+	}
+
+	_setCurrentHtml(content, filename) {
+		this.currentHtml = content;
+		this.currentHtmlFilename = filename;
+		this.htmlZone.classList.add('loaded');
+		if (this.htmlTitle) this.htmlTitle.textContent = filename;
+		if (this.htmlSub)   this.htmlSub.textContent   = `${Math.round(content.length / 1024)} KB`;
+		if (this.htmlIcon)  this.htmlIcon.innerHTML = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+		if (this.htmlStatus) { this.htmlStatus.textContent = `✓ ${filename} loaded`; this.htmlStatus.className = 'upd-zone-status loaded'; }
+		this._checkReady();
+	}
+
+	_setWordDoc(base64, filename) {
+		this.wordDocBase64 = base64;
+		this.wordDocFilename = filename;
+		this.wordDocIR = null;
+		this.wordZone.classList.add('loaded');
+		if (this.wordTitle) this.wordTitle.textContent = filename;
+		if (this.wordSub)   this.wordSub.textContent   = 'Ready to process';
+		if (this.wordIcon)  this.wordIcon.innerHTML = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+		if (this.wordStatus) { this.wordStatus.textContent = `✓ ${filename} ready`; this.wordStatus.className = 'upd-zone-status loaded'; }
+		this._checkReady();
+	}
+
+	_checkReady() {
+		if (this.analyzeBtn) this.analyzeBtn.disabled = !(this.currentHtml && this.wordDocBase64);
+	}
+
+	async _analyze() {
+		if (this.isBusy) return;
+		this.isBusy = true;
+		this._showProcessing('Processing document…');
+		this._hideChanges();
+		this._hideResult();
+		this._hideError();
+		this.chatHistory = [];
+
+		try {
+			if (!this.wordDocIR) {
+				this._setProcessingMsg('Extracting document content…');
+				const procRes = await fetch('/api/process-doc', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						file: this.wordDocBase64,
+						filename: this.wordDocFilename,
+						includeLayoutPdf: false
+					})
+				});
+				const procData = await procRes.json();
+				if (!procRes.ok || !procData.ir) throw new Error(procData.error || 'Failed to process the Word document.');
+				this.wordDocIR = procData.ir;
+			}
+
+			this._setProcessingMsg('Analyzing differences…');
+			const anaRes = await fetch('/api/analyze-update', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					currentHtml:  this.currentHtml,
+					wordDocIR:    this.wordDocIR,
+					contextNotes: this.contextInput ? this.contextInput.value.trim() : '',
+					messages:     []
+				})
+			});
+			const anaData = await anaRes.json();
+			if (!anaRes.ok) throw new Error(anaData.error || 'Analysis failed.');
+
+			this.proposedChanges = anaData.changes || [];
+			this.changesSummary  = anaData.summary || '';
+			this._hideProcessing();
+			this._renderChanges();
+		} catch (err) {
+			this._hideProcessing();
+			this._showError(err.message);
+		} finally {
+			this.isBusy = false;
+		}
+	}
+
+	async _sendChat() {
+		const text = this.chatInput ? this.chatInput.value.trim() : '';
+		if (!text || this.isBusy) return;
+		this.isBusy = true;
+
+		this._appendChatMsg('user', text);
+		this.chatHistory.push({ role: 'user', content: text });
+		if (this.chatInput) { this.chatInput.value = ''; this.chatInput.style.height = 'auto'; }
+		if (this.chatSend)  this.chatSend.disabled = true;
+
+		const typingEl = this._appendChatTyping();
+
+		try {
+			const res = await fetch('/api/analyze-update', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					currentHtml:    this.currentHtml,
+					wordDocIR:      this.wordDocIR,
+					contextNotes:   this.contextInput ? this.contextInput.value.trim() : '',
+					messages:       this.chatHistory,
+					currentChanges: this.proposedChanges,
+					currentSummary: this.changesSummary
+				})
+			});
+			const data = await res.json();
+			if (typingEl) typingEl.remove();
+			if (!res.ok) throw new Error(data.error || 'Request failed.');
+
+			this.proposedChanges = data.changes || [];
+			this.changesSummary  = data.summary || '';
+			const reply = data.reply || 'I\'ve updated the proposed changes based on your feedback.';
+			this._appendChatMsg('assistant', reply);
+			this.chatHistory.push({ role: 'assistant', content: reply });
+			this._updateChangesList();
+		} catch (err) {
+			if (typingEl) typingEl.remove();
+			this._appendChatMsg('assistant', `⚠️ ${err.message}`);
+		} finally {
+			this.isBusy = false;
+			if (this.chatSend) this.chatSend.disabled = false;
+			if (this.chatInput) this.chatInput.focus();
+		}
+	}
+
+	async _approve() {
+		if (this.isBusy) return;
+		this.isBusy = true;
+		if (this.approveBtn) this.approveBtn.disabled = true;
+		const origHTML = this.approveBtn ? this.approveBtn.innerHTML : '';
+		if (this.approveBtn) this.approveBtn.textContent = 'Applying…';
+
+		try {
+			const res = await fetch('/api/apply-update', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					currentHtml:  this.currentHtml,
+					changes:      this.proposedChanges,
+					contextNotes: this.contextInput ? this.contextInput.value.trim() : ''
+				})
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || 'Apply failed.');
+
+			this.resultHtml = data.html;
+			this._hideChanges();
+			this._showResult(data.html);
+		} catch (err) {
+			this._showError(err.message);
+			if (this.approveBtn) { this.approveBtn.disabled = false; this.approveBtn.innerHTML = origHTML; }
+		} finally {
+			this.isBusy = false;
+		}
+	}
+
+	_renderChanges() {
+		if (this.changesSection) this.changesSection.style.display = '';
+		this._updateChangesList();
+	}
+
+	_updateChangesList() {
+		if (this.changesSummaryEl) this.changesSummaryEl.textContent = this.changesSummary;
+		if (this.changesCount) {
+			const n = this.proposedChanges.length;
+			this.changesCount.textContent = `${n} change${n !== 1 ? 's' : ''}`;
+		}
+		if (!this.changesList) return;
+		this.changesList.innerHTML = '';
+
+		if (this.proposedChanges.length === 0) {
+			this.changesList.innerHTML = '<p class="upd-no-changes">No changes detected — the documents appear identical.</p>';
+			return;
+		}
+
+		this.proposedChanges.forEach((change, i) => {
+			const card = document.createElement('div');
+			const typeSlug = (change.type || 'change').toLowerCase().replace(/\s+/g, '-');
+			card.className = `upd-change-card upd-change-${typeSlug}`;
+
+			let diffHtml = '';
+			const before = this._esc(change.currentValue || '');
+			const after  = this._esc(change.newValue || '');
+			if (before || after) {
+				diffHtml = `<div class="upd-change-diff">
+					${before ? `<div class="upd-diff-row upd-diff-old"><span class="upd-diff-label">Before</span><span class="upd-diff-val">${before}</span></div>` : ''}
+					${after  ? `<div class="upd-diff-row upd-diff-new"><span class="upd-diff-label">After</span><span class="upd-diff-val">${after}</span></div>` : ''}
+				</div>`;
+			}
+			const locHtml = change.location
+				? `<div class="upd-change-location">📍 ${this._esc(change.location)}</div>` : '';
+
+			card.innerHTML = `
+				<div class="upd-change-num">${i + 1}</div>
+				<div class="upd-change-body">
+					<div class="upd-change-type">${this._esc(change.type || 'change')}</div>
+					<div class="upd-change-desc">${this._esc(change.description || '')}</div>
+					${locHtml}
+					${diffHtml}
+				</div>`;
+			this.changesList.appendChild(card);
+		});
+	}
+
+	_showResult(html) {
+		if (!this.resultSection) return;
+		this.resultSection.style.display = '';
+		if (this.resultHtmlCode) this.resultHtmlCode.textContent = html;
+		if (this.resultPreview)  this.resultPreview.innerHTML  = html;
+		this._switchResultTab('updHtml');
+	}
+
+	_switchResultTab(tabName) {
+		if (this.resultTabBtns) {
+			this.resultTabBtns.forEach(btn => btn.classList.remove('active'));
+			const activeBtn = document.querySelector(`#updResultSection .upd-tab-btn[data-tab="${tabName}"]`);
+			if (activeBtn) activeBtn.classList.add('active');
+		}
+		document.querySelectorAll('#updResultSection .tab-content').forEach(c => c.classList.remove('active'));
+		const activeContent = document.getElementById(`${tabName}Tab`);
+		if (activeContent) activeContent.classList.add('active');
+	}
+
+	_copyResult() {
+		if (!this.resultHtml) return;
+		navigator.clipboard.writeText(this.resultHtml).then(() => {
+			if (!this.resultCopyBtn) return;
+			const orig = this.resultCopyBtn.innerHTML;
+			this.resultCopyBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+			setTimeout(() => { this.resultCopyBtn.innerHTML = orig; }, 1800);
+		});
+	}
+
+	_resetToUpload() {
+		this.proposedChanges = [];
+		this.changesSummary  = '';
+		this.chatHistory     = [];
+		if (this.chatMessages) this.chatMessages.innerHTML = '';
+		this._hideChanges();
+		this._hideResult();
+		this._hideError();
+	}
+
+	_fullReset() {
+		this.currentHtml         = null;
+		this.currentHtmlFilename = null;
+		this.wordDocBase64       = null;
+		this.wordDocFilename     = null;
+		this.wordDocIR           = null;
+		this.proposedChanges     = [];
+		this.changesSummary      = '';
+		this.chatHistory         = [];
+		this.resultHtml          = null;
+
+		const htmlSvg = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
+		const wordSvg = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
+
+		if (this.htmlZone)   this.htmlZone.classList.remove('loaded');
+		if (this.htmlTitle)  this.htmlTitle.textContent = 'Drop current .html file here';
+		if (this.htmlSub)    this.htmlSub.textContent   = 'The existing on-file template';
+		if (this.htmlIcon)   this.htmlIcon.innerHTML    = htmlSvg;
+		if (this.htmlStatus) { this.htmlStatus.textContent = ''; this.htmlStatus.className = 'upd-zone-status'; }
+
+		if (this.wordZone)   this.wordZone.classList.remove('loaded');
+		if (this.wordTitle)  this.wordTitle.textContent = 'Drop new .docx file here';
+		if (this.wordSub)    this.wordSub.textContent   = 'The updated version from the client';
+		if (this.wordIcon)   this.wordIcon.innerHTML    = wordSvg;
+		if (this.wordStatus) { this.wordStatus.textContent = ''; this.wordStatus.className = 'upd-zone-status'; }
+
+		if (this.contextInput)  this.contextInput.value  = '';
+		if (this.chatMessages)  this.chatMessages.innerHTML = '';
+		this._checkReady();
+		this._hideChanges();
+		this._hideResult();
+		this._hideError();
+		this._hideProcessing();
+	}
+
+	_showProcessing(msg) {
+		if (this.processingDiv) this.processingDiv.style.display = '';
+		this._setProcessingMsg(msg);
+		if (this.analyzeBtn) this.analyzeBtn.disabled = true;
+	}
+
+	_setProcessingMsg(msg) {
+		if (this.processingMsg) this.processingMsg.textContent = msg;
+	}
+
+	_hideProcessing() {
+		if (this.processingDiv) this.processingDiv.style.display = 'none';
+		this._checkReady();
+	}
+
+	_hideChanges() { if (this.changesSection) this.changesSection.style.display = 'none'; }
+	_hideResult()  { if (this.resultSection)  this.resultSection.style.display  = 'none'; }
+
+	_showError(msg) {
+		if (!this.errorDiv) return;
+		this.errorDiv.style.display = '';
+		if (this.errorText) this.errorText.textContent = msg;
+	}
+
+	_hideError() { if (this.errorDiv) this.errorDiv.style.display = 'none'; }
+
+	_appendChatMsg(role, text) {
+		if (!this.chatMessages) return null;
+		const wrap   = document.createElement('div');
+		wrap.className = `upd-msg upd-msg-${role}`;
+		const bubble = document.createElement('div');
+		bubble.className = 'upd-msg-bubble';
+		bubble.textContent = text;
+		wrap.appendChild(bubble);
+		this.chatMessages.appendChild(wrap);
+		this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+		return wrap;
+	}
+
+	_appendChatTyping() {
+		if (!this.chatMessages) return null;
+		const wrap = document.createElement('div');
+		wrap.className = 'upd-msg upd-msg-assistant upd-msg-typing';
+		wrap.innerHTML = '<div class="upd-msg-bubble"><span></span><span></span><span></span></div>';
+		this.chatMessages.appendChild(wrap);
+		this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+		return wrap;
+	}
+
+	_esc(str) {
+		return String(str)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;');
 	}
 }

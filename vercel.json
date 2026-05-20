@@ -5,6 +5,8 @@
     "api/process-pdf.py": { "maxDuration": 60 },
     "api/generate-template.py": { "maxDuration": 120 },
     "api/patch-template.py": { "maxDuration": 90 },
+    "api/analyze-update.py": { "maxDuration": 90 },
+    "api/apply-update.py": { "maxDuration": 120 },
     "api/assistant.py": { "maxDuration": 60 },
     "api/*.py": { "maxDuration": 60 }
   },

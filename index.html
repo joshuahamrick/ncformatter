@@ -21,6 +21,14 @@
         </header>
 
         <main class="main-content">
+            <!-- Page-level navigation -->
+            <nav class="page-nav" aria-label="Main navigation">
+                <button class="page-nav-btn active" data-page="formatter">Template Formatter</button>
+                <button class="page-nav-btn" data-page="update">Version Update</button>
+            </nav>
+
+            <!-- ── Formatter Section (existing) ── -->
+            <div class="page-section active" id="formatterSection">
             <div class="main-panel">
                 <!-- Advanced option above drop zone -->
                 <div class="advanced-option-row">
@@ -136,6 +144,180 @@
                     </div>
                 </div>
             </div>
+            </div><!-- /formatterSection -->
+
+            <!-- ── Version Update Section (new) ── -->
+            <div class="page-section" id="updateSection">
+                <div class="upd-upload-row">
+                    <!-- Zone 1: Current HTML Template -->
+                    <div class="upd-zone-wrap">
+                        <div class="upd-zone-label">
+                            <span class="upd-zone-badge">1</span>
+                            Current HTML Template
+                        </div>
+                        <div class="upd-drop-zone" id="updHtmlZone" role="button" tabindex="0" aria-label="Drop current HTML template here">
+                            <div class="upd-zone-icon" id="updHtmlIcon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <polyline points="16 18 22 12 16 6"/>
+                                    <polyline points="8 6 2 12 8 18"/>
+                                </svg>
+                            </div>
+                            <h4 id="updHtmlTitle">Drop current .html file here</h4>
+                            <p id="updHtmlSub">The existing on-file template</p>
+                            <button class="upd-browse-btn" id="updHtmlBrowseBtn">Browse Files</button>
+                            <input type="file" id="updHtmlFileInput" accept=".html,text/html" hidden>
+                        </div>
+                        <div class="upd-zone-status" id="updHtmlStatus"></div>
+                    </div>
+
+                    <!-- Zone 2: New Word Document -->
+                    <div class="upd-zone-wrap">
+                        <div class="upd-zone-label">
+                            <span class="upd-zone-badge">2</span>
+                            Updated Word Document
+                        </div>
+                        <div class="upd-drop-zone" id="updWordZone" role="button" tabindex="0" aria-label="Drop new Word document here">
+                            <div class="upd-zone-icon" id="updWordIcon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                            </div>
+                            <h4 id="updWordTitle">Drop new .docx file here</h4>
+                            <p id="updWordSub">The updated version from the client</p>
+                            <button class="upd-browse-btn" id="updWordBrowseBtn">Browse Files</button>
+                            <input type="file" id="updWordFileInput" accept=".doc,.docx,.pdf" hidden>
+                        </div>
+                        <div class="upd-zone-status" id="updWordStatus"></div>
+                    </div>
+                </div>
+
+                <!-- Context notes -->
+                <div class="upd-context-row">
+                    <label class="upd-context-label" for="updContextNotes">Context &amp; Notes</label>
+                    <textarea id="updContextNotes" class="upd-context-input" rows="3"
+                        placeholder="Add context about this update — what changed, client info, or any specific instructions for the AI…"></textarea>
+                </div>
+
+                <!-- Analyze button -->
+                <div class="upd-analyze-row">
+                    <button id="updAnalyzeBtn" class="upd-analyze-btn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        Analyze Changes
+                    </button>
+                </div>
+
+                <!-- Processing -->
+                <div id="updProcessing" class="upd-processing" style="display:none;">
+                    <div class="spinner"></div>
+                    <p id="updProcessingMsg">Analyzing differences…</p>
+                </div>
+
+                <!-- Error -->
+                <div id="updError" class="upd-error" style="display:none;">
+                    <div class="upd-error-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <span class="upd-error-text" id="updErrorText"></span>
+                </div>
+
+                <!-- Changes section (shown after analysis) -->
+                <div id="updChangesSection" class="upd-changes-section" style="display:none;">
+                    <div class="upd-changes-header">
+                        <h3 class="upd-changes-title">Proposed Changes</h3>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <span class="upd-changes-count" id="updChangesCount"></span>
+                            <button class="upd-reset-btn" id="updResetBtn" title="Start over">Reset</button>
+                        </div>
+                    </div>
+                    <p class="upd-changes-summary" id="updChangesSummary"></p>
+                    <div class="upd-changes-list" id="updChangesList"></div>
+
+                    <!-- Action row -->
+                    <div class="upd-action-row">
+                        <button id="updApproveBtn" class="upd-approve-btn">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Approve &amp; Apply Changes
+                        </button>
+                        <span class="upd-action-divider">or</span>
+                        <span class="upd-action-hint">reply below to adjust the plan</span>
+                    </div>
+
+                    <!-- Chat refinement -->
+                    <div class="upd-chat" id="updChat">
+                        <div class="upd-chat-messages" id="updChatMessages"></div>
+                        <div class="upd-chat-input-row">
+                            <textarea id="updChatInput" class="upd-chat-input" rows="2"
+                                placeholder="What would you like to change about this plan?…"></textarea>
+                            <button id="updChatSend" class="upd-chat-send" title="Send">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result section (after apply) -->
+                <div id="updResultSection" class="upd-result-section" style="display:none;">
+                    <div class="output-container">
+                        <div class="upd-result-success-badge" style="margin-bottom:16px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Changes applied successfully
+                        </div>
+                        <div class="tabs">
+                            <button class="upd-tab-btn" data-tab="updPreview">Preview</button>
+                            <button class="upd-tab-btn active" data-tab="updHtml">HTML Code</button>
+                        </div>
+                        <div id="updPreviewTab" class="tab-content">
+                            <div class="preview-header">
+                                <div class="preview-header-left">
+                                    <span class="html-code-filename">updated letter preview</span>
+                                </div>
+                            </div>
+                            <div class="preview-page-wrapper">
+                                <div id="updFormattedPreview" class="formatted-preview"></div>
+                            </div>
+                        </div>
+                        <div id="updHtmlTab" class="tab-content active">
+                            <div class="html-header">
+                                <div class="html-header-left">
+                                    <span class="html-code-filename">updated-template.html</span>
+                                </div>
+                                <div class="html-header-actions">
+                                    <button id="updCopyBtn" class="copy-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                        </svg>
+                                        Copy HTML
+                                    </button>
+                                </div>
+                            </div>
+                            <pre id="updHtmlCode" class="html-code"></pre>
+                        </div>
+                    </div>
+                    <div style="text-align:center;margin-top:20px;">
+                        <button class="upd-reset-btn" id="updStartOverBtn">← Start a New Update</button>
+                    </div>
+                </div>
+            </div><!-- /updateSection -->
+
         </main>
         <footer class="page-footer">
             <button id="infoModalBtn" class="footer-info-link">Info &amp; Resources</button>

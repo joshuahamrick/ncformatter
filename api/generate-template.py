@@ -671,13 +671,13 @@ def format_ir_for_prompt(ir):
 			if block.get('isListItem'):
 				list_level = block.get('listLevel', 0)
 				list_type = block.get('listType', 'bullet')
-			bullet_char = block.get('listBulletChar', '')
-			# Always use literal • for bullet points regardless of what symbol the doc uses
-			# (e.g. Symbol-font middle dot · is visually a bullet → output • directly)
-			if bullet_char and bullet_char not in ('•', '\u2022', '·', '\u00b7'):
-				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char}, MARGIN_LEFT_30PX)")
-			else:
-				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, USE_BULLET=•, MARGIN_LEFT_30PX)")
+				bullet_char = block.get('listBulletChar', '')
+				# Always use literal • for bullet points regardless of what symbol the doc uses
+				# (e.g. Symbol-font middle dot · is visually a bullet → output • directly)
+				if bullet_char and bullet_char not in ('•', '\u2022', '·', '\u00b7'):
+					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char}, MARGIN_LEFT_30PX)")
+				else:
+					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, USE_BULLET=\u2022, MARGIN_LEFT_30PX)")
 			
 			# Add left indent if significant (helps with margin-left decisions)
 			left_indent = block.get('leftIndentPt')

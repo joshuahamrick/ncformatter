@@ -1094,14 +1094,14 @@ def format_ir_for_prompt(ir):
 			ln_var_match = re.search(r'(\{?\[?M594\]?\}?)', line)
 			ln_var = ln_var_match.group(1) if ln_var_match else '{[M594]}'
 			line += (
-				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row 2-column table: '
-				f'<table width="100%"><tbody><tr>'
+				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row 2-column table with NO border: '
+				f'<table width="100%" style="border-collapse: collapse"><tbody><tr>'
 				f'<td width="20%" valign="top">Loan Number:</td>'
 				f'<td>{ln_var}</td>'
 				f'</tr><tr>'
 				f'<td width="20%" valign="top">RE:</td>'
 				f'<td>{{Compress(...)}}</td>'
-				f'</tr></tbody></table> — keep exactly 2 columns per row, the RE: row uses Compress() from the next paragraph]'
+				f'</tr></tbody></table> — NO border on this table; keep exactly 2 columns per row; the RE: row uses Compress() from the next paragraph]'
 			)
 		# Paragraph immediately before first mortgagee clause: suppress trailing <br>
 		if i == pre_mortgagee_idx:

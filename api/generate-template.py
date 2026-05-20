@@ -671,11 +671,11 @@ def format_ir_for_prompt(ir):
 			if block.get('isListItem'):
 				list_level = block.get('listLevel', 0)
 				list_type = block.get('listType', 'bullet')
-				bullet_char = block.get('listBulletChar', '')
-				if bullet_char and bullet_char not in ('•', '\u2022'):
-					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char})")
-				else:
-					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level})")
+			bullet_char = block.get('listBulletChar', '')
+			if bullet_char and bullet_char not in ('•', '\u2022'):
+				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char}, MARGIN_LEFT_30PX)")
+			else:
+				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, MARGIN_LEFT_30PX)")
 			
 			# Add left indent if significant (helps with margin-left decisions)
 			left_indent = block.get('leftIndentPt')
@@ -789,7 +789,7 @@ def format_ir_for_prompt(ir):
 			def flush_bullets():
 				if bullet_rows:
 			trs = ''.join(
-					f'<tr><td width="3%" valign="top" style="text-align: center">&bull;</td><td>{r}</td></tr>'
+					f'<tr><td width="3%" valign="top" style="text-align: center">&#8226;</td><td>{r}</td></tr>'
 					for r in bullet_rows
 				)
 					inner_lines.append(

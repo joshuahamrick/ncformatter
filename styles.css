@@ -84,7 +84,7 @@ body {
     background: #161b22;
     border: 1px solid #30363d;
     border-radius: 8px;
-    padding: 40px;
+    padding: 18px 40px 40px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     flex-shrink: 0;
 }
@@ -1955,7 +1955,7 @@ body {
 .page-nav {
     display: flex;
     border-bottom: 2px solid #30363d;
-    margin-bottom: 32px;
+    margin-bottom: 44px;
     gap: 0;
 }
 

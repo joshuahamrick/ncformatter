@@ -788,10 +788,10 @@ def format_ir_for_prompt(ir):
 
 			def flush_bullets():
 				if bullet_rows:
-					trs = ''.join(
-						f'<tr><td width="3%" valign="top" style="text-align: center">\u2022</td><td>{r}</td></tr>'
-						for r in bullet_rows
-					)
+			trs = ''.join(
+					f'<tr><td width="3%" valign="top" style="text-align: center">&bull;</td><td>{r}</td></tr>'
+					for r in bullet_rows
+				)
 					inner_lines.append(
 						f'<div><table width="100%" style="border-collapse: collapse">'
 						f'<tbody>{trs}</tbody></table></div>'
@@ -1493,10 +1493,10 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    
    **BULLET LIST FORMAT (width="3%", border-collapse, margin-left) - when using TABLE:**
    <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
-     <td width="3%" valign="top">•</td>
+     <td width="3%" valign="top" style="text-align: center">{Symbol(·)}</td>
      <td>First item text</td>
    </tr></tbody></table></div>
-   CRITICAL: The margin-left and <div> wrapper are MANDATORY for all bullet/numbered list tables.
+   CRITICAL: The margin-left: 30px and <div> wrapper are MANDATORY for ALL bullet list tables — this applies whether the bullet is {Symbol(·)}, •, or any other bullet character. NO EXCEPTIONS.
    
    **CRITICAL**: NEVER change numbered lists (1., 2.) to bullets (•) or vice versa!
    **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%" when using TABLE format!

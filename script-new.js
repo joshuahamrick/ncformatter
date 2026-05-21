@@ -4102,6 +4102,14 @@ class UpdateManager {
 			(base64, filename) => this._setWordDoc(base64, filename)
 		);
 
+		if (this.contextInput) {
+			this.contextInput.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' && !e.shiftKey) {
+					e.preventDefault();
+					this._analyze();
+				}
+			});
+		}
 		if (this.analyzeBtn)  this.analyzeBtn.addEventListener('click',  () => this._analyze());
 		if (this.approveBtn)  this.approveBtn.addEventListener('click',  () => this._approve());
 		if (this.resetBtn)    this.resetBtn.addEventListener('click',    () => this._resetToUpload());
@@ -4229,8 +4237,8 @@ class UpdateManager {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
-						file: this.wordDocBase64,
-						filename: this.wordDocFilename,
+						fileData: this.wordDocBase64,
+						fileName: this.wordDocFilename,
 						includeLayoutPdf: false
 					})
 				});

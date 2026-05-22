@@ -712,7 +712,7 @@ def _build_ir_document(doc):
 	default_font = None
 	default_font_size_pt = None
 	try:
-		styles_elem = doc.element.find(qn('w:styles'))
+		styles_elem = doc.styles.element
 		if styles_elem is not None:
 			# 1. Try docDefaults
 			doc_defaults = styles_elem.find(qn('w:docDefaults'))
@@ -750,7 +750,7 @@ def _build_ir_document(doc):
 									f = (rFonts.get(qn('w:ascii')) or
 										 rFonts.get(qn('w:hAnsi')) or
 										 rFonts.get(qn('w:cs')))
-									if f and f not in ('Times New Roman', 'Calibri'):
+									if f:
 										default_font = f
 								if sz is not None and not default_font_size_pt:
 									val = sz.get(qn('w:val'))
@@ -765,6 +765,12 @@ def _build_ir_document(doc):
 						break
 	except Exception:
 		pass
+
+	# Triad/mortgage docs commonly use theme fonts where docDefaults specifies
+	# only the size — assume Calibri when size was detected but font name was not,
+	# so the global {Font(Calibri|<size>)} directive still gets emitted.
+	if default_font_size_pt and not default_font:
+		default_font = 'Calibri'
 
 	# Store header texts in meta for header detection
 	return {

@@ -251,6 +251,12 @@ def format_ir_for_prompt(ir):
 	import re
 	blocks = ir.get('blocks', [])
 	formatted = []
+	# Document-level default font size from metadata (set globally via {Font()} directive).
+	# Paragraphs matching this size do NOT need an explicit FONT_SIZE hint.
+	try:
+		_default_size_pt = float(ir.get('meta', {}).get('defaultFontSizePt') or 0)
+	except (TypeError, ValueError):
+		_default_size_pt = 0.0
 	
 	# Patterns to skip - these are metadata/instructions, not actual content
 	# IMPORTANT: These should match EXACT metadata phrases, not parts of actual content
@@ -654,7 +660,12 @@ def format_ir_for_prompt(ir):
 			if font_size and (font_size >= 11.0 or font_size <= 9.0):  # Flag headings (11pt+) and footnotes; skip 10pt standard body
 				# Round 11–12.9pt down to 11pt — mortgage letter heading standard is 11pt
 				reported_size = 11 if 11.0 <= font_size <= 12.9 else int(font_size)
-				formatting_hints.append(f"FONT_SIZE_{reported_size}pt")
+				# Suppress hint when this size already matches the document's default font
+				# size (which is emitted globally via the {Font()} directive). Without this,
+				# every body paragraph in an 11pt-default letter ends up with a redundant
+				# style="font-size: 11pt" attribute in the generated HTML.
+				if not (_default_size_pt and abs(reported_size - _default_size_pt) < 0.5):
+					formatting_hints.append(f"FONT_SIZE_{reported_size}pt")
 			if alignment and alignment != 'left':
 				formatting_hints.append(f"ALIGN_{alignment.upper()}")
 			
@@ -1114,7 +1125,8 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	default_font = ir.get('meta', {}).get('defaultFont')
 	default_font_size_pt = ir.get('meta', {}).get('defaultFontSizePt')
 	if default_font and default_font_size_pt:
-		font_directive = f"\n[DEFAULT_FONT: {default_font} {default_font_size_pt}pt — emit `&nbsp;{{Font({default_font}|{default_font_size_pt}pt)}}` as the very first line before the header div]\n"
+		_size_str = (str(int(default_font_size_pt)) if float(default_font_size_pt).is_integer() else str(default_font_size_pt))
+		font_directive = f"\n[DEFAULT_FONT: {default_font} {_size_str}pt — emit `&nbsp;{{Font({default_font}|{_size_str}pt)}}` as the very first line before the header div]\n"
 	else:
 		font_directive = ""
 

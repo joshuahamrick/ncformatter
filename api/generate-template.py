@@ -674,10 +674,10 @@ def format_ir_for_prompt(ir):
 				bullet_char = block.get('listBulletChar', '')
 				# Always use literal • for bullet points regardless of what symbol the doc uses
 				# (e.g. Symbol-font middle dot · is visually a bullet → output • directly)
-				if bullet_char and bullet_char not in ('•', '\u2022', '·', '\u00b7'):
-					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char}, MARGIN_LEFT_30PX)")
+				if bullet_char and bullet_char not in ('•', '\u2022'):
+					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char})")
 				else:
-					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, USE_BULLET=\u2022, MARGIN_LEFT_30PX)")
+					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level})")
 			
 			# Add left indent if significant (helps with margin-left decisions)
 			left_indent = block.get('leftIndentPt')
@@ -1385,7 +1385,7 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - `{Lower(value)}` — converts value to lowercase
    - `{PadLeft(value|width|char)}` — left-pads value: `{PadLeft(123|6|0)}` → 000123
    - `{Replace(source|"old"|"new")}` — replaces all occurrences of old with new in source
-   - `{Symbol(value)}` — outputs a special symbol wrapped in an HTML label tag. Use ONLY for non-standard symbols like Wingdings checkmarks (e.g. {Symbol(ü)}). NEVER use {Symbol(·)} for bullet points — use the literal • character instead.
+   - `{Symbol(value)}` — outputs a symbol wrapped in an HTML label tag
 
    Numeric / Formatting:
    - `{Number(value|decimals)}` — formats number with rounding: `{Number(1234.567|2)}` → 1234.57; also use for numeric comparisons
@@ -1496,11 +1496,10 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    
    **BULLET LIST FORMAT (width="3%", border-collapse, margin-left) - when using TABLE:**
    <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
-     <td width="3%" valign="top" style="text-align: center">•</td>
+     <td width="3%" valign="top">•</td>
      <td>First item text</td>
    </tr></tbody></table></div>
-   CRITICAL: The margin-left: 30px and <div> wrapper are MANDATORY for ALL bullet list tables. NO EXCEPTIONS.
-   CRITICAL: ALWAYS use the literal • character directly for bullet points — NEVER use {Symbol(·)} or any {Symbol()} wrapper for standard bullets. {Symbol()} is ONLY for non-bullet special characters like Wingdings checkmarks.
+   CRITICAL: The margin-left and <div> wrapper are MANDATORY for all bullet/numbered list tables.
    
    **CRITICAL**: NEVER change numbered lists (1., 2.) to bullets (•) or vice versa!
    **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%" when using TABLE format!

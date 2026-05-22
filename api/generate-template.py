@@ -672,8 +672,6 @@ def format_ir_for_prompt(ir):
 				list_level = block.get('listLevel', 0)
 				list_type = block.get('listType', 'bullet')
 				bullet_char = block.get('listBulletChar', '')
-				# Always use literal • for bullet points regardless of what symbol the doc uses
-				# (e.g. Symbol-font middle dot · is visually a bullet → output • directly)
 				if bullet_char and bullet_char not in ('•', '\u2022'):
 					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char})")
 				else:
@@ -711,12 +709,12 @@ def format_ir_for_prompt(ir):
 			re_loan_match = re.match(r'^RE:\s*Loan Number:\s*(\{?\[.*?\]\}?)(.*)$', cleaned_text)
 			if re_loan_match:
 				loan_var = re_loan_match.group(1).strip()
-				cleaned_text = f"Loan Number: {loan_var}"
+				cleaned_text = f"[RE_TABLE_ROW_1: RE: | Loan Number: | {loan_var}] — USE 3-COLUMN TABLE: <td width=\"3%\" valign=\"top\">RE:</td><td width=\"20%\" valign=\"top\">Loan Number:</td><td>{loan_var}</td>"
 			# Transform "RE: {Compress(...)}" or "Property Address: ..." into 3-column second row
-			re_prop_match = re.match(r'^(?:RE:\s*|Property Address:\s*)(\{Compress\(.*\)\}|\{?\[M\d+\]\}?)\s*$', cleaned_text)
+			re_prop_match = re.match(r'^(?:RE:\s*)?(?:Property Address:\s*)?(\{Compress\([^)]+\)\})', cleaned_text)
 			if re_prop_match and not re_loan_match:
 				prop_var = re_prop_match.group(1).strip()
-				cleaned_text = f"RE: {prop_var}"
+				cleaned_text = f"[RE_TABLE_ROW_2: (empty) | Property Address: | {prop_var}] — 3-COLUMN TABLE second row: <td width=\"3%\" valign=\"top\"></td><td width=\"20%\" valign=\"top\">Property Address:</td><td>{prop_var}</td>"
 			
 			# Detect indented non-list paragraphs that follow a list item
 			# (e.g., "*This ONLY applies..." or a URL continuation after a bullet)
@@ -777,71 +775,6 @@ def format_ir_for_prompt(ir):
 			last_was_list_item = cur_is_list
 			last_was_sub_row = is_indent_sub_row
 			last_list_level = cur_list_level if cur_is_list else last_list_level
-		elif block.get('type') == 'textbox' and block.get('anchoredInline'):
-			# Pre-render the textbox as complete HTML and embed verbatim.
-			# This avoids AI grouping errors with START/END markers.
-			fill  = block.get('fillColor') or ''
-			bclr  = block.get('borderColor') or '#000000'
-			bwid  = (block.get('borderWidth') or '1pt').rstrip('px').rstrip('pt') + 'pt'
-
-			# Build inner HTML — list items → bullet <table>, others → <div>
-			inner_lines = []
-			bullet_rows = []
-
-			def flush_bullets():
-				if bullet_rows:
-					trs = ''.join(
-						f'<tr><td width="3%" valign="top" style="text-align: center">&#8226;</td><td>{r}</td></tr>'
-						for r in bullet_rows
-					)
-					inner_lines.append(
-						f'<div><table width="100%" style="border-collapse: collapse">'
-						f'<tbody>{trs}</tbody></table></div>'
-					)
-					bullet_rows.clear()
-
-			for row in block.get('rows', []):
-				runs = row.get('runs', [])
-				if not any(r.get('text', '').strip() for r in runs):
-					continue
-				align = row.get('align', 'left')
-				bold_all = all(r.get('bold') for r in runs if r.get('text','').strip())
-				is_list = row.get('isListItem') or row.get('listType') == 'bullet'
-
-				# Build cell HTML respecting per-run hyperlink underline
-				cell_parts = []
-				for r in runs:
-					rt = r.get('text', '')
-					if not rt:
-						continue
-					if r.get('isHyperlink') or r.get('underline'):
-						cell_parts.append(f'<u>{rt}</u>')
-					else:
-						cell_parts.append(rt)
-				row_html = ''.join(cell_parts).strip()
-				if bold_all:
-					row_html = f'<b>{row_html}</b>'
-
-				if is_list:
-					bullet_rows.append(row_html)
-				else:
-					flush_bullets()
-					div_style = ' style="text-align: center"' if align in ('center', 'CENTER') else ''
-					inner_lines.append(f'<div{div_style}>{row_html}</div>')
-			flush_bullets()
-
-			cell_html = '\n  '.join(inner_lines)
-			div_style_parts = [
-				'font-family: Times New Roman',
-				'font-size: 12pt',
-				f'border: {bwid} solid {bclr}',
-				f'background-color: {fill}' if fill else '',
-				'padding: 8pt 10pt',
-			]
-			div_style = '; '.join(p for p in div_style_parts if p)
-			tb_html = f'<div style="{div_style}">\n  {cell_html}\n</div>'
-			formatted.append(f'[VERBATIM_HTML: copy the following HTML exactly as-is to your output]\n{tb_html}\n[END_VERBATIM_HTML]')
-
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			tbl_borders = block.get('tableBorders')
@@ -1057,8 +990,7 @@ def format_ir_for_prompt(ir):
 	mailing_addr_indices = set()
 	for i, line in enumerate(formatted):
 		# Detect mailing address M-code lines (M558–M566 are borrower mailing address fields)
-		# Exclude signature lines that reuse M558/M559 with Dated:/underscores context
-		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line) and not re.search(r'_{4,}|Dated:', line):
+		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line):
 			mailing_addr_indices.add(i)
 
 	# Detect which address variables exist in the RAW IR blocks (not the filtered list,
@@ -1089,19 +1021,20 @@ def format_ir_for_prompt(ir):
 		# Subject heading before Loan Number table: force correct style
 		if i == subject_heading_idx:
 			line += ' [NOTE: This is the SUBJECT HEADING — format as: <b><div style="font-size: 11pt">text</div></b> — do NOT add <br> after this before the Loan Number table]'
-		# Loan Number line: force standard 2-column table (Pattern 3a)
+		# Loan Number line: force Pattern 3b (colspan=2 with empty 3rd cell)
 		if i == loan_number_idx:
+			# Extract the loan number variable from the line
 			ln_var_match = re.search(r'(\{?\[?M594\]?\}?)', line)
 			ln_var = ln_var_match.group(1) if ln_var_match else '{[M594]}'
 			line += (
-				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row 2-column table with NO border: '
-				f'<table width="100%" style="border-collapse: collapse"><tbody><tr>'
-				f'<td width="20%" valign="top">Loan Number:</td>'
-				f'<td>{ln_var}</td>'
+				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row table using Pattern 3b: '
+				f'<table width="100%"><tbody><tr>'
+				f'<td valign="top" colspan="2">Loan Number: {ln_var}</td>'
+				f'<td></td>'
 				f'</tr><tr>'
-				f'<td width="20%" valign="top">RE:</td>'
+				f'<td width="15%" valign="top">RE:</td>'
 				f'<td>{{Compress(...)}}</td>'
-				f'</tr></tbody></table> — NO border on this table; keep exactly 2 columns per row; the RE: row uses Compress() from the next paragraph]'
+				f'</tr></tbody></table> — the RE: row uses the Compress() expression from the next paragraph]'
 			)
 		# Paragraph immediately before first mortgagee clause: suppress trailing <br>
 		if i == pre_mortgagee_idx:
@@ -1207,22 +1140,21 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 
 	ir_content = header_directive + font_directive + gap_directive + ir_content
 	
-	# Append any remaining floating text boxes from meta that were NOT already injected
-	# inline (i.e., legacy title/warning boxes that have no anchor paragraph).
+	# Append text box content if present (floating text boxes are not in body flow)
 	text_boxes = ir.get('meta', {}).get('textBoxes', [])
 	if text_boxes:
-		# Collect text keys already emitted inline so we don't duplicate
-		import re as _re_tb
-		ir_content += "\n\n=== ADDITIONAL FLOATING TEXT BOXES ===\n"
-		ir_content += "PLACEMENT RULES:\n"
-		ir_content += "  - SHORT TITLE box (1-3 words) → place AFTER mailing address, centered\n"
-		ir_content += "  - WARNING/NOTICE box ('If you do not…', 'IMPORTANT:') → place at VERY BOTTOM\n"
-		ir_content += "  - LOAN/PROPERTY INFO box → place after mailing address, before salutation\n"
+		ir_content += "\n\n=== FLOATING TEXT BOXES (visually prominent boxes floating in document layout) ===\n"
+		ir_content += "PLACEMENT RULES — read the content to decide where each box belongs:\n"
+		ir_content += "  - SHORT TITLE box (1-3 words, e.g. 'Escrow Cancellation Request', 'Loan Summary') → place AFTER mailing address, centered. Use {Compress(Part1|Part2)} to split the title across two lines at a natural word boundary (e.g. 'Escrow Cancellation Request' → {Compress(Escrow Cancellation|Request)})\n"
+		ir_content += "  - WARNING/NOTICE box (long sentence starting with 'If you do not...', 'You must...', 'IMPORTANT:') → place at the VERY BOTTOM of the document, AFTER return address and fax/email lines\n"
+		ir_content += "  - LOAN/PROPERTY INFO box (Loan Number, Property Address, RE:) → place after mailing address, before salutation\n"
 		for i, tb in enumerate(text_boxes):
 			tb_text = ' '.join(
 				''.join(r.get('text','') for r in row.get('runs',[])).strip()
 				for row in tb.get('rows',[])
 			).strip()
+			# Classify this text box so Claude knows where to place it
+			import re as _re_tb
 			if len(tb_text.split()) <= 6 and not _re_tb.search(r'If you|must|required|payment|IMPORTANT', tb_text, _re_tb.IGNORECASE):
 				tb_role = "TITLE (place after mailing address, centered)"
 			elif _re_tb.search(r'If you|must|required|payment will|escrow payment', tb_text, _re_tb.IGNORECASE):
@@ -1752,13 +1684,6 @@ When the document has a thin horizontal line separating the mailing address from
 <div style="text-align: center">...
 ```
 Detection: If the IR contains `[FORMATTING: BORDER_BOTTOM]` on a paragraph between the mailing address and the document title/body, or a paragraph that is blank with only a bottom border → render as `<hr>`.
-
-**VERBATIM HTML BLOCKS — pre-rendered content (text boxes, special shapes):**
-When the IR contains `[VERBATIM_HTML: copy the following HTML exactly as-is to your output]` followed by HTML and then `[END_VERBATIM_HTML]`:
-- Copy EVERY LINE of the HTML between those markers to your output EXACTLY as written — do not change, reformat, move, or omit any part of it.
-- Place it at the exact position it appears in the IR (between the surrounding paragraphs).
-- Do NOT emit the `[VERBATIM_HTML:]` or `[END_VERBATIM_HTML]` marker text itself — only the HTML between them.
-- Do NOT add `<br>` before or after the verbatim block unless the IR spacing markers say to.
 
 **PARAGRAPH BORDER BOX — wrapping consecutive bordered/shaded paragraphs:**
 When the IR contains `[BORDER_BOX_START...]` and `[BORDER_BOX_END]` markers, ALL content between them must be wrapped in a single bordered table (the paragraphs share a paragraph-level border and/or fill extracted from the OOXML). Use this pattern:

@@ -19,79 +19,118 @@ except ImportError:
 
 
 def _ir_to_text_summary(ir):
-	"""Convert an IR dict to a human-readable text summary for the prompt."""
+	"""Convert an IR dict to a detailed text summary for comparison.
+	Preserves blank lines, formatting markers, and table structure so
+	the AI can detect spacing and content differences accurately."""
 	if not ir or not isinstance(ir, dict):
 		return '(no document content)'
 	blocks = ir.get('blocks', [])
 	lines = []
-	for block in blocks:
+	for i, block in enumerate(blocks):
 		btype = block.get('type', '')
 		if btype == 'paragraph':
 			runs = block.get('runs', [])
 			text = ''.join(r.get('text', '') for r in runs).strip()
-			if text:
-				align = block.get('align', '')
-				bold_count = sum(1 for r in runs if r.get('bold'))
-				prefix = '[BOLD] ' if bold_count and bold_count == len([r for r in runs if r.get('text', '').strip()]) else ''
-				align_note = f' [{align.upper()}]' if align and align != 'left' else ''
-				lines.append(f'{prefix}{text}{align_note}')
+
+			if not text:
+				# Preserve blank paragraphs — they represent spacing
+				lines.append('[BLANK LINE]')
+				continue
+
+			# Collect formatting markers
+			markers = []
+			align = block.get('align', '')
+			if align and align not in ('left', ''):
+				markers.append(align.upper())
+
+			# Run-level formatting
+			all_bold      = all(r.get('bold')      for r in runs if r.get('text', '').strip())
+			all_italic    = all(r.get('italic')    for r in runs if r.get('text', '').strip())
+			all_underline = all(r.get('underline') for r in runs if r.get('text', '').strip())
+			any_bold      = any(r.get('bold')      for r in runs if r.get('text', '').strip())
+			if all_bold:      markers.append('BOLD')
+			if all_italic:    markers.append('ITALIC')
+			if all_underline: markers.append('UNDERLINE')
+			elif any_bold:    markers.append('PARTIAL-BOLD')
+
+			# Font size (first run that has one)
+			for r in runs:
+				sz = r.get('fontSize') or r.get('font_size')
+				if sz:
+					markers.append(f'{sz}pt')
+					break
+
+			prefix = f'[{", ".join(markers)}] ' if markers else ''
+			lines.append(f'{prefix}{text}')
+
 		elif btype == 'table':
 			rows = block.get('rows', [])
 			lines.append(f'[TABLE: {len(rows)} rows]')
-			for row in rows[:8]:
+			for row in rows[:20]:
 				cells = row.get('cells', [])
 				cell_texts = []
 				for cell in cells:
 					cell_paras = cell.get('paragraphs', [])
-					cell_text = ' | '.join(
+					cell_text = ' / '.join(
 						''.join(r.get('text', '') for r in p.get('runs', [])).strip()
 						for p in cell_paras
+						if ''.join(r.get('text', '') for r in p.get('runs', [])).strip()
 					).strip()
-					cell_texts.append(cell_text)
-				lines.append('  ' + ' || '.join(cell_texts))
+					cell_texts.append(cell_text or '(empty)')
+				lines.append('  ROW: ' + ' | '.join(cell_texts))
+
+		elif btype == 'textbox':
+			tb_rows = block.get('rows', [])
+			tb_text = ' '.join(
+				''.join(r.get('text', '') for r in row.get('runs', [])).strip()
+				for row in tb_rows
+				if ''.join(r.get('text', '') for r in row.get('runs', [])).strip()
+			)
+			if tb_text:
+				lines.append(f'[TEXTBOX] {tb_text}')
+
 	return '\n'.join(lines) if lines else '(document appears empty)'
 
 
-ANALYZE_SYSTEM_PROMPT = """You are an expert at comparing HTML mortgage letter templates with Word document sources.
+ANALYZE_SYSTEM_PROMPT = """You are an expert at comparing HTML mortgage letter templates with updated Word document sources.
 
-Your job is to identify the MINIMAL, LOCALIZED set of changes needed to update an existing HTML template to match an updated Word document.
+Your job is to carefully read both documents and produce an accurate, complete list of every difference that needs to be applied to the HTML template.
 
-CRITICAL PRINCIPLES:
-1. The existing HTML template is correct — only identify genuine differences that must change.
-2. Be EXTREMELY CONSERVATIVE. If in doubt, do NOT flag it as a change.
-3. Never suggest reformatting, restructuring, or restyling existing content.
-4. Never suggest changes to HTML syntax, variable placeholders ({[TAG]}), or helper functions.
-5. A text change means ONLY that specific text changed — nothing else.
-6. A spacing change means ONLY that specific spacing changed — nothing else.
-7. Ignore minor whitespace differences within unchanged paragraphs.
-8. Preserve all NcFormatter-specific syntax exactly as-is.
+CORE RULES:
+1. Be THOROUGH — find every genuine difference between the two versions. Do not skip or dismiss changes.
+2. Be LOCALIZED — each change entry should describe one specific, targeted edit. Do not bundle multiple changes into one.
+3. Do NOT suggest changes to HTML syntax, tag structure, or NcFormatter variable placeholders ({[TAG]}, {[plsMatrix.*]}, {Compress(...)}, etc.) unless those tags themselves actually changed in the new document.
+4. Do NOT suggest cosmetic reformatting of unchanged content.
+5. DO flag: text wording changes, added/removed sentences or paragraphs, spacing changes (blank lines added or removed), table content changes, formatting changes (bold/italic added or removed).
+6. The Word document shows [BLANK LINE] markers — compare these carefully against the HTML's <br> tags to find spacing differences.
+7. When text contains NcFormatter placeholders, compare the surrounding literal text and the placeholder names — either may have changed.
 
-CHANGE TYPES you may use:
-- "text" — a specific word, phrase, or sentence changed
-- "spacing" — blank lines or spacing between sections changed
-- "addition" — entirely new content added
-- "removal" — existing content removed
-- "structure" — a section was reorganized (use sparingly)
-- "tag" — an NcFormatter variable or helper function reference changed
+CHANGE TYPES:
+- "text" — a word, phrase, or sentence changed
+- "spacing" — blank lines / <br> tags added or removed
+- "addition" — new paragraph, sentence, or section added
+- "removal" — existing paragraph, sentence, or section removed
+- "formatting" — bold, italic, underline, alignment changed
+- "structure" — section reordered or reorganized
+- "tag" — an NcFormatter placeholder or helper function changed
 
-RESPONSE FORMAT — always respond with valid JSON:
+RESPONSE FORMAT — always return valid JSON, nothing else:
 {
-  "summary": "One or two sentences describing what changed overall.",
+  "summary": "One or two sentences describing the overall nature of the changes.",
   "changes": [
     {
       "id": 1,
       "type": "text",
-      "location": "Where in the template (e.g. 'paragraph 3', 'RE: table', 'closing section')",
-      "description": "Clear, concise description of what needs to change",
-      "currentValue": "The exact current text/value in the HTML (short — max ~150 chars)",
-      "newValue": "The new text/value that should replace it (short — max ~150 chars)"
+      "location": "Where in the template (e.g. 'opening paragraph', 'RE table', 'closing sentence')",
+      "description": "Clear description of what needs to change and why",
+      "currentValue": "Exact current text from the HTML (≤150 chars)",
+      "newValue": "New text it should become (≤150 chars)"
     }
   ],
-  "reply": "A brief conversational message to the user (only needed if responding to chat; otherwise omit or use empty string)"
+  "reply": "Conversational response to the user — only include if replying to a chat message, otherwise leave empty string"
 }
 
-If the user is having a conversation to refine the plan, update the changes list accordingly and include a helpful reply.
-If there are no meaningful differences, return an empty changes array and explain in the summary."""
+If the documents are genuinely identical, return an empty changes array and say so clearly in the summary."""
 
 
 class handler(BaseHTTPRequestHandler):

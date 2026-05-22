@@ -2049,7 +2049,7 @@ body {
     cursor: pointer;
     background: #1a1f27;
     transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-    min-height: 160px;
+    height: 230px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2174,6 +2174,7 @@ body {
     background: #1a1f27;
     overflow: hidden;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    height: 230px;
 }
 
 .upd-paste-wrap:focus-within {
@@ -2192,8 +2193,8 @@ body {
 
 .upd-paste-area {
     width: 100%;
-    min-height: 160px;
-    max-height: 260px;
+    flex: 1;
+    min-height: 0;
     padding: 12px 14px;
     background: transparent;
     border: none;

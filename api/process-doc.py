@@ -30,13 +30,12 @@ except ImportError:
 		try_convert_docx_to_pdf = None
 
 try:
-	from api.layout_raster import try_pdf_first_page_png, try_pdf_all_pages_png_list
+	from api.layout_raster import try_pdf_first_page_png
 except ImportError:
 	try:
-		from layout_raster import try_pdf_first_page_png, try_pdf_all_pages_png_list
+		from layout_raster import try_pdf_first_page_png
 	except ImportError:
 		try_pdf_first_page_png = None
-		try_pdf_all_pages_png_list = None
 
 
 def _align_to_str(alignment):
@@ -433,45 +432,13 @@ def _extract_table_ir(table):
 	}
 
 
-def _wingdings_to_symbol(char, font_name):
-	"""
-	Map a Wingdings/Symbol private-use-area character to the {Symbol(X)} notation
-	used by NcConnect templates.
-	
-	Word stores Wingdings characters in the Unicode private use area (U+F0xx).
-	The actual character displayed depends on the font, but for NcConnect's
-	{Symbol(X)} function, X is the Latin-1 equivalent (subtract 0xF000).
-	"""
-	if not char:
-		return None
-	c = char[0]
-	code = ord(c)
-	# Wingdings private use area: U+F000–U+F0FF maps to Latin-1 equivalent
-	if 0xF000 <= code <= 0xF0FF:
-		latin1_char = chr(code - 0xF000)
-		return '{Symbol(' + latin1_char + ')}'
-	# Already a standard symbol character
-	standard_bullets = {'\u2022', '\u25cf', '\u25cb', '\u25a0', '\u25aa', '\u2013', '\u2014'}
-	if c in standard_bullets:
-		return '{Symbol(' + c + ')}'
-	# Plain text marker (e.g. 'o', '-', '*')
-	if c.isascii() and not c.isdigit():
-		return c
-	return None
-
-
 def _resolve_list_types(doc, blocks):
-	"""
-	Resolve whether list items are bullet or numbered by reading numbering.xml.
-	Also extracts the actual bullet character (e.g. {Symbol(ü)} for Wingdings ü)
-	and stores it in listBulletChar on each block.
-	"""
+	"""Resolve whether list items are bullet or numbered by reading numbering.xml definitions."""
 	import zipfile
 	import re as _re
-
-	# Characters that always mean 'bullet' regardless of numFmt
+	
 	bullet_chars = {'\uf0b7', '\u2022', '\u25cf', '\u25cb', '\u25a0', '\u25aa', '-', '\u2013', '\u2014'}
-
+	
 	try:
 		numbering_xml = None
 		temp = io.BytesIO()
@@ -481,105 +448,67 @@ def _resolve_list_types(doc, blocks):
 			if 'word/numbering.xml' in z.namelist():
 				with z.open('word/numbering.xml') as f:
 					numbering_xml = f.read().decode('utf-8')
-
+		
 		if not numbering_xml:
 			for b in blocks:
 				if b.get('type') == 'paragraph' and b.get('isListItem'):
 					b['listType'] = 'bullet'
 			return
-
+		
 		num_to_abstract = {}
-		for m in _re.finditer(
-			r'<w:num\s+w:numId="(\d+)"[^>]*>.*?<w:abstractNumId\s+w:val="(\d+)"',
-			numbering_xml, _re.DOTALL
-		):
+		for m in _re.finditer(r'<w:num\s+w:numId="(\d+)"[^>]*>.*?<w:abstractNumId\s+w:val="(\d+)"', numbering_xml, _re.DOTALL):
 			num_to_abstract[m.group(1)] = m.group(2)
-
-		# Per-abstractNum, per-level: store (fmt, lvlText, font)
-		# Key: (abs_id, ilvl_str)  Value: dict with fmt/lvlText/font
-		abstract_level_info = {}
-		for m in _re.finditer(
-			r'<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>(.*?)</w:abstractNum>',
-			numbering_xml, _re.DOTALL
-		):
+		
+		abstract_fmt = {}
+		for m in _re.finditer(r'<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>(.*?)</w:abstractNum>', numbering_xml, _re.DOTALL):
 			abs_id = m.group(1)
 			body = m.group(2)
-			for lvl_m in _re.finditer(r'<w:lvl\s+w:ilvl="(\d+)"[^>]*>(.*?)</w:lvl>', body, _re.DOTALL):
-				ilvl = lvl_m.group(1)
-				lvl_body = lvl_m.group(2)
-
-				fmt_m = _re.search(r'<w:numFmt\s+w:val="([^"]+)"', lvl_body)
-				fmt = fmt_m.group(1) if fmt_m else ''
-
-				txt_m = _re.search(r'<w:lvlText\s+w:val="([^"]*)"', lvl_body)
-				lvl_text = txt_m.group(1) if txt_m else ''
-
-				# Font override for the level (rFonts inside lvl/pPr or lvl/rPr)
-				font_m = _re.search(r'<w:rFonts[^/]*/?>.*?(?=</w:)', lvl_body, _re.DOTALL)
-				if not font_m:
-					font_m = _re.search(r'<w:rFonts\s+[^>]+>', lvl_body)
-				lvl_font = ''
-				if font_m:
-					fn_m = _re.search(r'w:ascii="([^"]+)"', font_m.group(0))
-					if fn_m:
-						lvl_font = fn_m.group(1)
-
-				# If lvlText is a symbol character, override numFmt to 'bullet'
-				if lvl_text and lvl_text[0] in bullet_chars:
-					fmt = 'bullet'
-				elif lvl_text and ord(lvl_text[0]) >= 0xF000:
-					# Private-use-area (Wingdings/Symbol) → treat as bullet
-					fmt = 'bullet'
-
-				abstract_level_info[(abs_id, ilvl)] = {
-					'fmt': fmt,
-					'lvlText': lvl_text,
-					'font': lvl_font,
-				}
-
-		# Re-scan doc paragraphs to map text → (numId, ilvl)
+			lvl_match = _re.search(r'<w:lvl\s+w:ilvl="0"[^>]*>(.*?)</w:lvl>', body, _re.DOTALL)
+			if lvl_match:
+				lvl_body = lvl_match.group(1)
+				fmt_match = _re.search(r'<w:numFmt\s+w:val="([^"]+)"', lvl_body)
+				if fmt_match:
+					abstract_fmt[abs_id] = fmt_match.group(1)
+				txt_match = _re.search(r'<w:lvlText\s+w:val="([^"]*)"', lvl_body)
+				if txt_match and txt_match.group(1) in bullet_chars:
+					abstract_fmt[abs_id] = 'bullet'
+		
+		# Build a map from paragraph XML element to numId
 		from docx.oxml.ns import qn
-		para_texts_to_numinfo = {}
+		para_numids = {}
+		for b in blocks:
+			if b.get('type') != 'paragraph' or not b.get('isListItem'):
+				continue
+			# We need the raw paragraph element to get numId
+			# Since we don't store it, re-scan from doc paragraphs
+		
+		# Re-scan doc paragraphs to get numId mapping
+		para_texts_to_numid = {}
 		for para in doc.paragraphs:
 			pPr = para._p.find(qn('w:pPr'))
 			if pPr is not None:
 				numPr = pPr.find(qn('w:numPr'))
 				if numPr is not None:
 					numId_elem = numPr.find(qn('w:numId'))
-					ilvl_elem = numPr.find(qn('w:ilvl'))
 					if numId_elem is not None:
 						num_id = numId_elem.get(qn('w:val'), '')
-						ilvl = ilvl_elem.get(qn('w:val'), '0') if ilvl_elem is not None else '0'
 						text = ''.join(run.text for run in para.runs if run.text)
-						para_texts_to_numinfo[text.strip()] = (num_id, ilvl)
-
+						para_texts_to_numid[text.strip()] = num_id
+		
 		for b in blocks:
 			if b.get('type') != 'paragraph' or not b.get('isListItem'):
 				continue
 			text = ''.join(r.get('text', '') for r in b.get('runs', [])).strip()
-			num_id, ilvl = para_texts_to_numinfo.get(text, ('', '0'))
-			info = None
+			num_id = para_texts_to_numid.get(text, '')
 			if num_id and num_id in num_to_abstract:
 				abs_id = num_to_abstract[num_id]
-				info = abstract_level_info.get((abs_id, ilvl))
-				# Fall back to level 0 info if exact level not found
-				if info is None:
-					info = abstract_level_info.get((abs_id, '0'))
-
-			if info:
-				fmt = info['fmt']
-				lvl_text = info['lvlText']
-				lvl_font = info['font']
-
-				if fmt == 'bullet' or fmt not in ('decimal', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'):
+				fmt = abstract_fmt.get(abs_id, '')
+				if fmt == 'bullet':
 					b['listType'] = 'bullet'
-				else:
+				elif fmt in ('decimal', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'):
 					b['listType'] = 'numbered'
-
-				# Determine the actual bullet character for the template
-				bullet_char = _wingdings_to_symbol(lvl_text, lvl_font)
-				if bullet_char:
-					b['listBulletChar'] = bullet_char
+				else:
+					b['listType'] = 'bullet'
 			else:
 				b['listType'] = 'bullet'
 	except Exception:
@@ -689,132 +618,8 @@ def _build_ir_document(doc):
 				'rows': rows
 			})
 	
-	# Helper: extract a floating text box drawing from a paragraph element.
-	# Returns a textbox IR block (with fill/border) or None.
-	def _extract_inline_textbox(para_p):
-		WPD_NS  = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing'
-		WPS_NS  = 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape'
-		A_NS    = 'http://schemas.openxmlformats.org/drawingml/2006/main'
-		VML_NS  = 'urn:schemas-microsoft-com:vml'
-
-		drawing = para_p.find('.//{%s}drawing' % 'http://schemas.openxmlformats.org/wordprocessingml/2006/main')
-		if drawing is None:
-			return None
-		# Only handle anchor (floating) drawings — inline drawings are logos/images
-		anchor = drawing.find('{%s}anchor' % WPD_NS)
-		if anchor is None:
-			return None
-
-		# ── Collect text paragraphs from wps:txbx ──
-		rows = []
-		seen = set()
-		for txbx in drawing.iter('{%s}txbx' % WPS_NS):
-			for p_elem in txbx.iter(qn('w:p')):
-				text = ''.join(t.text or '' for t in p_elem.iter(qn('w:t'))).strip()
-				if not text or text in seen:
-					continue
-				seen.add(text)
-				# paragraph alignment
-				pPr_e = p_elem.find(qn('w:pPr'))
-				align = 'left'
-				is_bold_all = False
-				if pPr_e is not None:
-					jc = pPr_e.find(qn('w:jc'))
-					if jc is not None:
-						align = jc.get(qn('w:val'), 'left')
-				runs_out = []
-				for r_elem in p_elem.iter(qn('w:r')):
-					t_text = ''.join(t.text or '' for t in r_elem.iter(qn('w:t')))
-					if not t_text:
-						continue
-					rPr = r_elem.find(qn('w:rPr'))
-					is_bold = False
-					font_sz = None
-					if rPr is not None:
-						b = rPr.find(qn('w:b'))
-						if b is not None:
-							val = b.get(qn('w:val'))
-							is_bold = val is None or val.lower() in ('true', '1', 'on')
-						sz = rPr.find(qn('w:sz'))
-						if sz is not None:
-							try:
-								font_sz = int(sz.get(qn('w:val'), '0')) / 2
-							except Exception:
-								pass
-					# Detect if run is inside a w:hyperlink (underline it)
-					is_hyperlink = False
-					r_parent = r_elem.getparent()
-					if r_parent is not None and r_parent is not p_elem and r_parent.tag == qn('w:hyperlink'):
-						is_hyperlink = True
-					runs_out.append({'text': t_text, 'bold': is_bold, 'italic': False, 'underline': is_hyperlink, 'fontSizePt': font_sz, 'fontFamily': None, 'isHyperlink': is_hyperlink})
-				if runs_out:
-					is_list = False
-					list_level = None
-					if pPr_e is not None:
-						numPr = pPr_e.find(qn('w:numPr'))
-						if numPr is not None:
-							is_list = True
-							ilvl = numPr.find(qn('w:ilvl'))
-							if ilvl is not None:
-								try:
-									list_level = int(ilvl.get(qn('w:val'), 0))
-								except Exception:
-									list_level = 0
-					rows.append({'type': 'paragraph', 'runs': runs_out, 'align': align, 'leadingSpaces': None, 'styleName': None, 'isListItem': is_list, 'listLevel': list_level, 'listMarker': None, 'listType': 'bullet' if is_list else None, 'spacingBeforePt': None, 'spacingAfterPt': None, 'lineHeightMultiple': None, 'leftIndentPt': None, 'firstLineIndentPt': None, 'hangingIndentPt': None})
-
-		if not rows:
-			return None
-
-		# ── Extract fill color ──
-		# The VML fallback shape is at: p > r > mc:AlternateContent > mc:Fallback > w:pict > v:shape
-		# It is NOT inside w:drawing, so we must search the whole paragraph element.
-		# VML fillcolor is the resolved hex (avoids scheme-color ambiguity).
-		fill_color = None
-		VML_NS2 = 'urn:schemas-microsoft-com:vml'
-		for shape in para_p.iter('{%s}shape' % VML_NS2):
-			fc = (shape.get('fillcolor') or '').strip()
-			if fc and fc.startswith('#'):
-				fill_color = fc.split(' ')[0]  # strip " [NNN]" theme-index suffix
-				break
-		if not fill_color:
-			# WPS modern spPr — use DIRECT child solidFill only (not border fill inside a:ln)
-			for spPr in drawing.iter('{%s}spPr' % WPS_NS):
-				direct_fill = spPr.find('{%s}solidFill' % A_NS)
-				if direct_fill is not None:
-					srgb = direct_fill.find('{%s}srgbClr' % A_NS)
-					if srgb is not None:
-						fill_color = '#' + srgb.get('val', '')
-						break
-
-		# ── Extract border color/width ──
-		border_color = '#000000'
-		border_width = '1px'
-		for spPr in drawing.iter('{%s}spPr' % WPS_NS):
-			ln = spPr.find('{%s}ln' % A_NS)
-			if ln is not None:
-				w_emu = ln.get('w')
-				if w_emu:
-					try:
-						border_width = f'{int(w_emu) / 9525:.1f}pt'
-					except Exception:
-						pass
-				ln_clr = ln.find('.//{%s}solidFill/{%s}srgbClr' % (A_NS, A_NS))
-				if ln_clr is not None:
-					border_color = '#' + ln_clr.get('val', '000000')
-			break
-
-		return {
-			'type': 'textbox',
-			'rows': rows,
-			'fillColor': fill_color,
-			'borderColor': border_color,
-			'borderWidth': border_width,
-			'anchoredInline': True,  # position determined by anchor paragraph
-		}
-
 	# Iterate block items in document order: paragraphs and tables
 	# python-docx doesn't provide a direct unified iterator; iterate through document._body
-	seen_inline_textbox_texts = set()
 	for element in doc.element.body.iterchildren():
 		tag = element.tag.rsplit('}', 1)[-1]
 		if tag == 'p':
@@ -822,17 +627,6 @@ def _build_ir_document(doc):
 			for para in doc.paragraphs:
 				if para._p is element:
 					blocks.append(_extract_paragraph_ir(para))
-					# Inject any floating text box anchored to this paragraph
-					try:
-						tb = _extract_inline_textbox(para._p)
-						if tb:
-							# Deduplicate by first row text
-							key = ''.join(r.get('text','') for r in tb['rows'][0].get('runs',[]))
-							if key not in seen_inline_textbox_texts:
-								seen_inline_textbox_texts.add(key)
-								blocks.append(tb)
-					except Exception:
-						pass
 					break
 		elif tag == 'tbl':
 			for tbl in doc.tables:
@@ -841,23 +635,13 @@ def _build_ir_document(doc):
 					break
 	# Resolve list types (bullet vs numbered) from numbering definitions
 	_resolve_list_types(doc, blocks)
-
-	# Remove from meta.textBoxes any text boxes already injected inline,
-	# so the AI doesn't receive duplicate/conflicting placement instructions.
-	if seen_inline_textbox_texts:
-		filtered_tb = []
-		for tb in text_box_blocks:
-			first_text = ''.join(r.get('text','') for r in tb.get('rows',[{}])[0].get('runs',[])).strip()
-			if first_text not in seen_inline_textbox_texts:
-				filtered_tb.append(tb)
-		text_box_blocks = filtered_tb
 	
 	# Extract document-level default font and size
 	# Check docDefaults first, then fall back to "Body Text" and "Normal" paragraph styles
 	default_font = None
 	default_font_size_pt = None
 	try:
-		styles_elem = doc.styles.element
+		styles_elem = doc.element.find(qn('w:styles'))
 		if styles_elem is not None:
 			# 1. Try docDefaults
 			doc_defaults = styles_elem.find(qn('w:docDefaults'))
@@ -895,7 +679,7 @@ def _build_ir_document(doc):
 									f = (rFonts.get(qn('w:ascii')) or
 										 rFonts.get(qn('w:hAnsi')) or
 										 rFonts.get(qn('w:cs')))
-									if f:
+									if f and f not in ('Times New Roman', 'Calibri'):
 										default_font = f
 								if sz is not None and not default_font_size_pt:
 									val = sz.get(qn('w:val'))
@@ -910,12 +694,6 @@ def _build_ir_document(doc):
 						break
 	except Exception:
 		pass
-
-	# Triad/mortgage docs commonly use theme fonts where docDefaults specifies
-	# only the size — assume Calibri when size was detected but font name was not,
-	# so the global {Font(Calibri|<size>)} directive still gets emitted.
-	if default_font_size_pt and not default_font:
-		default_font = 'Calibri'
 
 	# Store header texts in meta for header detection
 	return {
@@ -972,36 +750,19 @@ class handler(BaseHTTPRequestHandler):
 			payload = {'success': True, 'fileName': file_name, 'ir': ir}
 
 			# Optional layout PDF (for browser screenshot / multimodal compare). Runs after PII gate.
-			pdf_bytes = None
-			pdf_err = None
 			if data.get('includeLayoutPdf') and try_convert_docx_to_pdf is not None:
 				pdf_bytes, pdf_err = try_convert_docx_to_pdf(file_bytes, file_name)
-			if pdf_bytes is not None:
-				payload['layoutPdfBase64'] = base64.b64encode(pdf_bytes).decode('ascii')
-				payload['layoutPdfMime'] = 'application/pdf'
-				# Multi-page PNG list for advanced vision — all pages
-				if try_pdf_all_pages_png_list is not None:
-					png_pages, pages_err = try_pdf_all_pages_png_list(pdf_bytes)
-					if png_pages:
-						payload['layoutPngPages'] = [
-							base64.b64encode(p).decode('ascii') for p in png_pages
-						]
-						payload['layoutPngPageCount'] = len(png_pages)
-						# Keep single-page fallback for backwards compat
-						payload['layoutPngBase64'] = payload['layoutPngPages'][0]
-					elif pages_err:
-						payload['layoutPngError'] = pages_err
-				elif try_pdf_first_page_png is not None:
-					# Fallback: single page only
-					png_bytes, png_err = try_pdf_first_page_png(pdf_bytes)
-					if png_bytes is not None:
-						payload['layoutPngBase64'] = base64.b64encode(png_bytes).decode('ascii')
-						payload['layoutPngPages'] = [payload['layoutPngBase64']]
-						payload['layoutPngPageCount'] = 1
-					elif png_err:
-						payload['layoutPngError'] = png_err
-			else:
-				payload['layoutPdfError'] = pdf_err or 'unknown conversion error'
+				if pdf_bytes is not None:
+					payload['layoutPdfBase64'] = base64.b64encode(pdf_bytes).decode('ascii')
+					payload['layoutPdfMime'] = 'application/pdf'
+					if try_pdf_first_page_png is not None:
+						png_bytes, png_err = try_pdf_first_page_png(pdf_bytes)
+						if png_bytes is not None:
+							payload['layoutPngBase64'] = base64.b64encode(png_bytes).decode('ascii')
+						elif png_err:
+							payload['layoutPngError'] = png_err
+				else:
+					payload['layoutPdfError'] = pdf_err or 'unknown conversion error'
 
 			return self._send(200, payload)
 		except Exception as e:

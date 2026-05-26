@@ -199,7 +199,6 @@ def load_few_shot_examples():
 		'LM300/LM300-formatted.html',       # HUD Pre-Foreclosure Sale: 2-col RE table with custom labels, 2-part Compress (no M583), margin-left bullets, no <br> after Sincerely
 		'CL028/CL028-formatted.html',       # Illinois Affidavit of Defense: 60/40 IMPORTANT NOTICE header, bordered lender/consumer table, grid home table, border-bottom writing lines, dual 50/50 signature tables
 		'ES014/ES014-formatted.html',       # Escrow Cancellation Request: Font() declaration, <hr> divider, Compress title box, account/borrower table, 80%-wide 40/1/20 signature tables, address section table, nested-table double-border warning box, plain TaxEmail at bottom
-		'LM001/LM001-formatted.html',       # Loss Mit Acknowledgement: {Symbol(ü)} Wingdings checkmark bullets, SUB_ROW indented continuation, <hr> after closing, 11pt bold section headings, colspan=2 Loan Number table
 	]
 
 	curated = foundational + recently_trained
@@ -251,12 +250,6 @@ def format_ir_for_prompt(ir):
 	import re
 	blocks = ir.get('blocks', [])
 	formatted = []
-	# Document-level default font size from metadata (set globally via {Font()} directive).
-	# Paragraphs matching this size do NOT need an explicit FONT_SIZE hint.
-	try:
-		_default_size_pt = float(ir.get('meta', {}).get('defaultFontSizePt') or 0)
-	except (TypeError, ValueError):
-		_default_size_pt = 0.0
 	
 	# Patterns to skip - these are metadata/instructions, not actual content
 	# IMPORTANT: These should match EXACT metadata phrases, not parts of actual content
@@ -298,10 +291,6 @@ def format_ir_for_prompt(ir):
 	
 	para_counter = 0  # Sequential numbering - no gaps from skipped blanks
 	seen_salutation = False  # Only emit SPACING markers after the Dear/salutation
-	seen_sincerely = False   # Track when we're past the "Sincerely," closing line
-	last_was_list_item = False  # Track whether the previous content block was a list item
-	last_was_sub_row = False   # Track whether the previous content block was a SUB_ROW
-	last_list_level = None     # Track the level of the last list item (for level-change detection)
 	for idx, block in enumerate(blocks):
 		if block.get('type') == 'paragraph':
 			runs = block.get('runs', [])
@@ -311,8 +300,6 @@ def format_ir_for_prompt(ir):
 			# Exception: preserve empty list items (empty bullet/numbered items are intentional placeholders)
 			# Exception: preserve blank paragraphs between list items (they indicate separate list groups)
 			if not text or len(text) < 3:
-				last_was_list_item = False  # Reset: blank paragraph breaks the list-item chain
-				last_was_sub_row = False    # Reset: blank paragraph breaks the sub-row chain
 				if block.get('isListItem') and (not text or len(text) < 3):
 					# Empty list item — include it as an explicit empty placeholder
 					list_level = block.get('listLevel', 0) or 0
@@ -382,18 +369,19 @@ def format_ir_for_prompt(ir):
 												is_preamble_blank = True
 												break
 							if not is_preamble_blank:
-								# After "Sincerely," closing: large gaps (5+) = <hr> section divider
-								if seen_sincerely and blank_count >= 5:
-									para_counter += 1
-									formatted.append(
-										f"Paragraph {para_counter}: [HR_SECTION_BREAK: {blank_count} blank lines after closing — render as <hr> (horizontal rule) here, NOT as multiple <br> tags]"
-									)
-								else:
-									br_tags = '<br>' * blank_count
-									para_counter += 1
-									formatted.append(
-										f"Paragraph {para_counter}: [SPACING: {blank_count} blank lines — output exactly {br_tags}]"
-									)
+								# Cap visible spacing at 4 blank lines. The source doc
+								# often has many trailing blank paragraphs to force a
+								# page break (40+), but those should not inflate the
+								# HTML template. 4 blanks is the standard gap after
+								# the mailing-address header and other intentional
+								# visual separators in our letter templates, so we
+								# preserve anything up to 4 and squash longer runs.
+								effective_count = min(blank_count, 4)
+								br_tags = '<br>' * effective_count
+								para_counter += 1
+								formatted.append(
+									f"Paragraph {para_counter}: [SPACING: {effective_count} blank lines — output exactly {br_tags}]"
+								)
 				continue
 			
 			# Allow short text if it looks like a label or contains template markers
@@ -576,12 +564,6 @@ def format_ir_for_prompt(ir):
 				r'\1',
 				cleaned_text
 			)
-			# Strip dash-prefixed trailing annotations: "[M594] – No Dash" or "[M594] — Description"
-			cleaned_text = re.sub(
-				r'(\[(?:[A-Z]\d{3}[A-Za-z0-9]*)\])\s*[–—]\s*[A-Za-z][A-Za-z \-]*$',
-				r'\1',
-				cleaned_text
-			)
 			# Convert METADATA annotations to clear directives instead of stripping
 			# e.g. "*METADATA -ONLY PRODUCE LAST 4 DIGITS OF LOAN NUMBER*" → "[USE: {[loanNumberLast4]}]"
 			def _convert_metadata(m):
@@ -657,15 +639,8 @@ def format_ir_for_prompt(ir):
 				if hyperlink_texts:
 					formatting_hints.append(f"HYPERLINK({'; '.join(hyperlink_texts)})")
 			
-			if font_size and (font_size >= 11.0 or font_size <= 9.0):  # Flag headings (11pt+) and footnotes; skip 10pt standard body
-				# Round 11–12.9pt down to 11pt — mortgage letter heading standard is 11pt
-				reported_size = 11 if 11.0 <= font_size <= 12.9 else int(font_size)
-				# Suppress hint when this size already matches the document's default font
-				# size (which is emitted globally via the {Font()} directive). Without this,
-				# every body paragraph in an 11pt-default letter ends up with a redundant
-				# style="font-size: 11pt" attribute in the generated HTML.
-				if not (_default_size_pt and abs(reported_size - _default_size_pt) < 0.5):
-					formatting_hints.append(f"FONT_SIZE_{reported_size}pt")
+			if font_size and (font_size >= 13.0 or font_size <= 8.0):  # Only flag headings/footnotes; skip common body sizes (8–12pt)
+				formatting_hints.append(f"FONT_SIZE_{int(font_size)}pt")
 			if alignment and alignment != 'left':
 				formatting_hints.append(f"ALIGN_{alignment.upper()}")
 			
@@ -678,48 +653,17 @@ def format_ir_for_prompt(ir):
 			if block.get('borderBottom'):
 				formatting_hints.append("BORDER_BOTTOM — this paragraph has a bottom border; render as <hr> if empty, or follow with <hr> if it has text")
 
-			# Add list item indicator with type and actual bullet character if known
+			# Add list item indicator with type (CRITICAL for bullet/numbered detection)
 			if block.get('isListItem'):
 				list_level = block.get('listLevel', 0)
 				list_type = block.get('listType', 'bullet')
-				bullet_char = block.get('listBulletChar', '')
-				# Always use literal • for bullet points regardless of what symbol the doc uses
-				# (e.g. Symbol-font middle dot · is visually a bullet → output • directly)
-				# Treat Symbol-font bullets ({Symbol(·)}, {Symbol(•)}, {Symbol(*)}, plain ·/•)
-				# as visual bullets and tell the AI to emit a literal • character.
-				def _is_visual_bullet(c):
-					if not c: return False
-					c_stripped = c.strip()
-					if c_stripped in ('•', '\u2022', '·', '\u00b7', '*', 'o', '▪', '◦'):
-						return True
-					if re.match(r'^\{Symbol\(\s*[·•\*o]\s*\)\}$', c_stripped):
-						return True
-					return False
-				if bullet_char and not _is_visual_bullet(bullet_char):
-					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={bullet_char}, MARGIN_LEFT_30PX)")
-				else:
-					formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, USE_BULLET=\u2022, MARGIN_LEFT_30PX)")
+				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level})")
 			
 			# Add left indent if significant (helps with margin-left decisions)
 			left_indent = block.get('leftIndentPt')
 			if left_indent and left_indent > 10:
 				formatting_hints.append(f"INDENT_LEFT_{int(left_indent)}pt")
-
-			# Add paragraph border / shading hints extracted directly from OOXML
-			has_border = block.get('hasBorder')
-			border_color = block.get('borderColor')
-			shading_fill = block.get('shadingFill')
-			if has_border:
-				sides = set(has_border.keys())
-				if sides >= {'top', 'bottom', 'left', 'right'}:
-					bc = f"_COLOR_{border_color}" if border_color else ""
-					formatting_hints.append(f"PARA_BORDER_BOX{bc}")
-				else:
-					for s in sorted(sides):
-						formatting_hints.append(f"PARA_BORDER_{s.upper()}")
-			if shading_fill:
-				formatting_hints.append(f"PARA_SHADING_#{shading_fill}")
-
+			
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
 			
@@ -739,130 +683,11 @@ def format_ir_for_prompt(ir):
 				prop_var = re_prop_match.group(1).strip()
 				cleaned_text = f"[RE_TABLE_ROW_2: (empty) | Property Address: | {prop_var}] — 3-COLUMN TABLE second row: <td width=\"3%\" valign=\"top\"></td><td width=\"20%\" valign=\"top\">Property Address:</td><td>{prop_var}</td>"
 			
-			# Detect indented non-list paragraphs that follow a list item
-			# (e.g., "*This ONLY applies..." or a URL continuation after a bullet)
-			# These should be flagged as additional rows in the same table
-			is_indent_sub_row = False
-			cur_is_list = bool(block.get('isListItem'))
-			cur_list_level = block.get('listLevel') if cur_is_list else None
-
-			# Emit level-change markers: level 0→1 means sub-items follow; 1→0 means back to main
-			if cur_is_list and last_was_list_item and cur_list_level != last_list_level:
-				if cur_list_level is not None and last_list_level is not None:
-					if cur_list_level > last_list_level:
-						# Going deeper — sub-items start here
-						para_counter += 1
-						formatted.append(
-							f"Paragraph {para_counter}: [LIST_LEVEL_DOWN: Following are LEVEL-{cur_list_level} sub-items — "
-							f"output as a SEPARATE <table width=\"100%\" style=\"border-collapse: collapse; margin-left: 30px\"> "
-							f"with NO <div> wrapper. Close the current level-{last_list_level} table first.]"
-						)
-					elif cur_list_level < last_list_level:
-						# Going back up — sub-item block ends here
-						para_counter += 1
-						formatted.append(
-							f"Paragraph {para_counter}: [LIST_LEVEL_UP: Returning to LEVEL-{cur_list_level} items — "
-							f"close the level-{last_list_level} sub-table and start a new <div><table> for this item]"
-						)
-
-			# Emit separator when a SUB_ROW paragraph is followed by a new list item
-			# (the new list item needs its own <div><table> block with <br> before it)
-			if cur_is_list and last_was_sub_row:
-				para_counter += 1
-				formatted.append(
-					f"Paragraph {para_counter}: [BETWEEN_TABLES: Close the previous <div><table> block and output <br> here, "
-					f"then start a NEW <div><table> block for the next bullet]"
-				)
-
-			if (last_was_list_item
-					and not cur_is_list
-					and block.get('leftIndentPt') and block.get('leftIndentPt') >= 15):
-				is_indent_sub_row = True
-				formatting_hints.append(
-					"SUB_ROW: This indented paragraph immediately follows a list-item bullet — "
-					"output it as an ADDITIONAL <tr> (with empty first <td>) in the SAME "
-					"<div><table> block as the preceding bullet, do NOT start a new table"
-				)
-				# Rebuild formatting_note with the new hint
-				formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
-
 			para_counter += 1
 			formatted.append(f"Paragraph {para_counter}: {cleaned_text[:char_limit]}{formatting_note}")
 			# Track when we've entered the letter body (past the preamble)
 			if not seen_salutation and re.match(r'Dear\b', cleaned_text, re.IGNORECASE):
 				seen_salutation = True
-			# Track when we've passed "Sincerely," so we can detect hr gaps
-			if seen_salutation and not seen_sincerely and re.match(r'Sincerely\b', cleaned_text, re.IGNORECASE):
-				seen_sincerely = True
-			# Update tracking state for next iteration
-			last_was_list_item = cur_is_list
-			last_was_sub_row = is_indent_sub_row
-			last_list_level = cur_list_level if cur_is_list else last_list_level
-		elif block.get('type') == 'textbox' and block.get('anchoredInline'):
-			# Pre-render the textbox as complete HTML and embed verbatim.
-			# This avoids AI grouping errors with START/END markers.
-			fill  = block.get('fillColor') or ''
-			bclr  = block.get('borderColor') or '#000000'
-			bwid  = (block.get('borderWidth') or '1pt').rstrip('px').rstrip('pt') + 'pt'
-
-			# Build inner HTML — list items → bullet <table>, others → <div>
-			inner_lines = []
-			bullet_rows = []
-
-			def flush_bullets():
-				if bullet_rows:
-					trs = ''.join(
-						f'<tr><td width="3%" valign="top" style="text-align: center">&#8226;</td><td>{r}</td></tr>'
-						for r in bullet_rows
-					)
-					inner_lines.append(
-						f'<div><table width="100%" style="border-collapse: collapse">'
-						f'<tbody>{trs}</tbody></table></div>'
-					)
-					bullet_rows.clear()
-
-			for row in block.get('rows', []):
-				runs = row.get('runs', [])
-				if not any(r.get('text', '').strip() for r in runs):
-					continue
-				align = row.get('align', 'left')
-				bold_all = all(r.get('bold') for r in runs if r.get('text','').strip())
-				is_list = row.get('isListItem') or row.get('listType') == 'bullet'
-
-				# Build cell HTML respecting per-run hyperlink underline
-				cell_parts = []
-				for r in runs:
-					rt = r.get('text', '')
-					if not rt:
-						continue
-					if r.get('isHyperlink') or r.get('underline'):
-						cell_parts.append(f'<u>{rt}</u>')
-					else:
-						cell_parts.append(rt)
-				row_html = ''.join(cell_parts).strip()
-				if bold_all:
-					row_html = f'<b>{row_html}</b>'
-
-				if is_list:
-					bullet_rows.append(row_html)
-				else:
-					flush_bullets()
-					div_style = ' style="text-align: center"' if align in ('center', 'CENTER') else ''
-					inner_lines.append(f'<div{div_style}>{row_html}</div>')
-			flush_bullets()
-
-			cell_html = '\n  '.join(inner_lines)
-			div_style_parts = [
-				'font-family: Times New Roman',
-				'font-size: 12pt',
-				f'border: {bwid} solid {bclr}',
-				f'background-color: {fill}' if fill else '',
-				'padding: 8pt 10pt',
-			]
-			div_style = '; '.join(p for p in div_style_parts if p)
-			tb_html = f'<div style="{div_style}">\n  {cell_html}\n</div>'
-			formatted.append(f'[VERBATIM_HTML: copy the following HTML exactly as-is to your output]\n{tb_html}\n[END_VERBATIM_HTML]')
-
 		elif block.get('type') == 'table':
 			rows = block.get('rows', [])
 			tbl_borders = block.get('tableBorders')
@@ -992,36 +817,6 @@ def format_ir_for_prompt(ir):
 		return text
 	formatted = [normalize_vars(line) for line in formatted]
 
-	# Post-process step 0b: Insert BORDER_BOX_START / BORDER_BOX_END around consecutive
-	# paragraphs that all carry [FORMATTING: PARA_BORDER_BOX...].  This lets Claude know
-	# they belong inside a single bordered (and optionally shaded) wrapper element.
-	_BORDER_RE = re.compile(r'\[FORMATTING:[^\]]*PARA_BORDER_BOX([^\]]*)\]')
-	_SHADE_RE  = re.compile(r'PARA_SHADING_(#[0-9A-Fa-f]{6})')
-	_grouped: list[str] = []
-	_in_box = False
-	_box_attrs: str = ''
-	for _line in formatted:
-		_m = _BORDER_RE.search(_line)
-		if _m:
-			_attrs = _m.group(1)  # may contain _COLOR_XXXXXX
-			# Collect shading color if present
-			_sm = _SHADE_RE.search(_line)
-			_shade = _sm.group(1) if _sm else ''
-			_attr_str = (_attrs or '') + (_shade or '')
-			if not _in_box:
-				_in_box = True
-				_box_attrs = _attr_str
-				_grouped.append(f'[BORDER_BOX_START{_box_attrs}]')
-			_grouped.append(_line)
-		else:
-			if _in_box:
-				_in_box = False
-				_grouped.append('[BORDER_BOX_END]')
-			_grouped.append(_line)
-	if _in_box:
-		_grouped.append('[BORDER_BOX_END]')
-	formatted = _grouped
-
 	# Post-process step 1: Merge continuation lines
 	# Word sometimes splits a single sentence across multiple paragraphs (soft returns).
 	# Detect: a line that ends without terminal punctuation followed by a line that starts lowercase.
@@ -1078,8 +873,7 @@ def format_ir_for_prompt(ir):
 	mailing_addr_indices = set()
 	for i, line in enumerate(formatted):
 		# Detect mailing address M-code lines (M558–M566 are borrower mailing address fields)
-		# Exclude signature lines that reuse M558/M559 with Dated:/underscores context
-		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line) and not re.search(r'_{4,}|Dated:', line):
+		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line):
 			mailing_addr_indices.add(i)
 
 	# Detect which address variables exist in the RAW IR blocks (not the filtered list,
@@ -1110,26 +904,12 @@ def format_ir_for_prompt(ir):
 		# Subject heading before Loan Number table: force correct style
 		if i == subject_heading_idx:
 			line += ' [NOTE: This is the SUBJECT HEADING — format as: <b><div style="font-size: 11pt">text</div></b> — do NOT add <br> after this before the Loan Number table]'
-		# Loan Number line: force standard 2-column table (Pattern 3a)
-		if i == loan_number_idx:
-			ln_var_match = re.search(r'(\{?\[?M594\]?\}?)', line)
-			ln_var = ln_var_match.group(1) if ln_var_match else '{[M594]}'
-			line += (
-				f' [NOTE: LOAN NUMBER TABLE — combine this Loan Number line with the NEXT RE: line into a single 2-row 2-column table: '
-				f'<table width="100%"><tbody><tr>'
-				f'<td width="20%" valign="top">Loan Number:</td>'
-				f'<td>{ln_var}</td>'
-				f'</tr><tr>'
-				f'<td width="20%" valign="top">RE:</td>'
-				f'<td>{{Compress(...)}}</td>'
-				f'</tr></tbody></table> — keep exactly 2 columns per row, the RE: row uses Compress() from the next paragraph]'
-			)
 		# Paragraph immediately before first mortgagee clause: suppress trailing <br>
 		if i == pre_mortgagee_idx:
 			line += " [NOTE: Mortgagee clause lines follow IMMEDIATELY after this paragraph — do NOT add <br> between this paragraph and the mortgagee lines]"
 		# RE/Property Address row: merge address variables into Compress form using ONLY
 		# the variables that actually appear in the source document (source-driven).
-		if re.search(r'(?:RE:|Property Address:)\s+.*M567', line):
+		if re.search(r'(?:RE:|Property Address:)\s*.*M567', line):
 			para_num = re.match(r'Paragraph (\d+):', line)
 			num = para_num.group(1) if para_num else '?'
 			fmt_match = re.search(r'\[FORMATTING:[^\]]*\]', line)
@@ -1202,8 +982,7 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 	default_font = ir.get('meta', {}).get('defaultFont')
 	default_font_size_pt = ir.get('meta', {}).get('defaultFontSizePt')
 	if default_font and default_font_size_pt:
-		_size_str = (str(int(default_font_size_pt)) if float(default_font_size_pt).is_integer() else str(default_font_size_pt))
-		font_directive = f"\n[DEFAULT_FONT: {default_font} {_size_str}pt — emit `&nbsp;{{Font({default_font}|{_size_str}pt)}}` as the very first line before the header div]\n"
+		font_directive = f"\n[DEFAULT_FONT: {default_font} {default_font_size_pt}pt — emit `&nbsp;{{Font({default_font}|{default_font_size_pt}pt)}}` as the very first line before the header div]\n"
 	else:
 		font_directive = ""
 
@@ -1229,22 +1008,21 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 
 	ir_content = header_directive + font_directive + gap_directive + ir_content
 	
-	# Append any remaining floating text boxes from meta that were NOT already injected
-	# inline (i.e., legacy title/warning boxes that have no anchor paragraph).
+	# Append text box content if present (floating text boxes are not in body flow)
 	text_boxes = ir.get('meta', {}).get('textBoxes', [])
 	if text_boxes:
-		# Collect text keys already emitted inline so we don't duplicate
-		import re as _re_tb
-		ir_content += "\n\n=== ADDITIONAL FLOATING TEXT BOXES ===\n"
-		ir_content += "PLACEMENT RULES:\n"
-		ir_content += "  - SHORT TITLE box (1-3 words) → place AFTER mailing address, centered\n"
-		ir_content += "  - WARNING/NOTICE box ('If you do not…', 'IMPORTANT:') → place at VERY BOTTOM\n"
-		ir_content += "  - LOAN/PROPERTY INFO box → place after mailing address, before salutation\n"
+		ir_content += "\n\n=== FLOATING TEXT BOXES (visually prominent boxes floating in document layout) ===\n"
+		ir_content += "PLACEMENT RULES — read the content to decide where each box belongs:\n"
+		ir_content += "  - SHORT TITLE box (1-3 words, e.g. 'Escrow Cancellation Request', 'Loan Summary') → place AFTER mailing address, centered. Use {Compress(Part1|Part2)} to split the title across two lines at a natural word boundary (e.g. 'Escrow Cancellation Request' → {Compress(Escrow Cancellation|Request)})\n"
+		ir_content += "  - WARNING/NOTICE box (long sentence starting with 'If you do not...', 'You must...', 'IMPORTANT:') → place at the VERY BOTTOM of the document, AFTER return address and fax/email lines\n"
+		ir_content += "  - LOAN/PROPERTY INFO box (Loan Number, Property Address, RE:) → place after mailing address, before salutation\n"
 		for i, tb in enumerate(text_boxes):
 			tb_text = ' '.join(
 				''.join(r.get('text','') for r in row.get('runs',[])).strip()
 				for row in tb.get('rows',[])
 			).strip()
+			# Classify this text box so Claude knows where to place it
+			import re as _re_tb
 			if len(tb_text.split()) <= 6 and not _re_tb.search(r'If you|must|required|payment|IMPORTANT', tb_text, _re_tb.IGNORECASE):
 				tb_role = "TITLE (place after mailing address, centered)"
 			elif _re_tb.search(r'If you|must|required|payment will|escrow payment', tb_text, _re_tb.IGNORECASE):
@@ -1407,7 +1185,7 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - `{Lower(value)}` — converts value to lowercase
    - `{PadLeft(value|width|char)}` — left-pads value: `{PadLeft(123|6|0)}` → 000123
    - `{Replace(source|"old"|"new")}` — replaces all occurrences of old with new in source
-   - `{Symbol(value)}` — outputs a special symbol wrapped in an HTML label tag. Use ONLY for non-standard symbols like Wingdings checkmarks (e.g. {Symbol(ü)}). NEVER use {Symbol(·)} for bullet points — use the literal • character instead.
+   - `{Symbol(value)}` — outputs a symbol wrapped in an HTML label tag
 
    Numeric / Formatting:
    - `{Number(value|decimals)}` — formats number with rounding: `{Number(1234.567|2)}` → 1234.57; also use for numeric comparisons
@@ -1518,11 +1296,10 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    
    **BULLET LIST FORMAT (width="3%", border-collapse, margin-left) - when using TABLE:**
    <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
-     <td width="3%" valign="top" style="text-align: center">•</td>
+     <td width="3%" valign="top">•</td>
      <td>First item text</td>
    </tr></tbody></table></div>
-   CRITICAL: The margin-left: 30px and <div> wrapper are MANDATORY for ALL bullet list tables. NO EXCEPTIONS.
-   CRITICAL: ALWAYS use the literal • character directly for bullet points — NEVER use {Symbol(·)} or any {Symbol()} wrapper for standard bullets. {Symbol()} is ONLY for non-bullet special characters like Wingdings checkmarks.
+   CRITICAL: The margin-left and <div> wrapper are MANDATORY for all bullet/numbered list tables.
    
    **CRITICAL**: NEVER change numbered lists (1., 2.) to bullets (•) or vice versa!
    **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%" when using TABLE format!
@@ -1775,27 +1552,6 @@ When the document has a thin horizontal line separating the mailing address from
 <div style="text-align: center">...
 ```
 Detection: If the IR contains `[FORMATTING: BORDER_BOTTOM]` on a paragraph between the mailing address and the document title/body, or a paragraph that is blank with only a bottom border → render as `<hr>`.
-
-**VERBATIM HTML BLOCKS — pre-rendered content (text boxes, special shapes):**
-When the IR contains `[VERBATIM_HTML: copy the following HTML exactly as-is to your output]` followed by HTML and then `[END_VERBATIM_HTML]`:
-- Copy EVERY LINE of the HTML between those markers to your output EXACTLY as written — do not change, reformat, move, or omit any part of it.
-- Place it at the exact position it appears in the IR (between the surrounding paragraphs).
-- Do NOT emit the `[VERBATIM_HTML:]` or `[END_VERBATIM_HTML]` marker text itself — only the HTML between them.
-- Do NOT add `<br>` before or after the verbatim block unless the IR spacing markers say to.
-
-**PARAGRAPH BORDER BOX — wrapping consecutive bordered/shaded paragraphs:**
-When the IR contains `[BORDER_BOX_START...]` and `[BORDER_BOX_END]` markers, ALL content between them must be wrapped in a single bordered table (the paragraphs share a paragraph-level border and/or fill extracted from the OOXML). Use this pattern:
-```html
-<table width="100%" style="border: 1px solid #000; border-collapse: collapse;"><tbody><tr>
-  <td style="padding: 8pt 10pt;">
-    [all paragraph content rendered normally inside here]
-  </td>
-</tr></tbody></table>
-```
-- If the marker contains a shading color (e.g. `[BORDER_BOX_START#E2EFDA]`), add `background-color: #E2EFDA` to the `<table>` style.
-- If a border color is specified (e.g. `_COLOR_FF0000`), use that color for the border instead of `#000`.
-- Render each paragraph inside the box as its own element (div, bullet sub-table, etc.) just as you would outside a box — the box is ONLY the outer wrapper.
-- Do NOT emit the `[BORDER_BOX_START]` / `[BORDER_BOX_END]` text in the output — they are IR markers only.
 
 **CENTERED TITLE BOX with {Compress()} for multi-line titles:**
 When a document has a large centered title in a bordered box where the title spans two lines (e.g. "Escrow Cancellation / Request"), use `{Compress()}` to split it across lines inside the box — do NOT use `font-weight: bold` unless the document explicitly shows bold:
@@ -2658,28 +2414,16 @@ class handler(BaseHTTPRequestHandler):
 		try:
 			content_length = int(self.headers.get('Content-Length', '0'))
 			post_data = self.rfile.read(content_length)
-
+			
 			data = json.loads(post_data.decode('utf-8') or '{}')
 			ir = data.get('ir')
 			doc_meta = data.get('docMeta', {})
 			user_instruction = data.get('userInstruction')
 			chat_history = data.get('chatHistory', [])
-
-			# Support multi-page PNG list (preferred) or single-page fallback
-			raw_pages = data.get('layoutPngPages')  # list of base64 strings
-			layout_png_b64 = data.get('layoutPngBase64')  # single-page fallback
-
-			layout_png_pages: list = []
-			if isinstance(raw_pages, list) and raw_pages:
-				for p in raw_pages:
-					if isinstance(p, str) and len(p) > 200:
-						cleaned = p.split('base64,', 1)[-1].strip() if 'base64,' in p else p.strip()
-						layout_png_pages.append(cleaned)
-			elif isinstance(layout_png_b64, str) and len(layout_png_b64) > 200:
-				# Fall back to single page
-				cleaned = layout_png_b64.split('base64,', 1)[-1].strip() if 'base64,' in layout_png_b64 else layout_png_b64.strip()
-				layout_png_pages = [cleaned]
-
+			layout_png_b64 = data.get('layoutPngBase64')
+			if isinstance(layout_png_b64, str) and 'base64,' in layout_png_b64:
+				layout_png_b64 = layout_png_b64.split('base64,', 1)[-1].strip()
+			
 			if not ir:
 				return self._send(400, {'success': False, 'error': 'No IR data provided'})
 			
@@ -2769,41 +2513,33 @@ class handler(BaseHTTPRequestHandler):
 				else:
 					max_tokens = 8000   # Standard documents
 
-				use_layout_images = len(layout_png_pages) > 0
-				if use_layout_images:
+				use_layout_image = (
+					isinstance(layout_png_b64, str)
+					and len(layout_png_b64) > 200
+				)
+				if use_layout_image:
 					max_tokens = min(max_tokens + 4000, 16000)
 
-				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}, layoutPages={len(layout_png_pages)}")
+				print(f"Document has {ir_blocks} blocks, estimated input tokens: ~{estimated_input_tokens}, using max_tokens={max_tokens}, layoutImage={bool(use_layout_image)}")
 
-				if use_layout_images:
-					n_pages = len(layout_png_pages)
+				if use_layout_image:
 					layout_note = (
-						f"The {n_pages} image{'s' if n_pages > 1 else ''} above show{'s' if n_pages == 1 else ''} "
-						f"all {n_pages} page{'s' if n_pages > 1 else ''} of the source Word document as rendered (PDF raster). "
-						"Use them to supplement the IR text below. Specifically, look for:\n"
-						"  1. TABLE STRUCTURE — exact number of columns, visible borders (or no borders), "
-						"column width proportions (e.g. narrow first column for a bullet symbol, wide content column)\n"
-						"  2. INDENTATION — any section visually indented (approximate pixel offset → use padding-left or margin-left)\n"
-						"  3. TAB STOPS — within a line, where text jumps horizontally after a bold label "
-						"(use <span style=\"padding-left: 55px\"> for the indented portion)\n"
-						"  4. TEXT ALIGNMENT — centered, left, justified per section\n"
-						"  5. HORIZONTAL RULES — visible dividing lines between sections\n"
-						"  6. SPACING — blank lines / extra whitespace between paragraphs or after the closing\n"
-						"All wording and merge field variables MUST still come from the Document Content / IR text below. "
-						"The images are visual reference only — do not invent text from them.\n\n"
+						"The first image is page 1 of the source document as rendered (PDF raster). "
+						"Use it to match table grid, borders, column widths, cell alignment, and spacing. "
+						"Preserve bold/italic/underline from the IR run formatting below; use the image to confirm structure and alignment. "
+						"All wording and merge fields must still come from the Document Content / IR text below, not from the image.\n\n"
 					)
-					user_blocks = []
-					for idx, page_b64 in enumerate(layout_png_pages):
-						user_blocks.append({"type": "text", "text": f"[Page {idx + 1} of {n_pages}]"})
-						user_blocks.append({
+					user_blocks = [
+						{
 							"type": "image",
 							"source": {
 								"type": "base64",
 								"media_type": "image/png",
-								"data": page_b64,
+								"data": layout_png_b64.strip(),
 							},
-						})
-					user_blocks.append({"type": "text", "text": layout_note + user_message})
+						},
+						{"type": "text", "text": layout_note + user_message},
+					]
 					messages = [{"role": "user", "content": user_blocks}]
 				else:
 					messages = [{"role": "user", "content": user_message}]
@@ -2825,7 +2561,7 @@ class handler(BaseHTTPRequestHandler):
 						messages=messages,
 						temperature=0,
 					)
-
+				
 				html = response.content[0].text.strip()
 				print(f"Anthropic API call successful, HTML length: {len(html)}")
 			except Exception as api_error:
@@ -2853,7 +2589,7 @@ class handler(BaseHTTPRequestHandler):
 				'success': True,
 				'html': html,
 				'notes': notes,
-				'layoutImageUsed': bool(use_layout_images),
+				'layoutImageUsed': bool(use_layout_image),
 			})
 			
 		except Exception as e:

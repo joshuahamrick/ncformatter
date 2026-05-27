@@ -1004,7 +1004,12 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 			else:
 				empty_run = 0
 	if max_empty >= 15:
-		gap_directive = f"\n[SECTION_GAP_DETECTED: {max_empty} consecutive empty paragraphs act as a visual section separator — render as <hr> between mailing address and document title/body]\n"
+		# Source documents often pad with many empty paragraphs to force a page
+		# break, NOT to indicate a horizontal-rule section divider. Render as the
+		# standard 5-<br> mailing-address gap unless a BORDER_BOTTOM annotation
+		# elsewhere indicates a real horizontal rule. (Letters that genuinely
+		# need <hr> learn that pattern from their few-shot example, e.g. ES014.)
+		gap_directive = f"\n[LARGE_BLANK_RUN_DETECTED: {max_empty} consecutive empty paragraphs in source — these are a page-break artifact, NOT a section divider. Render as <br><br><br><br><br> (5 br tags) after the mailing address, NOT as <hr>. Do not preserve all {max_empty} blanks; cap at 5 br.]\n"
 
 	ir_content = header_directive + font_directive + gap_directive + ir_content
 	
@@ -1676,7 +1681,7 @@ STEP 0 - SYSTEMATIC CONTENT SCAN (DO THIS FIRST):
      - TITLE box → place after mailing address, centered
      - WARNING box → place at the VERY BOTTOM of document (after return address, after fax/email lines)
      - INFO box → place after mailing address, before salutation
-   - **CHECK FOR [SECTION_GAP_DETECTED]**: If this directive is present at the top of Document Content, you MUST output `<hr>` immediately after `<div>{[mailingAddress]}</div>` — do NOT use `<br><br><br><br><br>`. This is MANDATORY, not optional. The `<hr>` replaces all spacing after the mailing address in these documents.
+   - **CHECK FOR [LARGE_BLANK_RUN_DETECTED]**: If this directive is present at the top of Document Content, output exactly `<br><br><br><br><br>` (5 br tags) immediately after `<div>{[mailingAddress]}</div>`. The directive signals that the source document padded a page break with many blank paragraphs — those are NOT a horizontal-rule divider, just a normal mailing-address gap. Do NOT use `<hr>` here unless the few-shot example for a similar letter explicitly does so (e.g. ES014 has a real visible horizontal rule in its source).
    - Look for CONDITIONAL SECTIONS: Text like "(IF TAG = value then insert the below):" 
      indicates conditional content. Convert these to {If()} blocks in the output.
      Example: "(IF M007 IBM State Code = "19" then insert the below):" → {If('{[M007]}' = '19')}
@@ -1858,7 +1863,7 @@ STEP 4 - VERIFY COMPLETENESS:
     - 1 <br> after header tag
     - NO <br> between date and mailing address (they are adjacent)
     - <br><br><br><br><br> after mailing address (standard 5-br gap before next section)
-    - EXCEPTION: If `[SECTION_GAP_DETECTED]` is present OR `[FORMATTING: BORDER_BOTTOM]` appears on a paragraph near the mailing address, use `<hr>` instead of the 5-br gap. NEVER combine `<hr>` with `<br>` tags before or after it.
+    - EXCEPTION: ONLY use `<hr>` instead of the 5-br gap when `[FORMATTING: BORDER_BOTTOM]` appears on a paragraph near the mailing address — that signals a real horizontal-rule border in the source. The `[LARGE_BLANK_RUN_DETECTED]` directive is NOT an hr signal; it just confirms the 5-br standard gap is correct. NEVER combine `<hr>` with `<br>` tags before or after it.
     - 1 <br> after Loan Number/Property Address table (if present)
     - 1 <br> before and after salutation line
     - 1 <br> between body paragraphs

@@ -1,0 +1,40 @@
+# Gotenberg (LibreOffice in Docker) for NcFormatter's Advanced mode.
+#
+# Converts uploaded .docx files to print-accurate PDFs that the Vercel
+# backend then rasterizes into per-page PNGs and sends to Claude for the
+# Advanced visual-layout pass.
+#
+# Deploy:   cd infra/gotenberg && flyctl deploy
+# Status:   flyctl status -a ncformatter-gotenberg
+
+app = "ncformatter-gotenberg"
+primary_region = "ord"  # Chicago — closest to Vercel's iad1 default
+
+[build]
+  image = "gotenberg/gotenberg:8"
+
+[experimental]
+  cmd = ["gotenberg", "--api-timeout=60s", "--api-disable-health-check-logging"]
+
+# Gotenberg listens on port 3000; expose via Fly's edge with HTTPS.
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"     # save free-tier hours when idle
+  auto_start_machines = true      # cold-start on next request
+  min_machines_running = 0        # 0 idle → free; first request after idle ~3-5s
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+# 512 MB RAM handles typical mortgage-letter conversions (4-8 pages) with
+# headroom. Bump if you start converting very large docs.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

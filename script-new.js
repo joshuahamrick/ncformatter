@@ -213,9 +213,26 @@ class WordFormatter {
             shouldBlock = true;
         }
 
-        if (salutationName.test(totalText)) {
-            findings.push('Real person name detected in salutation (e.g. "Dear John Smith").');
-            shouldBlock = true;
+        const salMatch = totalText.match(salutationName);
+        if (salMatch) {
+            const placeholderWords = new Set([
+                'Mortgagor', 'Borrower', 'Coborrower', 'Customer', 'Client', 'Homeowner',
+                'Occupant', 'Resident', 'Owner', 'Tenant', 'Applicant', 'Holder',
+                'Member', 'Account', 'Property', 'Name',
+                'Valued', 'Loyal', 'Esteemed', 'Prospective', 'Former', 'Current',
+                'Mortgage', 'Loan', 'Home',
+                'Sir', 'Sirs', 'Madam', 'Madams',
+                'Second', 'Third', 'Additional', 'Non', 'Primary', 'Co',
+            ]);
+            // Match looks like "Dear Word1 Word2 ..." — split off "Dear" and check
+            // whether every remaining word is a known generic/placeholder. If so,
+            // it's boilerplate ("Dear Valued Customer"), not a real name.
+            const matchWords = salMatch[0].split(/\s+/).slice(1);
+            const isPlaceholder = matchWords.every(w => placeholderWords.has(w.replace(/[,&]/g, '')));
+            if (!isPlaceholder) {
+                findings.push('Real person name detected in salutation (e.g. "Dear John Smith").');
+                shouldBlock = true;
+            }
         }
 
         if (dobPattern.test(totalText)) {

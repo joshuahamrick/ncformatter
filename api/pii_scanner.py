@@ -108,11 +108,21 @@ SALUTATION_NAME_PATTERN = re.compile(
 )
 
 # Known template placeholder words that appear in salutations but are NOT real names.
-# e.g. "Dear Mortgagor Name," or "Dear Borrower," after stripping a [M558] variable.
+# e.g. "Dear Mortgagor Name," or "Dear Borrower," after stripping a [M558] variable,
+# or generic boilerplate salutations like "Dear Valued Customer," / "Dear Mortgage Customer,".
 SALUTATION_PLACEHOLDER_WORDS = {
-    'Mortgagor', 'Borrower', 'Coborrower', 'Customer', 'Homeowner',
-    'Occupant', 'Resident', 'Owner', 'Property', 'Name', 'Second',
-    'Third', 'Additional', 'Non', 'Primary', 'Co',
+    # Role / role-placeholder nouns
+    'Mortgagor', 'Borrower', 'Coborrower', 'Customer', 'Client', 'Homeowner',
+    'Occupant', 'Resident', 'Owner', 'Tenant', 'Applicant', 'Holder',
+    'Member', 'Account', 'Property', 'Name',
+    # Generic boilerplate adjectives used in greetings
+    # ("Dear Valued Customer", "Dear Loyal Borrower", "Dear Esteemed Client", ...)
+    'Valued', 'Loyal', 'Esteemed', 'Prospective', 'Former', 'Current',
+    'Mortgage', 'Loan', 'Home', 'Property',
+    # Generic plural/inclusive greeting words ("Dear Sir or Madam", "Dear Sirs")
+    'Sir', 'Sirs', 'Madam', 'Madams', 'Sirs/Madams',
+    # Ordering / qualifier words ("Dear Co-Borrower", "Dear Second Mortgagor")
+    'Second', 'Third', 'Additional', 'Non', 'Primary', 'Co',
 }
 
 TITLE_NAME_PATTERN = re.compile(

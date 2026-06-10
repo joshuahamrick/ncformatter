@@ -1,5 +1,31 @@
 // Word Document Formatter - Python Backend Version
 
+function isDocxUpload(file) {
+	const name = (file && file.name || '').toLowerCase();
+	const type = (file && file.type) || '';
+	return name.endsWith('.docx') ||
+		type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+}
+
+async function readDocxBase64ForUpload(file) {
+	if (!isDocxUpload(file) || typeof window.NcStripDocxFonts === 'undefined') {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = (e) => resolve(String(e.target.result).split(',')[1]);
+			reader.onerror = () => reject(new Error('Failed to read file'));
+			reader.readAsDataURL(file);
+		});
+	}
+	const prepared = await window.NcStripDocxFonts.prepare(await file.arrayBuffer());
+	if (prepared.stripped) {
+		console.log(
+			`strip_docx_fonts: removed embedded fonts from ${file.name} ` +
+			`(${prepared.bytesSaved.toLocaleString()} bytes saved)`
+		);
+	}
+	return window.NcStripDocxFonts.toBase64(prepared.bytes);
+}
+
 class WordFormatter {
     constructor() {
         this.initializeElements();
@@ -268,14 +294,8 @@ class WordFormatter {
             this.showProcessing();
 			let htmlOut = '';
 			if (this.isWordDocument(file)) {
-				// Use DOCX IR endpoint
-				const arrayBuffer = await new Promise((resolve, reject) => {
-					const reader = new FileReader();
-					reader.onload = e => resolve(e.target.result);
-					reader.onerror = () => reject(new Error('Failed to read file'));
-					reader.readAsDataURL(file);
-				});
-				const base64String = String(arrayBuffer).split(',')[1];
+				// Use DOCX IR endpoint (strip embedded fonts first to stay under upload limit)
+				const base64String = await readDocxBase64ForUpload(file);
 				const apiUrl = '/api/process-doc';
 				console.log('Calling process-doc endpoint:', apiUrl);
 				
@@ -1024,12 +1044,8 @@ class WordFormatter {
             
             reader.onload = async function(event) {
                 console.log('FileReader onload triggered');
-                const dataURL = event.target.result;
-                console.log('DataURL length:', dataURL.length);
-                
                 try {
-                    // Extract base64 string from data URL
-                    const base64String = dataURL.split(',')[1];
+                    const base64String = await readDocxBase64ForUpload(file);
                     
                     // Call Vercel Python serverless function
                     const response = await fetch('/api/process-word', {
@@ -4187,6 +4203,10 @@ class UpdateManager {
 			reader.onload  = (e) => callback(e.target.result, file.name);
 			reader.onerror = ()  => this._showError('Failed to read the file.');
 			reader.readAsText(file);
+		} else if (isDocxUpload(file)) {
+			readDocxBase64ForUpload(file)
+				.then((b64) => callback(b64, file.name))
+				.catch((err) => this._showError(err.message || 'Failed to read the file.'));
 		} else {
 			const reader = new FileReader();
 			reader.onload  = (e) => callback(e.target.result.split(',')[1], file.name);

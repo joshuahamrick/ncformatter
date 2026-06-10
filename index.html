@@ -442,6 +442,9 @@
         </div>
     </div>
 
+    <!-- Strip embedded Word fonts before upload (keeps payloads under Vercel limit) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="strip-docx-fonts.js"></script>
     <!-- New Python-powered formatter -->
     <script src="script-new.js"></script>
 

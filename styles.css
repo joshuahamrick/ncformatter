@@ -2010,6 +2010,26 @@ body {
     }
 }
 
+.upd-upload-row-optional {
+    margin-bottom: 20px;
+}
+
+.upd-zone-wrap-optional {
+    max-width: 100%;
+}
+
+.upd-drop-zone-optional {
+    height: 160px;
+    border-style: dotted;
+    opacity: 0.92;
+}
+
+.upd-zone-badge-optional {
+    background: #21262d;
+    color: #6e7681;
+    font-size: 0.85rem;
+}
+
 .upd-zone-wrap {
     display: flex;
     flex-direction: column;

@@ -4063,6 +4063,9 @@ class UpdateManager {
 		this.wordDocBase64 = null;
 		this.wordDocFilename = null;
 		this.wordDocIR = null;
+		this.oldWordDocBase64 = null;
+		this.oldWordDocFilename = null;
+		this.oldWordDocIR = null;
 		this.proposedChanges = [];
 		this.changesSummary = '';
 		this.chatHistory = [];
@@ -4087,6 +4090,14 @@ class UpdateManager {
 		this.wordTitle      = document.getElementById('updWordTitle');
 		this.wordSub        = document.getElementById('updWordSub');
 		this.wordIcon       = document.getElementById('updWordIcon');
+
+		this.oldWordZone       = document.getElementById('updOldWordZone');
+		this.oldWordFileInput  = document.getElementById('updOldWordFileInput');
+		this.oldWordBrowseBtn  = document.getElementById('updOldWordBrowseBtn');
+		this.oldWordStatus     = document.getElementById('updOldWordStatus');
+		this.oldWordTitle      = document.getElementById('updOldWordTitle');
+		this.oldWordSub        = document.getElementById('updOldWordSub');
+		this.oldWordIcon       = document.getElementById('updOldWordIcon');
 
 		this.contextInput     = document.getElementById('updContextNotes');
 		this.analyzeBtn       = document.getElementById('updAnalyzeBtn');
@@ -4133,6 +4144,11 @@ class UpdateManager {
 		this._bindDropZone(
 			this.wordZone, this.wordFileInput, this.wordBrowseBtn,
 			(base64, filename) => this._setWordDoc(base64, filename)
+		);
+
+		this._bindDropZone(
+			this.oldWordZone, this.oldWordFileInput, this.oldWordBrowseBtn,
+			(base64, filename) => this._setOldWordDoc(base64, filename)
 		);
 
 		if (this.contextInput) {
@@ -4246,12 +4262,58 @@ class UpdateManager {
 		this.wordDocBase64 = base64;
 		this.wordDocFilename = filename;
 		this.wordDocIR = null;
+		this.proposedChanges = [];
+		this.changesSummary = '';
+		this.chatHistory = [];
+		if (this.chatMessages) this.chatMessages.innerHTML = '';
+		this._hideChanges();
+		this._hideResult();
+		this._hideError();
 		this.wordZone.classList.add('loaded');
 		if (this.wordTitle) this.wordTitle.textContent = filename;
-		if (this.wordSub)   this.wordSub.textContent   = 'Ready to process';
+		if (this.wordSub)   this.wordSub.textContent   = 'Ready to analyze';
 		if (this.wordIcon)  this.wordIcon.innerHTML = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>`;
 		if (this.wordStatus) { this.wordStatus.textContent = `✓ ${filename} ready`; this.wordStatus.className = 'upd-zone-status loaded'; }
 		this._checkReady();
+	}
+
+	_setOldWordDoc(base64, filename) {
+		this.oldWordDocBase64 = base64;
+		this.oldWordDocFilename = filename;
+		this.oldWordDocIR = null;
+		this.proposedChanges = [];
+		this.changesSummary = '';
+		this.chatHistory = [];
+		if (this.chatMessages) this.chatMessages.innerHTML = '';
+		this._hideChanges();
+		this._hideResult();
+		this._hideError();
+		if (this.oldWordZone) this.oldWordZone.classList.add('loaded');
+		if (this.oldWordTitle) this.oldWordTitle.textContent = filename;
+		if (this.oldWordSub)   this.oldWordSub.textContent   = 'Previous version loaded';
+		if (this.oldWordIcon)  this.oldWordIcon.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+		if (this.oldWordStatus) {
+			this.oldWordStatus.textContent = `✓ ${filename} ready`;
+			this.oldWordStatus.className = 'upd-zone-status loaded';
+		}
+		this._checkReady();
+	}
+
+	async _extractWordIR(base64, filename, label) {
+		const procRes = await fetch('/api/process-doc', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				fileData: base64,
+				fileName: filename,
+				includeLayoutPdf: false
+			})
+		});
+		const procData = await procRes.json();
+		if (!procRes.ok || !procData.ir) {
+			throw new Error(procData.error || `Failed to process the ${label} Word document.`);
+		}
+		return procData.ir;
 	}
 
 	_checkReady() {
@@ -4269,31 +4331,32 @@ class UpdateManager {
 
 		try {
 			if (!this.wordDocIR) {
-				this._setProcessingMsg('Extracting document content…');
-				const procRes = await fetch('/api/process-doc', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						fileData: this.wordDocBase64,
-						fileName: this.wordDocFilename,
-						includeLayoutPdf: false
-					})
-				});
-				const procData = await procRes.json();
-				if (!procRes.ok || !procData.ir) throw new Error(procData.error || 'Failed to process the Word document.');
-				this.wordDocIR = procData.ir;
+				this._setProcessingMsg('Extracting new document content…');
+				this.wordDocIR = await this._extractWordIR(
+					this.wordDocBase64, this.wordDocFilename, 'new'
+				);
+			}
+			if (this.oldWordDocBase64 && !this.oldWordDocIR) {
+				this._setProcessingMsg('Extracting previous document content…');
+				this.oldWordDocIR = await this._extractWordIR(
+					this.oldWordDocBase64, this.oldWordDocFilename, 'previous'
+				);
 			}
 
 			this._setProcessingMsg('Analyzing differences…');
+			const anaPayload = {
+				currentHtml:  this.currentHtml,
+				wordDocIR:    this.wordDocIR,
+				contextNotes: this.contextInput ? this.contextInput.value.trim() : '',
+				messages:     []
+			};
+			if (this.oldWordDocIR) {
+				anaPayload.oldWordDocIR = this.oldWordDocIR;
+			}
 			const anaRes = await fetch('/api/analyze-update', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					currentHtml:  this.currentHtml,
-					wordDocIR:    this.wordDocIR,
-					contextNotes: this.contextInput ? this.contextInput.value.trim() : '',
-					messages:     []
-				})
+				body: JSON.stringify(anaPayload)
 			});
 			const anaData = await anaRes.json();
 			if (!anaRes.ok) throw new Error(anaData.error || 'Analysis failed.');
@@ -4323,17 +4386,21 @@ class UpdateManager {
 		const typingEl = this._appendChatTyping();
 
 		try {
+			const chatPayload = {
+				currentHtml:    this.currentHtml,
+				wordDocIR:      this.wordDocIR,
+				contextNotes:   this.contextInput ? this.contextInput.value.trim() : '',
+				messages:       this.chatHistory,
+				currentChanges: this.proposedChanges,
+				currentSummary: this.changesSummary
+			};
+			if (this.oldWordDocIR) {
+				chatPayload.oldWordDocIR = this.oldWordDocIR;
+			}
 			const res = await fetch('/api/analyze-update', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					currentHtml:    this.currentHtml,
-					wordDocIR:      this.wordDocIR,
-					contextNotes:   this.contextInput ? this.contextInput.value.trim() : '',
-					messages:       this.chatHistory,
-					currentChanges: this.proposedChanges,
-					currentSummary: this.changesSummary
-				})
+				body: JSON.stringify(chatPayload)
 			});
 			const data = await res.json();
 			if (typingEl) typingEl.remove();
@@ -4401,7 +4468,10 @@ class UpdateManager {
 		this.changesList.innerHTML = '';
 
 		if (this.proposedChanges.length === 0) {
-			this.changesList.innerHTML = '<p class="upd-no-changes">No changes detected — the documents appear identical.</p>';
+			const hint = this.oldWordDocIR
+				? 'No changes detected between the previous and new Word documents.'
+				: 'No changes detected. Try adding the previous .docx (optional zone above) for more accurate diffing.';
+			this.changesList.innerHTML = `<p class="upd-no-changes">${hint}</p>`;
 			return;
 		}
 
@@ -4479,6 +4549,9 @@ class UpdateManager {
 		this.wordDocBase64       = null;
 		this.wordDocFilename     = null;
 		this.wordDocIR           = null;
+		this.oldWordDocBase64    = null;
+		this.oldWordDocFilename  = null;
+		this.oldWordDocIR        = null;
 		this.proposedChanges     = [];
 		this.changesSummary      = '';
 		this.chatHistory         = [];
@@ -4497,6 +4570,13 @@ class UpdateManager {
 		if (this.wordSub)    this.wordSub.textContent   = 'The updated version from the client';
 		if (this.wordIcon)   this.wordIcon.innerHTML    = wordSvg;
 		if (this.wordStatus) { this.wordStatus.textContent = ''; this.wordStatus.className = 'upd-zone-status'; }
+
+		const oldWordSvg = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+		if (this.oldWordZone)   this.oldWordZone.classList.remove('loaded');
+		if (this.oldWordTitle)  this.oldWordTitle.textContent = 'Drop previous .docx here (optional)';
+		if (this.oldWordSub)    this.oldWordSub.textContent   = 'The last approved version — helps detect what actually changed';
+		if (this.oldWordIcon)   this.oldWordIcon.innerHTML    = oldWordSvg;
+		if (this.oldWordStatus) { this.oldWordStatus.textContent = ''; this.oldWordStatus.className = 'upd-zone-status'; }
 
 		if (this.contextInput)  this.contextInput.value  = '';
 		if (this.chatMessages)  this.chatMessages.innerHTML = '';

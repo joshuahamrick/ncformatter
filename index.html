@@ -202,6 +202,30 @@
                     </div>
                 </div>
 
+                <!-- Optional: previous Word document (improves change detection) -->
+                <div class="upd-upload-row-optional">
+                    <div class="upd-zone-wrap upd-zone-wrap-optional">
+                        <div class="upd-zone-label">
+                            <span class="upd-zone-badge upd-zone-badge-optional">+</span>
+                            Previous Word Document
+                            <span class="upd-zone-label-hint">optional — last approved .docx for better diff accuracy</span>
+                        </div>
+                        <div class="upd-drop-zone upd-drop-zone-optional" id="updOldWordZone" role="button" tabindex="0" aria-label="Drop previous Word document here (optional)">
+                            <div class="upd-zone-icon" id="updOldWordIcon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                            </div>
+                            <h4 id="updOldWordTitle">Drop previous .docx here (optional)</h4>
+                            <p id="updOldWordSub">The last approved version — helps detect what actually changed</p>
+                            <button class="upd-browse-btn" id="updOldWordBrowseBtn">Browse Files</button>
+                            <input type="file" id="updOldWordFileInput" accept=".doc,.docx" hidden>
+                        </div>
+                        <div class="upd-zone-status" id="updOldWordStatus"></div>
+                    </div>
+                </div>
+
                 <!-- Context notes -->
                 <div class="upd-context-row">
                     <label class="upd-context-label" for="updContextNotes">Context &amp; Notes</label>

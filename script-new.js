@@ -4066,6 +4066,7 @@ class UpdateManager {
 		this.oldWordDocBase64 = null;
 		this.oldWordDocFilename = null;
 		this.oldWordDocIR = null;
+		this.newPreviewHtml = null;
 		this.proposedChanges = [];
 		this.changesSummary = '';
 		this.chatHistory = [];
@@ -4262,6 +4263,7 @@ class UpdateManager {
 		this.wordDocBase64 = base64;
 		this.wordDocFilename = filename;
 		this.wordDocIR = null;
+		this.newPreviewHtml = null;
 		this.proposedChanges = [];
 		this.changesSummary = '';
 		this.chatHistory = [];
@@ -4316,6 +4318,30 @@ class UpdateManager {
 		return procData.ir;
 	}
 
+	async _generateNewPreviewHtml(ir) {
+		const res = await fetch('/api/generate-template', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				ir: ir,
+				docMeta: {},
+				userInstruction: null,
+				chatHistory: []
+			})
+		});
+		const text = await res.text();
+		let data;
+		try {
+			data = JSON.parse(text);
+		} catch (e) {
+			throw new Error(`Invalid response from formatter: ${text.substring(0, 200)}`);
+		}
+		if (!res.ok || !data.success || !data.html) {
+			throw new Error(data.error || 'Failed to generate preview HTML from the new Word document.');
+		}
+		return data.html;
+	}
+
 	_checkReady() {
 		if (this.analyzeBtn) this.analyzeBtn.disabled = !(this.currentHtml && this.wordDocBase64);
 	}
@@ -4343,12 +4369,18 @@ class UpdateManager {
 				);
 			}
 
-			this._setProcessingMsg('Analyzing differences…');
+			if (!this.newPreviewHtml) {
+				this._setProcessingMsg('Formatting new document preview…');
+				this.newPreviewHtml = await this._generateNewPreviewHtml(this.wordDocIR);
+			}
+
+			this._setProcessingMsg('Comparing confirmed HTML to new preview…');
 			const anaPayload = {
-				currentHtml:  this.currentHtml,
-				wordDocIR:    this.wordDocIR,
-				contextNotes: this.contextInput ? this.contextInput.value.trim() : '',
-				messages:     []
+				currentHtml:     this.currentHtml,
+				wordDocIR:       this.wordDocIR,
+				newPreviewHtml:  this.newPreviewHtml,
+				contextNotes:    this.contextInput ? this.contextInput.value.trim() : '',
+				messages:        []
 			};
 			if (this.oldWordDocIR) {
 				anaPayload.oldWordDocIR = this.oldWordDocIR;
@@ -4387,12 +4419,13 @@ class UpdateManager {
 
 		try {
 			const chatPayload = {
-				currentHtml:    this.currentHtml,
-				wordDocIR:      this.wordDocIR,
-				contextNotes:   this.contextInput ? this.contextInput.value.trim() : '',
-				messages:       this.chatHistory,
-				currentChanges: this.proposedChanges,
-				currentSummary: this.changesSummary
+				currentHtml:     this.currentHtml,
+				wordDocIR:       this.wordDocIR,
+				newPreviewHtml:  this.newPreviewHtml,
+				contextNotes:    this.contextInput ? this.contextInput.value.trim() : '',
+				messages:        this.chatHistory,
+				currentChanges:  this.proposedChanges,
+				currentSummary:  this.changesSummary
 			};
 			if (this.oldWordDocIR) {
 				chatPayload.oldWordDocIR = this.oldWordDocIR;
@@ -4468,10 +4501,9 @@ class UpdateManager {
 		this.changesList.innerHTML = '';
 
 		if (this.proposedChanges.length === 0) {
-			const hint = this.oldWordDocIR
-				? 'No changes detected between the previous and new Word documents.'
-				: 'No changes detected. Try adding the previous .docx (optional zone above) for more accurate diffing.';
-			this.changesList.innerHTML = `<p class="upd-no-changes">${hint}</p>`;
+			const hint = this.changesSummary
+				|| 'No mappable changes found. Use the chat to describe what should change (e.g. which paragraph or sentence).';
+			this.changesList.innerHTML = `<p class="upd-no-changes">${this._esc(hint)}</p>`;
 			return;
 		}
 
@@ -4552,6 +4584,7 @@ class UpdateManager {
 		this.oldWordDocBase64    = null;
 		this.oldWordDocFilename  = null;
 		this.oldWordDocIR        = null;
+		this.newPreviewHtml      = null;
 		this.proposedChanges     = [];
 		this.changesSummary      = '';
 		this.chatHistory         = [];

@@ -85,6 +85,21 @@ class handler(BaseHTTPRequestHandler):
 			if not changes:
 				return self._send(200, {'success': True, 'html': current_html, 'message': 'No changes to apply.'})
 
+			# Drop changes whose currentValue is not in the template (prevents bogus replacements)
+			applicable = []
+			for ch in changes:
+				cv = (ch.get('currentValue') or '').strip()
+				typ = (ch.get('type') or 'text').lower()
+				if typ == 'addition' and not cv:
+					applicable.append(ch)
+				elif cv and cv in current_html:
+					applicable.append(ch)
+			if not applicable:
+				return self._send(400, {
+					'error': 'None of the proposed changes could be applied — currentValue strings were not found in the HTML template. Use chat to refine the change list.'
+				})
+			changes = applicable
+
 			if not ANTHROPIC_AVAILABLE:
 				return self._send(500, {'error': 'Anthropic library not available'})
 

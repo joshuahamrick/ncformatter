@@ -15,6 +15,14 @@ except ImportError:
 
 import re
 
+try:
+	from api.strip_docx_fonts import strip_embedded_docx_fonts
+except ImportError:
+	try:
+		from strip_docx_fonts import strip_embedded_docx_fonts
+	except ImportError:
+		strip_embedded_docx_fonts = None
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Handle POST requests to process Word documents"""
@@ -39,7 +47,14 @@ class handler(BaseHTTPRequestHandler):
             
             # Decode base64 file data
             file_bytes = base64.b64decode(file_data)
-            
+            if strip_embedded_docx_fonts is not None:
+                file_bytes, fonts_stripped, bytes_saved = strip_embedded_docx_fonts(file_bytes)
+                if fonts_stripped:
+                    print(
+                        f"strip_docx_fonts: removed embedded fonts from {file_name} "
+                        f"({bytes_saved:,} bytes saved)"
+                    )
+
             # Process the Word document
             result = process_word_document(file_bytes, file_name)
             

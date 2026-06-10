@@ -21,6 +21,14 @@ except ImportError:
 		build_error_response = None
 		log_audit_event = None
 
+try:
+	from api.strip_docx_fonts import strip_embedded_docx_fonts
+except ImportError:
+	try:
+		from strip_docx_fonts import strip_embedded_docx_fonts
+	except ImportError:
+		strip_embedded_docx_fonts = None
+
 
 def _align_to_str(alignment):
 	if alignment == WD_ALIGN_PARAGRAPH.CENTER:
@@ -370,6 +378,13 @@ class handler(BaseHTTPRequestHandler):
 				return self._send(500, {'success': False, 'error': 'python-docx library not available'})
 
 			file_bytes = base64.b64decode(file_data)
+			if strip_embedded_docx_fonts is not None:
+				file_bytes, fonts_stripped, bytes_saved = strip_embedded_docx_fonts(file_bytes)
+				if fonts_stripped:
+					print(
+						f"strip_docx_fonts: removed embedded fonts from {file_name} "
+						f"({bytes_saved:,} bytes saved)"
+					)
 			doc = Document(io.BytesIO(file_bytes))
 
 			ir = _build_ir_document(doc)

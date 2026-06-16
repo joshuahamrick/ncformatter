@@ -106,7 +106,7 @@ Generate HTML templates that:
 - Use width percentages, valign="top" for multi-line cells
 - Bold headers: <td><b>Header</b></td> or <td style="text-align: center"><b>Header</b></td>
 - CRITICAL — TABLE div WRAPPING (Summernote): Bullet/numbered list tables and contact info tables MUST be wrapped in a <div>: <div><table ...>...</table></div>. This is required for Summernote editor compatibility (it needs a block element before/after tables to position cursor correctly).
-- CRITICAL — TABLE MARGINS: Indented bullet or numbered list tables MUST have margin-left: <table width="100%" style="margin-left: 25px; border-collapse: collapse">. Use margin-left: 55px for sub-level lists nested one level deeper (e.g. an `o` sub-bullet under a `•` parent — common HUD/CFPB sub-lists). Use margin-left: 50px for contact/address tables that appear deeper in the document.
+- CRITICAL — TABLE MARGINS (MANDATORY, NEVER OMIT): EVERY bullet, checkmark, or numbered-marker list table — where the first <td> of each row contains ONLY a marker (•, o, {Symbol(ü)}, {Symbol(§)}, "1.", "a.") — MUST open with style="margin-left: 25px; border-collapse: collapse". Do NOT shorten this to just "border-collapse: collapse" — the margin-left is required to visually offset the bullet list from the body text. Use margin-left: 55px for sub-level lists nested one level deeper (e.g. an `o` sub-bullet under a `•` parent — common HUD/CFPB sub-lists). Use margin-left: 50px for contact/address tables that appear deeper in the document. If you write `<table width="100%" style="border-collapse: collapse">` without margin-left for any bullet table, the document is wrong.
 - CRITICAL — COLORS as rgba: All `border`, `background-color`, and `color` style values use `rgba(R, G, B, 1)` form (e.g. `border: 1px solid rgba(0, 0, 0, 1)`), NOT hex. Convert any `#RRGGBB` to the decimal `rgba(R, G, B, 1)` equivalent.
 - Compress() with static text: Use {Compress(Line1|Line2|Line3|Line4)} for multi-line static addresses (no variable tags), e.g. {Compress(U.S. HUD|National Servicing Center|301 NW 6th Street, Suite 200|Oklahoma City, OK 73102)}
 
@@ -203,6 +203,40 @@ FFFFFF = white text on a dark banner).
 - Never emit `<hr>` for a BANNER_FILL paragraph — banners are full-width colored
   divs, not horizontal rules. (`<hr>` is only for explicit `BORDER_BOTTOM` paragraphs.)
 
+### Floating Text Box Callouts (=== FLOATING TEXT BOXES === section with [SHADING_<hex>] + [BORDER_<hex>] hints)
+The IR's `=== FLOATING TEXT BOXES ===` section lists floating Word shapes that
+hold callout-style content (e.g. the "QUESTIONS? CONTACT US" + contact block in
+GSE / FNMA / FHLMC modification letters). When a Text Box is tagged
+`[CALLOUT (place IMMEDIATELY AFTER the first 'If you do not contact us...'
+warning paragraph in the body)]` and the trailing brackets carry shape color
+hints like `[SHADING_DBE5F1] [BORDER_5A9AD4]`, render it as a single colored
+callout DIV inserted right after that first warning/contact paragraph:
+
+- Outer wrapper: `<div style="background-color: rgba(R, G, B, 1); padding: 8px;
+  border: 1px solid rgba(R, G, B, 1); text-align: center">` — convert the
+  SHADING hex to background-color rgba and the BORDER hex to border rgba.
+- First child: the TITLE row (e.g. "QUESTIONS? CONTACT US") as
+  `<div style="font-size: 14pt; font-weight: bold">TITLE</div>`.
+- Then a `<br>`.
+- Then a SECOND `<div style="font-weight: bold">{Compress(...)}</div>` whose
+  Compress() joins ALL remaining lines (CompanyLongName, addresses, Phone:
+  ..., Email Address: ..., Website: ...) with `|` separators — preserve the
+  literal label prefixes "Phone: ", "Email Address: ", "Website: " before each
+  variable, exactly as the IR shows.
+- Close with a trailing `<br>` inside the box, then the outer `</div>`.
+- Surround the entire callout with `<br>` on the OUTSIDE so it doesn't butt
+  against neighbouring body text.
+- Variables: map `<CompanyLongName>` → `{[plsMatrix.CompanyLongName]}`,
+  `<LossPreventionAddress1>` → `{[plsMatrix.LossPreventionAddress1]}` (and
+  Address2/3), `<LossPreventionPhoneNumberTollFree>` →
+  `{[plsMatrix.LossPreventionPhoneNumberTollFree]}`, `<LossMitEmail>` →
+  `{[plsMatrix.LossMitEmail]}`, `<Website>` → `{[plsMatrix.WebSite]}`.
+- Reference example for hex DBE5F1 / 5A9AD4:
+  `<div style="background-color: rgba(219, 229, 241, 1); padding: 8px; border: 1px solid rgba(90, 154, 212, 1); text-align: center"> <div style="font-size: 14pt; font-weight: bold">QUESTIONS? CONTACT US</div> <br> <div style="font-weight: bold">{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.LossPreventionAddress1]}|{[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]}|Phone: {[plsMatrix.LossPreventionPhoneNumberTollFree]}|Email Address: {[plsMatrix.LossMitEmail]}|Website: {[plsMatrix.WebSite]})}</div> <br> </div>`
+
+- Do NOT push a CALLOUT box to the bottom of the document; the IR's placement
+  hint tells you where it visually lives in the source layout.
+
 ### Subject Heading Before Loan Number Table
 - When a bold paragraph appears directly before the Loan Number/RE table (marked [FORMATTING: BOLD] with no ALIGN_CENTER), format it as:
   <b><div style="font-size: 11pt">Subject Heading Text</div></b>
@@ -256,7 +290,7 @@ FFFFFF = white text on a dark banner).
 
 ### LIST_LEVEL_DOWN / LIST_LEVEL_UP — Sub-Level Bullets
 - When the IR contains `[LIST_LEVEL_DOWN: ...]`, the NEXT items are sub-level bullets (level=1)
-- Output them as a SEPARATE `<table width="100%" style="border-collapse: collapse; margin-left: 30px">` with NO <div> wrapper
+- Output them as a SEPARATE `<table width="100%" style="margin-left: 55px; border-collapse: collapse">` with NO <div> wrapper
 - Close the current level-0 <div><table> block BEFORE the [LIST_LEVEL_DOWN] marker
 - Sub-level table rows use the char from `char=` (e.g. `o` for level-1 items)
 - When `[LIST_LEVEL_UP: ...]` appears, close the sub-level table and resume normal level-0 <div><table> blocks
@@ -284,7 +318,7 @@ FFFFFF = white text on a dark banner).
 - This typically appears after the closing company name when a new section (like "Additional Modification Information") follows
 - Output exactly: `<hr>`
 - IMPORTANT: If the IR contains [EMPTY_LIST_ITEM_LEVEL_X], this is an empty bullet placeholder — output it as a bullet row with an empty content cell wrapped in a div table:
-  <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
+  <div><table width="100%" style="margin-left: 25px; border-collapse: collapse"><tbody><tr>
     <td width="3%" valign="top">•</td>
     <td></td>
   </tr></tbody></table></div>
@@ -331,7 +365,7 @@ FFFFFF = white text on a dark banner).
 
 ### Address Blocks After List Items (Compress Pattern)
 - When indented paragraphs containing company address variables appear after a list item like "Responding in writing to:" or "Calling:", these should be placed inside a table cell using Compress() to stack the lines:
-  <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
+  <div><table width="100%" style="margin-left: 50px; border-collapse: collapse"><tbody><tr>
     <td width="3%" valign="top"></td>
     <td>{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]}|{[plsMatrix.CompanyReturnAddr3]})}</td>
   </tr></tbody></table></div>

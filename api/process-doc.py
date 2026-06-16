@@ -445,6 +445,62 @@ def _cell_shading_fill(tcPr_elem):
 	return fill
 
 
+def _hex6(value):
+	"""Normalize a color string (with optional '#', theme suffix like ' [660]', or 'rgb(...)') to 6-digit uppercase hex.
+	Returns None for None/empty/non-hex inputs and ignores auto/white/black sentinels."""
+	if not value:
+		return None
+	import re as _re
+	s = str(value).strip()
+	if s.startswith('#'):
+		s = s[1:]
+	m = _re.match(r'([0-9a-fA-F]{6})', s)
+	if not m:
+		return None
+	hex_val = m.group(1).upper()
+	if hex_val in ('FFFFFF',):
+		return None
+	return hex_val
+
+
+def _shape_fill_for_txbx(txbx_elem):
+	"""Walk up from a w:txbxContent element to find the enclosing shape (modern wsp or legacy VML)
+	and return (shapeFillHex, shapeStrokeHex). Both are 6-digit uppercase hex or None."""
+	A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+	WPS_NS = 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape'
+	shape_fill = None
+	shape_stroke = None
+	parent = txbx_elem
+	for _ in range(20):
+		parent = parent.getparent()
+		if parent is None:
+			break
+		tag = parent.tag.rsplit('}', 1)[-1] if isinstance(parent.tag, str) else ''
+		# VML legacy shape (v:shape): fillcolor/strokecolor on the element itself
+		if tag == 'shape':
+			shape_fill = shape_fill or _hex6(parent.get('fillcolor'))
+			shape_stroke = shape_stroke or _hex6(parent.get('strokecolor'))
+		# Modern wps:wsp — look for child wps:spPr/a:solidFill/a:srgbClr
+		if tag == 'wsp':
+			spPr = parent.find(f'{{{WPS_NS}}}spPr')
+			if spPr is not None:
+				solidFill = spPr.find(f'{{{A_NS}}}solidFill')
+				if solidFill is not None:
+					srgb = solidFill.find(f'{{{A_NS}}}srgbClr')
+					if srgb is not None and not shape_fill:
+						shape_fill = _hex6(srgb.get('val'))
+				ln = spPr.find(f'{{{A_NS}}}ln')
+				if ln is not None:
+					sf2 = ln.find(f'{{{A_NS}}}solidFill')
+					if sf2 is not None:
+						srgb = sf2.find(f'{{{A_NS}}}srgbClr')
+						if srgb is not None and not shape_stroke:
+							shape_stroke = _hex6(srgb.get('val'))
+		if shape_fill and shape_stroke:
+			break
+	return shape_fill, shape_stroke
+
+
 def _extract_table_ir(table):
 	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 	tblPr = table._tbl.find(f'{{{ns}}}tblPr')
@@ -665,22 +721,27 @@ def _build_ir_document(doc):
 	except Exception:
 		pass  # Headers might not be accessible, continue without them
 	
-	# Extract text box content first (floating text boxes are not in body flow)
-	# They appear as w:txbxContent inside drawing/shape elements
-	text_box_blocks = []
-	seen_textbox_texts = set()
+	# Extract text box content first (floating text boxes are not in body flow).
+	# They appear as w:txbxContent inside drawing/shape elements. Word writes both
+	# a modern (wsp/wps) AND a VML fallback (v:shape/v:textbox) for each textbox via
+	# mc:AlternateContent — the two are visually identical but only the VML fallback
+	# carries fillcolor/strokecolor as attributes; the modern one stores them in
+	# child wps:spPr/a:solidFill nodes. We process BOTH variants, then dedup by
+	# joined text content preferring whichever variant carries shape colors.
+	raw_textboxes = []
 	for txbx in doc.element.body.iter(qn('w:txbxContent')):
 		rows = []
+		seen_in_this_box = set()
 		for p_elem in txbx.iter(qn('w:p')):
 			text = ''.join(t.text or '' for t in p_elem.iter(qn('w:t')))
 			text = text.strip()
 			if not text:
 				continue
-			# Deduplicate (Word sometimes duplicates text boxes for compatibility)
-			if text in seen_textbox_texts:
+			# Dedup ONLY within this textbox (not across textboxes — we need the
+			# VML-fallback copy intact so we can read its fillcolor on the shape)
+			if text in seen_in_this_box:
 				continue
-			seen_textbox_texts.add(text)
-			# Build a simple paragraph IR for each line in the text box
+			seen_in_this_box.add(text)
 			runs = []
 			for r_elem in p_elem.iter(qn('w:r')):
 				t_text = ''.join(t.text or '' for t in r_elem.iter(qn('w:t')))
@@ -711,11 +772,37 @@ def _build_ir_document(doc):
 					'firstLineIndentPt': None,
 					'hangingIndentPt': None
 				})
-		if rows:
-			text_box_blocks.append({
-				'type': 'textbox',
-				'rows': rows
-			})
+		if not rows:
+			continue
+		shape_fill, shape_stroke = _shape_fill_for_txbx(txbx)
+		tb = {'type': 'textbox', 'rows': rows}
+		if shape_fill:
+			tb['shadingFill'] = shape_fill
+		if shape_stroke:
+			tb['borderColor'] = shape_stroke
+		raw_textboxes.append(tb)
+	# Dedup across textbox variants by joined text content. Prefer the variant that
+	# carries shadingFill / borderColor — this is almost always the VML fallback.
+	dedup = {}  # text_key -> textbox
+	for tb in raw_textboxes:
+		key = '|'.join(
+			''.join((r.get('text') or '') for r in row.get('runs', [])).strip()
+			for row in tb.get('rows', [])
+		)
+		if key not in dedup:
+			dedup[key] = tb
+		else:
+			existing = dedup[key]
+			tb_has_colors = bool(tb.get('shadingFill') or tb.get('borderColor'))
+			ex_has_colors = bool(existing.get('shadingFill') or existing.get('borderColor'))
+			if tb_has_colors and not ex_has_colors:
+				dedup[key] = tb
+			elif tb_has_colors and ex_has_colors:
+				# Both have some colors — merge missing fields onto the kept one
+				for fld in ('shadingFill', 'borderColor'):
+					if not existing.get(fld) and tb.get(fld):
+						existing[fld] = tb[fld]
+	text_box_blocks = list(dedup.values())
 	
 	# Iterate block items in document order: paragraphs and tables
 	# python-docx doesn't provide a direct unified iterator; iterate through document._body

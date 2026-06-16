@@ -135,6 +135,77 @@ def normalize_html(html):
 	# Strip trailing <br> tags at end of document
 	normalized = re.sub(r'(\s*<br>\s*)+$', '', normalized.strip())
 
+	# Enforce margin-left: 25px on every bullet / checkmark / square / numbered-marker
+	# table — these are the standard <table> wrappers used for bulleted lists where the
+	# first <td> contains only a marker (•, o, {Symbol(ü)}, {Symbol(§)}, decimal+period,
+	# letter+period). The system prompt instructs the AI to add this margin, but the
+	# AI occasionally drops it for certain documents (notably LM051/LM052), so we
+	# enforce it here as a safety net. Only touch tables we are confident are bullet
+	# wrappers; never modify tables with non-marker first-cell content (data tables).
+	#
+	# Strategy: find each <table ...>...</table>, check whether ALL data rows begin
+	# with a marker-only first cell, and if so ensure the table's style attribute
+	# contains "margin-left: 25px". If style attribute is missing, add one. If style
+	# is present but missing margin-left, prepend it.
+	def _looks_like_bullet_marker(cell_inner):
+		s = re.sub(r'<[^>]+>', '', cell_inner or '').strip()
+		if not s:
+			return False
+		# Common literal bullet glyphs
+		if s in ('•', '·', '○', '◦', '▪', '■', '►', '–', '-', 'o', 'O'):
+			return True
+		# {Symbol(...)} markers (Wingdings ü = checkmark, § = square)
+		if re.fullmatch(r'\{Symbol\(.\)\}', s):
+			return True
+		# Numbered list markers: "1.", "2.", "a.", "i.", "(1)"
+		if re.fullmatch(r'\(?\d{1,2}[.)]\)?', s):
+			return True
+		if re.fullmatch(r'[a-zA-Z][.)]', s):
+			return True
+		return False
+
+	def _ensure_margin_left_on_table(match):
+		full = match.group(0)
+		# Quick check: does the first <td> of every row contain only a marker?
+		# Use a simple regex over the table body to extract the first <td> per <tr>.
+		rows = re.findall(r'<tr[^>]*>(.*?)</tr>', full, re.IGNORECASE | re.DOTALL)
+		if not rows:
+			return full
+		first_cells = []
+		for row in rows:
+			m = re.search(r'<td[^>]*>(.*?)</td>', row, re.IGNORECASE | re.DOTALL)
+			if m:
+				first_cells.append(m.group(1))
+		if not first_cells:
+			return full
+		# Require EVERY first cell to look like a bullet marker — otherwise this is
+		# a data table and we must not touch its margin.
+		if not all(_looks_like_bullet_marker(c) for c in first_cells):
+			return full
+		# Extract opening <table ...> tag and inject / merge margin-left: 25px.
+		open_tag_m = re.match(r'<table\b([^>]*)>', full, re.IGNORECASE)
+		if not open_tag_m:
+			return full
+		attrs = open_tag_m.group(1)
+		# Already has margin-left? Leave alone.
+		style_m = re.search(r'\bstyle\s*=\s*"([^"]*)"', attrs, re.IGNORECASE)
+		if style_m and 'margin-left' in style_m.group(1).lower():
+			return full
+		if style_m:
+			new_style = 'margin-left: 25px; ' + style_m.group(1).strip()
+			new_attrs = attrs[:style_m.start()] + f'style="{new_style}"' + attrs[style_m.end():]
+		else:
+			new_attrs = attrs.rstrip() + ' style="margin-left: 25px; border-collapse: collapse"'
+		new_open = f'<table{new_attrs}>'
+		return new_open + full[open_tag_m.end():]
+
+	normalized = re.sub(
+		r'<table\b[^>]*>.*?</table>',
+		_ensure_margin_left_on_table,
+		normalized,
+		flags=re.IGNORECASE | re.DOTALL,
+	)
+
 	return normalized.strip()
 
 def load_system_prompt():
@@ -1065,22 +1136,52 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 		ir_content += "\n\n=== FLOATING TEXT BOXES (visually prominent boxes floating in document layout) ===\n"
 		ir_content += "PLACEMENT RULES — read the content to decide where each box belongs:\n"
 		ir_content += "  - SHORT TITLE box (1-3 words, e.g. 'Escrow Cancellation Request', 'Loan Summary') → place AFTER mailing address, centered. Use {Compress(Part1|Part2)} to split the title across two lines at a natural word boundary (e.g. 'Escrow Cancellation Request' → {Compress(Escrow Cancellation|Request)})\n"
+		ir_content += "  - CALLOUT box (starts with 'QUESTIONS?' / 'CONTACT US' / contains 'Phone:' + 'Email Address:' + 'Website:' / lists CompanyLongName + addresses) → place IMMEDIATELY AFTER the first body paragraph that mentions contacting the lender or warning about foreclosure (typically the 'If you do not contact us or send your first trial period plan payment by...' paragraph). Render as a colored callout div, NOT at the bottom.\n"
 		ir_content += "  - WARNING/NOTICE box (long sentence starting with 'If you do not...', 'You must...', 'IMPORTANT:') → place at the VERY BOTTOM of the document, AFTER return address and fax/email lines\n"
 		ir_content += "  - LOAN/PROPERTY INFO box (Loan Number, Property Address, RE:) → place after mailing address, before salutation\n"
+		ir_content += "\nRENDERING RULES for CALLOUT boxes with shape color hints:\n"
+		ir_content += "  - When a CALLOUT box has [SHADING_<hex>] + [BORDER_<hex>] hints, render as ONE outer <div> with background-color, padding: 8px, border: 1px solid <bordercolor>, text-align: center. Use rgba(R, G, B, 1) format for both colors.\n"
+		ir_content += "  - Inside the outer div: first row (the title like 'QUESTIONS? CONTACT US') as <div style=\"font-size: 14pt; font-weight: bold\">TITLE</div>, then a <br>, then the remaining contact lines as ONE <div style=\"font-weight: bold\">{Compress(line1|line2|line3|...)}</div> (use {Compress(...)} to join the contact lines with | separator), then a trailing <br> inside the box.\n"
+		ir_content += "  - Variables in CALLOUT boxes: <CompanyLongName> → {[plsMatrix.CompanyLongName]}, <LossPreventionAddress1> → {[plsMatrix.LossPreventionAddress1]}, <LossPreventionPhoneNumberTollFree> → {[plsMatrix.LossPreventionPhoneNumberTollFree]}, <LossMitEmail> → {[plsMatrix.LossMitEmail]}, <Website> → {[plsMatrix.WebSite]}. Keep the literal labels 'Phone: ', 'Email Address: ', 'Website: ' before each variable as in the source.\n"
+		ir_content += "  - Example: <div style=\"background-color: rgba(219, 229, 241, 1); padding: 8px; border: 1px solid rgba(90, 154, 212, 1); text-align: center\"> <div style=\"font-size: 14pt; font-weight: bold\">QUESTIONS? CONTACT US</div> <br> <div style=\"font-weight: bold\">{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.LossPreventionAddress1]}|{[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]}|Phone: {[plsMatrix.LossPreventionPhoneNumberTollFree]}|Email Address: {[plsMatrix.LossMitEmail]}|Website: {[plsMatrix.WebSite]})}</div> <br> </div>\n"
 		for i, tb in enumerate(text_boxes):
 			tb_text = ' '.join(
 				''.join(r.get('text','') for r in row.get('runs',[])).strip()
 				for row in tb.get('rows',[])
 			).strip()
-			# Classify this text box so Claude knows where to place it
+			# Classify this text box so Claude knows where to place it.
 			import re as _re_tb
-			if len(tb_text.split()) <= 6 and not _re_tb.search(r'If you|must|required|payment|IMPORTANT', tb_text, _re_tb.IGNORECASE):
+			tb_lower = tb_text.lower()
+			# Detect contact/QUESTIONS callouts first — they take precedence over the
+			# generic "WARNING" classifier even though their body may mention 'payment'
+			# or 'must contact', because the visual style (colored shape) and stacked
+			# contact lines clearly mark them as the upper-letter callout box.
+			is_callout = bool(
+				_re_tb.search(r'QUESTIONS\?|CONTACT US', tb_text, _re_tb.IGNORECASE)
+				or (
+					'phone:' in tb_lower
+					and ('email' in tb_lower or 'website' in tb_lower)
+				)
+				or _re_tb.search(r'CompanyLongName|LossPrevention|LossMitEmail', tb_text)
+			)
+			if is_callout:
+				tb_role = "CALLOUT (place IMMEDIATELY AFTER the first 'If you do not contact us...' / 'foreclosure proceedings may be started' warning paragraph in the body)"
+			elif len(tb_text.split()) <= 6 and not _re_tb.search(r'If you|must|required|payment|IMPORTANT', tb_text, _re_tb.IGNORECASE):
 				tb_role = "TITLE (place after mailing address, centered)"
 			elif _re_tb.search(r'If you|must|required|payment will|escrow payment', tb_text, _re_tb.IGNORECASE):
 				tb_role = "WARNING (place at very BOTTOM of document, after return address and fax/email lines)"
 			else:
 				tb_role = "INFO (place after mailing address)"
-			ir_content += f"\nText Box {i+1} [{tb_role}]:\n"
+			# Append shape color hints if the IR captured them from the underlying
+			# VML / DrawingML shape (Word stores callout fill/border there, NOT in
+			# w:shd, so this is the only signal we have for the visual color).
+			color_hints = []
+			if tb.get('shadingFill'):
+				color_hints.append(f"[SHADING_{tb['shadingFill']}]")
+			if tb.get('borderColor'):
+				color_hints.append(f"[BORDER_{tb['borderColor']}]")
+			color_str = (' ' + ' '.join(color_hints)) if color_hints else ''
+			ir_content += f"\nText Box {i+1} [{tb_role}]{color_str}:\n"
 			for row in tb.get('rows', []):
 				text = ''.join(r.get('text', '') for r in row.get('runs', []))
 				if text.strip():

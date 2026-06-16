@@ -203,39 +203,80 @@ FFFFFF = white text on a dark banner).
 - Never emit `<hr>` for a BANNER_FILL paragraph — banners are full-width colored
   divs, not horizontal rules. (`<hr>` is only for explicit `BORDER_BOTTOM` paragraphs.)
 
-### Floating Text Box Callouts (=== FLOATING TEXT BOXES === section with [SHADING_<hex>] + [BORDER_<hex>] hints)
-The IR's `=== FLOATING TEXT BOXES ===` section lists floating Word shapes that
-hold callout-style content (e.g. the "QUESTIONS? CONTACT US" + contact block in
-GSE / FNMA / FHLMC modification letters). When a Text Box is tagged
-`[CALLOUT (place IMMEDIATELY AFTER the first 'If you do not contact us...'
-warning paragraph in the body)]` and the trailing brackets carry shape color
-hints like `[SHADING_DBE5F1] [BORDER_5A9AD4]`, render it as a single colored
-callout DIV inserted right after that first warning/contact paragraph:
+### Floating Text Boxes (=== FLOATING TEXT BOXES === section)
+The IR's `=== FLOATING TEXT BOXES ===` section lists floating Word shapes
+(text boxes / callouts / banners) that are anchored to specific body
+paragraphs. The number, content, color, and POSITION of these boxes vary
+from document to document — there is no fixed "callout / warning / title /
+info" classification. Render every box the IR lists, exactly where its
+anchor places it. Never hardcode a placement strategy from content keywords.
 
-- Outer wrapper: `<div style="background-color: rgba(R, G, B, 1); padding: 8px;
-  border: 1px solid rgba(R, G, B, 1); text-align: center">` — convert the
-  SHADING hex to background-color rgba and the BORDER hex to border rgba.
-- First child: the TITLE row (e.g. "QUESTIONS? CONTACT US") as
-  `<div style="font-size: 14pt; font-weight: bold">TITLE</div>`.
-- Then a `<br>`.
-- Then a SECOND `<div style="font-weight: bold">{Compress(...)}</div>` whose
-  Compress() joins ALL remaining lines (CompanyLongName, addresses, Phone:
-  ..., Email Address: ..., Website: ...) with `|` separators — preserve the
-  literal label prefixes "Phone: ", "Email Address: ", "Website: " before each
-  variable, exactly as the IR shows.
-- Close with a trailing `<br>` inside the box, then the outer `</div>`.
-- Surround the entire callout with `<br>` on the OUTSIDE so it doesn't butt
-  against neighbouring body text.
-- Variables: map `<CompanyLongName>` → `{[plsMatrix.CompanyLongName]}`,
-  `<LossPreventionAddress1>` → `{[plsMatrix.LossPreventionAddress1]}` (and
-  Address2/3), `<LossPreventionPhoneNumberTollFree>` →
-  `{[plsMatrix.LossPreventionPhoneNumberTollFree]}`, `<LossMitEmail>` →
-  `{[plsMatrix.LossMitEmail]}`, `<Website>` → `{[plsMatrix.WebSite]}`.
-- Reference example for hex DBE5F1 / 5A9AD4:
-  `<div style="background-color: rgba(219, 229, 241, 1); padding: 8px; border: 1px solid rgba(90, 154, 212, 1); text-align: center"> <div style="font-size: 14pt; font-weight: bold">QUESTIONS? CONTACT US</div> <br> <div style="font-weight: bold">{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.LossPreventionAddress1]}|{[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]}|Phone: {[plsMatrix.LossPreventionPhoneNumberTollFree]}|Email Address: {[plsMatrix.LossMitEmail]}|Website: {[plsMatrix.WebSite]})}</div> <br> </div>`
+PLACEMENT — strictly anchor-driven:
+- For each Text Box, the IR gives you `ANCHOR_BEFORE:` (the visible text of
+  the nearest preceding body paragraph) and `ANCHOR_AFTER:` (the visible
+  text of the nearest following body paragraph).
+- Render the box BETWEEN those two paragraphs in your output, in the exact
+  position they identify. If `ANCHOR_AFTER` is the "ACT NOW" banner, the
+  box must appear immediately ABOVE the ACT NOW banner. If `ANCHOR_AFTER`
+  is "You must do one of these by …", the box appears immediately above
+  THAT line. Etc.
+- A document may have ZERO, ONE, or MANY boxes anchored at any point in
+  the body — between two body paragraphs, between two list items, before
+  the salutation, before the closing, anywhere. Render every one of them
+  at its anchor; do not skip any, do not push any to the bottom of the
+  document, do not cluster them at the top.
+- When ANCHOR_BEFORE / ANCHOR_AFTER are missing or the snippets don't
+  cleanly match anything in your output (e.g. because the anchor lives in
+  a stretch of empty paragraphs), fall back to the order the IR lists the
+  boxes — they are emitted in body-document order, so render them in that
+  same order interleaved with the surrounding body content.
 
-- Do NOT push a CALLOUT box to the bottom of the document; the IR's placement
-  hint tells you where it visually lives in the source layout.
+RENDERING — shape color hints map directly to inline CSS:
+- `[SHADING_<hex>]` is the shape's fill (background-color) and
+  `[BORDER_<hex>]` is the shape's outline (border).
+- Convert each hex to `rgba(R, G, B, 1)` with a SPACE after each comma.
+- Outer wrapper:
+  `<div style="background-color: rgba(R, G, B, 1); padding: 8px;
+   border: 1px solid rgba(R, G, B, 1); text-align: center">`
+- Inside the outer div, follow the IR's LINES in order:
+  - If the FIRST LINE is short (<= 5 words, no embedded variable), render
+    it as a TITLE: `<div style="font-size: 14pt; font-weight: bold">TITLE</div>`
+    followed by a `<br>`; then collapse ALL remaining LINES into ONE
+    `<div style="font-weight: bold">{Compress(line1|line2|…)}</div>`
+    joined with `|` separators.
+  - Otherwise render every LINE as its own
+    `<div style="font-weight: bold">…</div>`.
+- Close the outer div with a trailing `<br>` INSIDE the box, and surround
+  the entire callout with `<br>` on the OUTSIDE so it doesn't butt against
+  neighbouring body text.
+- If the box has NO color hints, render the same structure but with NO
+  background-color / border — just a centered block.
+
+VARIABLE MAPPING inside text-box LINES (only when the source uses literal
+angle-bracket variable names): `<CompanyLongName>` →
+`{[plsMatrix.CompanyLongName]}`, `<LossPreventionAddress1..3>` →
+`{[plsMatrix.LossPreventionAddress1..3]}`,
+`<LossPreventionPhoneNumberTollFree>` →
+`{[plsMatrix.LossPreventionPhoneNumberTollFree]}`, `<LossMitEmail>` →
+`{[plsMatrix.LossMitEmail]}`, `<Website>` → `{[plsMatrix.WebSite]}`,
+`<CompanyShortName>` → `{[plsMatrix.CompanyShortName]}`. Preserve any
+literal label that comes before the variable (e.g. `Phone: `,
+`Email Address: `, `Website: `) exactly as the IR shows.
+
+REFERENCE EXAMPLE for a box with `[SHADING_DBE5F1] [BORDER_5A9AD4]` whose
+LINES are "QUESTIONS? CONTACT US" then a stack of company / address / phone
+/ email / website lines, where ANCHOR_AFTER is the "ACT NOW" banner — the
+box renders IMMEDIATELY before ACT NOW, not after, not at the bottom:
+
+`<br>`
+`<div style="background-color: rgba(219, 229, 241, 1); padding: 8px; border: 1px solid rgba(90, 154, 212, 1); text-align: center">`
+`<div style="font-size: 14pt; font-weight: bold">QUESTIONS? CONTACT US</div>`
+`<br>`
+`<div style="font-weight: bold">{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.LossPreventionAddress1]}|{[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]}|Phone: {[plsMatrix.LossPreventionPhoneNumberTollFree]}|Email Address: {[plsMatrix.LossMitEmail]}|Website: {[plsMatrix.WebSite]})}</div>`
+`<br>`
+`</div>`
+`<br>`
+…then the next paragraph in your output is the "ACT NOW" banner.
 
 ### Subject Heading Before Loan Number Table
 - When a bold paragraph appears directly before the Loan Number/RE table (marked [FORMATTING: BOLD] with no ALIGN_CENTER), format it as:

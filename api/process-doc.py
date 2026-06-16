@@ -728,8 +728,30 @@ def _build_ir_document(doc):
 	# carries fillcolor/strokecolor as attributes; the modern one stores them in
 	# child wps:spPr/a:solidFill nodes. We process BOTH variants, then dedup by
 	# joined text content preferring whichever variant carries shape colors.
+	#
+	# Crucially we also capture the textbox's ANCHOR (the body-level w:p or w:tbl
+	# that the floating shape is anchored to) so downstream rendering can place
+	# the box at its actual source position instead of guessing from content.
+	body_elem = doc.element.body
+	body_children = list(body_elem.iterchildren())
+	body_child_index = {id(el): idx for idx, el in enumerate(body_children)}
+
+	def _body_anchor_for(txbx_elem):
+		"""Walk up from a w:txbxContent until we hit an element whose parent IS the
+		document body. Returns (anchor_element, body_index) or (None, None) if not
+		found (e.g. txbx is inside a nested doc or header). The anchor is the
+		body-level w:p or w:tbl in whose flow the floating shape lives."""
+		n = txbx_elem
+		while n is not None:
+			parent = n.getparent()
+			if parent is body_elem:
+				idx = body_child_index.get(id(n))
+				return n, idx
+			n = parent
+		return None, None
+
 	raw_textboxes = []
-	for txbx in doc.element.body.iter(qn('w:txbxContent')):
+	for txbx in body_elem.iter(qn('w:txbxContent')):
 		rows = []
 		seen_in_this_box = set()
 		for p_elem in txbx.iter(qn('w:p')):
@@ -775,20 +797,29 @@ def _build_ir_document(doc):
 		if not rows:
 			continue
 		shape_fill, shape_stroke = _shape_fill_for_txbx(txbx)
+		anchor_el, anchor_body_idx = _body_anchor_for(txbx)
 		tb = {'type': 'textbox', 'rows': rows}
 		if shape_fill:
 			tb['shadingFill'] = shape_fill
 		if shape_stroke:
 			tb['borderColor'] = shape_stroke
+		if anchor_el is not None:
+			tb['_anchorElement'] = anchor_el  # resolved to block index after body iter
+		if anchor_body_idx is not None:
+			tb['_anchorBodyIndex'] = anchor_body_idx
 		raw_textboxes.append(tb)
 	# Dedup across textbox variants by joined text content. Prefer the variant that
 	# carries shadingFill / borderColor — this is almost always the VML fallback.
-	dedup = {}  # text_key -> textbox
+	# We dedup ONLY across variants that share the same anchor body index, so
+	# distinct textboxes that happen to carry identical text (which legitimately
+	# happens in some letter families) are preserved as separate boxes.
+	dedup = {}  # (text_key, anchor_idx_or_None) -> textbox
 	for tb in raw_textboxes:
-		key = '|'.join(
+		text_key = '|'.join(
 			''.join((r.get('text') or '') for r in row.get('runs', [])).strip()
 			for row in tb.get('rows', [])
 		)
+		key = (text_key, tb.get('_anchorBodyIndex'))
 		if key not in dedup:
 			dedup[key] = tb
 		else:
@@ -798,27 +829,97 @@ def _build_ir_document(doc):
 			if tb_has_colors and not ex_has_colors:
 				dedup[key] = tb
 			elif tb_has_colors and ex_has_colors:
-				# Both have some colors — merge missing fields onto the kept one
 				for fld in ('shadingFill', 'borderColor'):
 					if not existing.get(fld) and tb.get(fld):
 						existing[fld] = tb[fld]
-	text_box_blocks = list(dedup.values())
-	
-	# Iterate block items in document order: paragraphs and tables
-	# python-docx doesn't provide a direct unified iterator; iterate through document._body
-	for element in doc.element.body.iterchildren():
+	# Preserve document order (body anchor index ascending; un-anchored last)
+	text_box_blocks = sorted(
+		dedup.values(),
+		key=lambda x: (x.get('_anchorBodyIndex') if x.get('_anchorBodyIndex') is not None else 10**9)
+	)
+
+	# Iterate block items in document order: paragraphs and tables.
+	# Track a mapping from the body-level element id → block index so we can
+	# later resolve each textbox's anchor to a concrete block position.
+	body_elem_to_block_index = {}
+	for element in body_elem.iterchildren():
 		tag = element.tag.rsplit('}', 1)[-1]
 		if tag == 'p':
-			# map to Paragraph object
 			for para in doc.paragraphs:
 				if para._p is element:
+					body_elem_to_block_index[id(element)] = len(blocks)
 					blocks.append(_extract_paragraph_ir(para))
 					break
 		elif tag == 'tbl':
 			for tbl in doc.tables:
 				if tbl._tbl is element:
+					body_elem_to_block_index[id(element)] = len(blocks)
 					blocks.append(_extract_table_ir(tbl))
 					break
+
+	# Resolve textbox anchors to block indices and surrounding-paragraph
+	# snippets so downstream rendering can place each box at its true source
+	# position (above/below whatever real paragraphs visually flank it). We
+	# also normalize the IR by stripping the internal _anchorElement reference
+	# now that we've used it.
+	def _block_visible_text(block, max_len=120):
+		if not isinstance(block, dict):
+			return ''
+		btype = block.get('type')
+		text = ''
+		if btype == 'paragraph':
+			runs = block.get('runs') or []
+			text = ''.join((r.get('text') or '') for r in runs).strip()
+		elif btype == 'table':
+			# Concat first row's cell texts as a coarse table preview
+			rows = block.get('rows') or []
+			if rows:
+				cells = rows[0].get('cells') or []
+				parts = []
+				for c in cells:
+					for p in (c.get('content') or []):
+						for r in (p.get('runs') or []):
+							t = (r.get('text') or '').strip()
+							if t:
+								parts.append(t)
+				text = ' | '.join(parts)[:max_len]
+		# Collapse whitespace
+		text = ' '.join(text.split())
+		return text[:max_len]
+
+	for tb in text_box_blocks:
+		anchor_el = tb.pop('_anchorElement', None)
+		tb.pop('_anchorBodyIndex', None)
+		if anchor_el is None:
+			continue
+		anchor_block_idx = body_elem_to_block_index.get(id(anchor_el))
+		if anchor_block_idx is None:
+			continue
+		tb['anchorBlockIndex'] = anchor_block_idx
+		# Walk backwards from the anchor to find the nearest non-empty preceding
+		# block (skipping the anchor paragraph itself, which usually only holds
+		# the floating shape and no real visible text).
+		before_text = ''
+		for i in range(anchor_block_idx - 1, -1, -1):
+			t = _block_visible_text(blocks[i])
+			if t:
+				before_text = t
+				break
+		after_text = ''
+		for i in range(anchor_block_idx, len(blocks)):
+			# Skip the anchor block itself if it is empty / only carries the shape
+			t = _block_visible_text(blocks[i])
+			if t and i != anchor_block_idx:
+				after_text = t
+				break
+			if t and i == anchor_block_idx:
+				# Anchor itself has real content (rare); record it as "after"
+				after_text = t
+				break
+		if before_text:
+			tb['anchorBeforeText'] = before_text
+		if after_text:
+			tb['anchorAfterText'] = after_text
 	# Resolve list types (bullet vs numbered) from numbering definitions
 	_resolve_list_types(doc, blocks)
 	

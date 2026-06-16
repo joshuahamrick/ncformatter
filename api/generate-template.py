@@ -1130,62 +1130,48 @@ def build_prompt(ir, few_shot_examples, user_instruction=None):
 
 	ir_content = header_directive + font_directive + gap_directive + ir_content
 	
-	# Append text box content if present (floating text boxes are not in body flow)
+	# Append text box content if present (floating text boxes are not in body flow).
+	# Placement is purely anchor-driven — for each box the IR carries the body
+	# block index of its anchor paragraph plus the visible text of the nearest
+	# preceding and following body paragraphs. The AI must render each box at
+	# that exact source position, NOT classify it by content and guess.
 	text_boxes = ir.get('meta', {}).get('textBoxes', [])
 	if text_boxes:
-		ir_content += "\n\n=== FLOATING TEXT BOXES (visually prominent boxes floating in document layout) ===\n"
-		ir_content += "PLACEMENT RULES — read the content to decide where each box belongs:\n"
-		ir_content += "  - SHORT TITLE box (1-3 words, e.g. 'Escrow Cancellation Request', 'Loan Summary') → place AFTER mailing address, centered. Use {Compress(Part1|Part2)} to split the title across two lines at a natural word boundary (e.g. 'Escrow Cancellation Request' → {Compress(Escrow Cancellation|Request)})\n"
-		ir_content += "  - CALLOUT box (starts with 'QUESTIONS?' / 'CONTACT US' / contains 'Phone:' + 'Email Address:' + 'Website:' / lists CompanyLongName + addresses) → place IMMEDIATELY AFTER the first body paragraph that mentions contacting the lender or warning about foreclosure (typically the 'If you do not contact us or send your first trial period plan payment by...' paragraph). Render as a colored callout div, NOT at the bottom.\n"
-		ir_content += "  - WARNING/NOTICE box (long sentence starting with 'If you do not...', 'You must...', 'IMPORTANT:') → place at the VERY BOTTOM of the document, AFTER return address and fax/email lines\n"
-		ir_content += "  - LOAN/PROPERTY INFO box (Loan Number, Property Address, RE:) → place after mailing address, before salutation\n"
-		ir_content += "\nRENDERING RULES for CALLOUT boxes with shape color hints:\n"
-		ir_content += "  - When a CALLOUT box has [SHADING_<hex>] + [BORDER_<hex>] hints, render as ONE outer <div> with background-color, padding: 8px, border: 1px solid <bordercolor>, text-align: center. Use rgba(R, G, B, 1) format for both colors.\n"
-		ir_content += "  - Inside the outer div: first row (the title like 'QUESTIONS? CONTACT US') as <div style=\"font-size: 14pt; font-weight: bold\">TITLE</div>, then a <br>, then the remaining contact lines as ONE <div style=\"font-weight: bold\">{Compress(line1|line2|line3|...)}</div> (use {Compress(...)} to join the contact lines with | separator), then a trailing <br> inside the box.\n"
-		ir_content += "  - Variables in CALLOUT boxes: <CompanyLongName> → {[plsMatrix.CompanyLongName]}, <LossPreventionAddress1> → {[plsMatrix.LossPreventionAddress1]}, <LossPreventionPhoneNumberTollFree> → {[plsMatrix.LossPreventionPhoneNumberTollFree]}, <LossMitEmail> → {[plsMatrix.LossMitEmail]}, <Website> → {[plsMatrix.WebSite]}. Keep the literal labels 'Phone: ', 'Email Address: ', 'Website: ' before each variable as in the source.\n"
-		ir_content += "  - Example: <div style=\"background-color: rgba(219, 229, 241, 1); padding: 8px; border: 1px solid rgba(90, 154, 212, 1); text-align: center\"> <div style=\"font-size: 14pt; font-weight: bold\">QUESTIONS? CONTACT US</div> <br> <div style=\"font-weight: bold\">{Compress({[plsMatrix.CompanyLongName]}|{[plsMatrix.LossPreventionAddress1]}|{[plsMatrix.LossPreventionAddress2]}|{[plsMatrix.LossPreventionAddress3]}|Phone: {[plsMatrix.LossPreventionPhoneNumberTollFree]}|Email Address: {[plsMatrix.LossMitEmail]}|Website: {[plsMatrix.WebSite]})}</div> <br> </div>\n"
+		ir_content += "\n\n=== FLOATING TEXT BOXES (visually prominent shapes anchored to specific body paragraphs) ===\n"
+		ir_content += "PLACEMENT — these boxes are anchored to specific paragraphs in the source. Render EACH box at its anchor location, NOT at a generic 'top' or 'bottom'. The IR tells you precisely between which two body paragraphs each box visually lives:\n"
+		ir_content += "  - ANCHOR_BEFORE = the nearest body paragraph that precedes the box's anchor in the source (its visible text snippet)\n"
+		ir_content += "  - ANCHOR_AFTER  = the nearest body paragraph that follows the box's anchor in the source (its visible text snippet)\n"
+		ir_content += "  - Render the box between those two paragraphs in your output, in the same place where it appears in the source layout.\n"
+		ir_content += "  - A document may contain ZERO, ONE, or MANY text boxes. Render every one of them. They may appear at any position (above the salutation, between two body paragraphs, between two list items, anywhere). Do NOT push them to the bottom of the document, do NOT cluster them at the top, do NOT skip any.\n"
+		ir_content += "  - If ANCHOR_BEFORE / ANCHOR_AFTER are missing for a box, fall back to the relative order: the boxes are listed below in body-document order, so render them in that same order, interleaved with the body paragraphs around them.\n"
+		ir_content += "\nRENDERING — shape color hints map directly to inline CSS:\n"
+		ir_content += "  - [SHADING_<hex>] is the shape's fill color (background-color) and [BORDER_<hex>] is the shape's outline color (border).\n"
+		ir_content += "  - Render the box as ONE outer <div> with: background-color: rgba(R, G, B, 1) from the SHADING hex; padding: 8px; border: 1px solid rgba(R, G, B, 1) from the BORDER hex; text-align: center. Convert hex to decimal rgba with a SPACE after each comma.\n"
+		ir_content += "  - When the box has multiple lines: if the FIRST line is short (<= 5 words, no embedded variable) treat it as a TITLE and render as <div style=\"font-size: 14pt; font-weight: bold\">TITLE</div> followed by a <br>; render the REMAINING lines as ONE <div style=\"font-weight: bold\">{Compress(line1|line2|...)}</div> joined with | separators. Otherwise render every line as its own <div style=\"font-weight: bold\">…</div>.\n"
+		ir_content += "  - When the box has only ONE line, render it as a single <div style=\"font-weight: bold\">…</div> (no Compress needed).\n"
+		ir_content += "  - Place a trailing <br> INSIDE the outer div, and a <br> AROUND the outer div on both sides so it doesn't butt against neighbouring body text.\n"
+		ir_content += "  - Variable mapping (only when the line contains a literal angle-bracket variable name from the IR): <CompanyLongName> → {[plsMatrix.CompanyLongName]}, <LossPreventionAddress1..3> → {[plsMatrix.LossPreventionAddress1..3]}, <LossPreventionPhoneNumberTollFree> → {[plsMatrix.LossPreventionPhoneNumberTollFree]}, <LossMitEmail> → {[plsMatrix.LossMitEmail]}, <Website> → {[plsMatrix.WebSite]}, <CompanyShortName> → {[plsMatrix.CompanyShortName]}. Preserve any literal label that comes before the variable (e.g. 'Phone: ', 'Email Address: ', 'Website: ').\n"
+		ir_content += "  - If the box has NO color hints (neither SHADING nor BORDER), render it as a plain centered <div> block (no background, no border), preserving line breaks the same way.\n"
+		# List each text box with its anchor info, in body-document order.
 		for i, tb in enumerate(text_boxes):
-			tb_text = ' '.join(
-				''.join(r.get('text','') for r in row.get('runs',[])).strip()
-				for row in tb.get('rows',[])
-			).strip()
-			# Classify this text box so Claude knows where to place it.
-			import re as _re_tb
-			tb_lower = tb_text.lower()
-			# Detect contact/QUESTIONS callouts first — they take precedence over the
-			# generic "WARNING" classifier even though their body may mention 'payment'
-			# or 'must contact', because the visual style (colored shape) and stacked
-			# contact lines clearly mark them as the upper-letter callout box.
-			is_callout = bool(
-				_re_tb.search(r'QUESTIONS\?|CONTACT US', tb_text, _re_tb.IGNORECASE)
-				or (
-					'phone:' in tb_lower
-					and ('email' in tb_lower or 'website' in tb_lower)
-				)
-				or _re_tb.search(r'CompanyLongName|LossPrevention|LossMitEmail', tb_text)
-			)
-			if is_callout:
-				tb_role = "CALLOUT (place IMMEDIATELY AFTER the first 'If you do not contact us...' / 'foreclosure proceedings may be started' warning paragraph in the body)"
-			elif len(tb_text.split()) <= 6 and not _re_tb.search(r'If you|must|required|payment|IMPORTANT', tb_text, _re_tb.IGNORECASE):
-				tb_role = "TITLE (place after mailing address, centered)"
-			elif _re_tb.search(r'If you|must|required|payment will|escrow payment', tb_text, _re_tb.IGNORECASE):
-				tb_role = "WARNING (place at very BOTTOM of document, after return address and fax/email lines)"
-			else:
-				tb_role = "INFO (place after mailing address)"
-			# Append shape color hints if the IR captured them from the underlying
-			# VML / DrawingML shape (Word stores callout fill/border there, NOT in
-			# w:shd, so this is the only signal we have for the visual color).
 			color_hints = []
 			if tb.get('shadingFill'):
 				color_hints.append(f"[SHADING_{tb['shadingFill']}]")
 			if tb.get('borderColor'):
 				color_hints.append(f"[BORDER_{tb['borderColor']}]")
 			color_str = (' ' + ' '.join(color_hints)) if color_hints else ''
-			ir_content += f"\nText Box {i+1} [{tb_role}]{color_str}:\n"
+			ir_content += f"\nText Box {i+1}{color_str}:\n"
+			before = (tb.get('anchorBeforeText') or '').strip()
+			after = (tb.get('anchorAfterText') or '').strip()
+			if before:
+				ir_content += f"  ANCHOR_BEFORE: {before[:140]!r}\n"
+			if after:
+				ir_content += f"  ANCHOR_AFTER:  {after[:140]!r}\n"
+			ir_content += "  LINES:\n"
 			for row in tb.get('rows', []):
 				text = ''.join(r.get('text', '') for r in row.get('runs', []))
 				if text.strip():
-					ir_content += f"  {text.strip()}\n"
+					ir_content += f"    {text.strip()}\n"
 	
 	# Build few-shot examples section - show ALL examples with proper formatting
 	few_shot_text = "\n## CRITICAL: Example Outputs - Study These Carefully\n\n"

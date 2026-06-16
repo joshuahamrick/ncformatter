@@ -144,7 +144,7 @@ Return ONLY the complete updated HTML:"""
 				if messages_create_with_retries is not None:
 					response = messages_create_with_retries(
 						client,
-						model='claude-sonnet-4-20250514',
+						model='claude-sonnet-4-6',
 						max_tokens=max_tokens,
 						system=APPLY_SYSTEM_PROMPT,
 						messages=[{'role': 'user', 'content': user_message}],
@@ -152,7 +152,7 @@ Return ONLY the complete updated HTML:"""
 					)
 				else:
 					response = client.messages.create(
-						model='claude-sonnet-4-20250514',
+						model='claude-sonnet-4-6',
 						max_tokens=max_tokens,
 						system=APPLY_SYSTEM_PROMPT,
 						messages=[{'role': 'user', 'content': user_message}],

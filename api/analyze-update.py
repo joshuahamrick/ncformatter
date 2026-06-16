@@ -372,7 +372,7 @@ TASK:
 				if messages_create_with_retries is not None:
 					response = messages_create_with_retries(
 						client,
-						model='claude-sonnet-4-20250514',
+						model='claude-sonnet-4-6',
 						max_tokens=8192,
 						system=ANALYZE_SYSTEM_PROMPT,
 						messages=api_messages,
@@ -380,7 +380,7 @@ TASK:
 					)
 				else:
 					response = client.messages.create(
-						model='claude-sonnet-4-20250514',
+						model='claude-sonnet-4-6',
 						max_tokens=8192,
 						system=ANALYZE_SYSTEM_PROMPT,
 						messages=api_messages,

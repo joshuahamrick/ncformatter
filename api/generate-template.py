@@ -2492,7 +2492,7 @@ class handler(BaseHTTPRequestHandler):
 			
 			# Call Anthropic Claude API
 			try:
-				model_name = "claude-sonnet-4-20250514"
+				model_name = "claude-sonnet-4-6"
 				print(f"Calling Anthropic API with model: {model_name}")
 				print(f"System prompt length: {len(full_system_prompt)}")
 				print(f"User message length: {len(user_message)}")

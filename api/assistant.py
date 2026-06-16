@@ -137,14 +137,14 @@ class handler(BaseHTTPRequestHandler):
 			if messages_create_with_retries:
 				response = messages_create_with_retries(
 					client,
-					model='claude-sonnet-4-20250514',
+					model='claude-sonnet-4-6',
 					max_tokens=2048,
 					system=system_prompt,
 					messages=messages
 				)
 			else:
 				response = client.messages.create(
-					model='claude-sonnet-4-20250514',
+					model='claude-sonnet-4-6',
 					max_tokens=2048,
 					system=system_prompt,
 					messages=messages

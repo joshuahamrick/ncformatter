@@ -263,7 +263,7 @@ Return ONLY the modified HTML with proper newlines and formatting:"""
 			user_message_length = len(user_message)
 			total_estimated_tokens = (system_prompt_length + user_message_length) // 3
 			
-			model_name = "claude-sonnet-4-20250514"
+			model_name = "claude-sonnet-4-6"
 			print(f"Calling Anthropic API: model={model_name}")
 			print(f"  System prompt: {system_prompt_length} chars (~{system_prompt_length//3} tokens)")
 			print(f"  User message: {user_message_length} chars (~{user_message_length//3} tokens)")

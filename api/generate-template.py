@@ -657,12 +657,55 @@ def format_ir_for_prompt(ir):
 			if block.get('isListItem'):
 				list_level = block.get('listLevel', 0)
 				list_type = block.get('listType', 'bullet')
-				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level})")
+				# Pick the bullet glyph the AI should emit in the table-cell first column.
+				# - Wingdings/Symbol glyphs in Word's PUA (U+F000-U+F0FF) → Symbol(<latin1>) function:
+				#     F0FC → Symbol(ü) (checkmark in a box), F0FE → Symbol(þ),
+				#     F0A7 → Symbol(§) (square), F0A8 → Symbol(¨), F071 → Symbol(q)
+				# - Symbol-font U+F0B7 (Symbol's bullet glyph) → literal `•` in the source design
+				# - Courier "o" / Arial "□" / etc. → literal char preserved
+				# Uses the `char=` field name that the existing prompt rules already understand.
+				char_marker = '•'
+				bf = (block.get('bulletFont') or '').strip()
+				bc = block.get('bulletChar') or ''
+				if list_type == 'bullet' and bf and bc:
+					if bf.lower() == 'symbol' and bc == '\uf0b7':
+						char_marker = '•'
+					elif bf.lower() in ('wingdings', 'wingdings 2', 'wingdings 3') and len(bc) == 1 and 0xF000 <= ord(bc) <= 0xF0FF:
+						latin = chr(ord(bc) - 0xF000)
+						char_marker = f'{{Symbol({latin})}}'
+					else:
+						# Plain font (Courier 'o', Arial '\u25a1'='□', dashes, etc.) — keep literal
+						char_marker = bc
+				formatting_hints.append(f"LIST_ITEM(type={list_type}, level={list_level}, char={char_marker})")
 			
-			# Add left indent if significant (helps with margin-left decisions)
+			# Banner shading: paragraph-level (w:pPr/w:shd) or rolled-up from run-level
+			# shading (w:rPr/w:shd) when every non-empty run shares the same fill.
+			# Combined with text color this lets the AI emit the canonical solid-blue banner
+			# `<b><div style="background-color: rgba(R,G,B,1); color: rgba(255,255,255,1); ...">`.
+			shading_fill = block.get('shadingFill')
+			if shading_fill:
+				formatting_hints.append(f"BANNER_FILL_{shading_fill}")
+			
+			# Add left indent if significant (helps with margin-left decisions).
+			# SUPPRESS the indent hint on heading paragraphs (banner shading, large font size
+			# like 14pt+, or centered) — Word's indent values on these are layout artifacts,
+			# not real "this needs to be indented" intent; surfacing them causes the AI to
+			# emit margin-left on banner divs that should be full-width.
 			left_indent = block.get('leftIndentPt')
-			if left_indent and left_indent > 10:
+			is_heading = bool(shading_fill) or (font_size and font_size >= 13.0) or (alignment == 'center')
+			if left_indent and left_indent > 10 and not is_heading:
 				formatting_hints.append(f"INDENT_LEFT_{int(left_indent)}pt")
+			# Aggregate uniform non-default font color across all non-empty runs into a single hint.
+			# Skip RED text in template documents — RED is the client's editorial markup convention
+			# meaning "this is a variable" or "this is metadata", not a real intentional color for
+			# the output. Same for blue link colors which are usually hyperlink defaults.
+			run_colors = {r.get('fontColor') for r in runs if (r.get('text') or '').strip() and r.get('fontColor')}
+			text_runs = [r for r in runs if (r.get('text') or '').strip()]
+			editorial_colors = {'FF0000', 'C00000', '0000FF', '0000CC', '0070C0'}
+			if text_runs and len(run_colors) == 1 and len(run_colors) == sum(1 for r in text_runs if r.get('fontColor')):
+				color = next(iter(run_colors))
+				if color not in editorial_colors:
+					formatting_hints.append(f"TEXT_COLOR_{color}")
 			
 			# Include formatting information in the output
 			formatting_note = f" [FORMATTING: {', '.join(formatting_hints)}]" if formatting_hints else ""
@@ -750,6 +793,9 @@ def format_ir_for_prompt(ir):
 						override = ', '.join(f'{k}={v}' for k, v in cb.items() if v and v != 'none')
 						if override:
 							cell_meta.append(f'cell-border={{{override}}}')
+					cs_fill = c.get('shadingFill')
+					if cs_fill:
+						cell_meta.append(f'SHADING={cs_fill}')
 					if cell_meta:
 						cell_hint = f'[{"; ".join(cell_meta)}] {cell_hint}'
 					cell_texts.append(cell_hint)
@@ -1274,7 +1320,7 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    2.  Second item text stays in its own column too.
    ```
    → Table structure (MUST include <div> wrapper and margin-left):
-   <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
+   <div><table width="100%" style="margin-left: 25px; border-collapse: collapse"><tbody><tr>
      <td width="5%" valign="top">1.</td>
      <td>This is the first item and when the text wraps it continues aligned here, past the number.</td>
    </tr><tr>
@@ -1300,11 +1346,12 @@ CRITICAL UNIVERSAL RULES - APPLY TO ALL DOCUMENTS:
    - When in doubt, check the source document's spatial layout
    
    **BULLET LIST FORMAT (width="3%", border-collapse, margin-left) - when using TABLE:**
-   <div><table width="100%" style="border-collapse: collapse; margin-left: 30px"><tbody><tr>
+   <div><table width="100%" style="margin-left: 25px; border-collapse: collapse"><tbody><tr>
      <td width="3%" valign="top">•</td>
      <td>First item text</td>
    </tr></tbody></table></div>
    CRITICAL: The margin-left and <div> wrapper are MANDATORY for all bullet/numbered list tables.
+   CRITICAL: Top-level bullet/checkmark tables use `margin-left: 25px` (px, not pt). Use `margin-left: 55px` for sub-level lists nested under another list (e.g. an `o` sub-bullet under a `•` parent).
    
    **CRITICAL**: NEVER change numbered lists (1., 2.) to bullets (•) or vice versa!
    **CRITICAL**: Numbered lists use width="5%", bullet lists use width="3%" when using TABLE format!
@@ -2201,10 +2248,11 @@ BULLET POINTS ANALYSIS (MUST PERFORM SYSTEMATICALLY):
   * If the list text wraps back to the SAME margin as the bullet/number → DIV format
   
   TABLE format (text indented past bullet):
-  <div><table width="100%" style="border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top">•</td><td>Next bullet point</td></tr></tbody></table></div>
+  <div><table width="100%" style="margin-left: 25px; border-collapse: collapse"><tbody><tr><td width="3%" valign="top">•</td><td>Bullet point text here</td></tr><tr><td width="3%" valign="top">•</td><td>Next bullet point</td></tr></tbody></table></div>
   CRITICAL: Notice the <div> wrapper around the table - this is required!
-  CRITICAL: Use style="border-collapse: collapse" on the table
+  CRITICAL: Use style="margin-left: 25px; border-collapse: collapse" on the table (px, not pt)
   CRITICAL: Bullet character goes in FIRST <td>, content in SECOND <td>
+  CRITICAL: If the LIST_ITEM hint contains `char={Symbol(ü)}` (or any other {Symbol(X)}), use that character EXACTLY in the first cell — do NOT substitute • for Symbol() variants. The Wingdings checkmark/section glyphs are rendered by the {Symbol()} function in the downstream renderer; replacing them with • loses information.
   
   DIV format (text wraps inline with bullet):
   <div style="margin-left: 25px">• Bullet point text here</div>

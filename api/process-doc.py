@@ -105,6 +105,9 @@ def _append_run_from_element(r_element, runs, paragraph, is_hyperlink=False):
 	is_underline = is_hyperlink  # Hyperlinks are treated as underlined
 	font_size_pt = None
 	font_name = None
+	font_color = None      # hex string without leading '#', e.g. 'FFFFFF' or '2D73B5'
+	highlight = None       # named highlight, e.g. 'yellow'
+	run_shading_fill = None # hex string for run-level w:shd (banner-style colored heading)
 	
 	if rPr is not None:
 		# Bold: <w:b/> or <w:b w:val="true"/>
@@ -139,16 +142,48 @@ def _append_run_from_element(r_element, runs, paragraph, is_hyperlink=False):
 		rFonts = rPr.find(qn('w:rFonts'))
 		if rFonts is not None:
 			font_name = rFonts.get(qn('w:ascii'))
+		
+		# Font color: <w:color w:val="FFFFFF"/> — capture only meaningful colors
+		# (skip 'auto', black, and missing values; downstream uses this to render
+		# white-on-banner text and other intentional color formatting).
+		color_elem = rPr.find(qn('w:color'))
+		if color_elem is not None:
+			val = (color_elem.get(qn('w:val')) or '').strip().upper()
+			if val and val not in ('AUTO', '000000'):
+				font_color = val
+		
+		# Highlight: <w:highlight w:val="yellow"/>
+		hi_elem = rPr.find(qn('w:highlight'))
+		if hi_elem is not None:
+			val = (hi_elem.get(qn('w:val')) or '').strip().lower()
+			if val and val != 'none':
+				highlight = val
+		
+		# Run shading: <w:shd w:fill="2D73B5"/> — Word uses this for inline banners
+		# (solid colored headings where the entire heading paragraph's runs share a fill).
+		shd_elem = rPr.find(qn('w:shd'))
+		if shd_elem is not None:
+			fill = (shd_elem.get(qn('w:fill')) or '').strip().upper()
+			if fill and fill not in ('AUTO', 'FFFFFF', ''):
+				run_shading_fill = fill
 	
-	runs.append({
+	run = {
 		'text': text,
 		'bold': is_bold,
 		'italic': is_italic,
 		'underline': is_underline,
 		'fontSizePt': font_size_pt,
 		'fontFamily': font_name,
-		'isHyperlink': is_hyperlink
-	})
+		'isHyperlink': is_hyperlink,
+	}
+	# Only attach color/highlight/shading if present, to keep IR compact for back-compat
+	if font_color:
+		run['fontColor'] = font_color
+	if highlight:
+		run['highlight'] = highlight
+	if run_shading_fill:
+		run['shadingFill'] = run_shading_fill
+	runs.append(run)
 
 
 def _detect_list_info(paragraph):
@@ -194,7 +229,9 @@ def _extract_paragraph_ir(paragraph):
 	is_list, level, marker = _detect_list_info(paragraph)
 
 	# Detect paragraph border (bottom border = horizontal rule separator)
+	# and paragraph shading fill (background-color for banner divs).
 	para_border_bottom = None
+	para_shading_fill = None
 	try:
 		pPr_elem = paragraph._p.find(qn('w:pPr'))
 		if pPr_elem is not None:
@@ -205,6 +242,12 @@ def _extract_paragraph_ir(paragraph):
 					val = bottom_el.get(qn('w:val'), '')
 					if val not in ('nil', 'none', ''):
 						para_border_bottom = True
+			# w:shd w:fill="DEEAF6" → light blue banner background
+			shd_el = pPr_elem.find(qn('w:shd'))
+			if shd_el is not None:
+				fill = (shd_el.get(qn('w:fill')) or '').strip().upper()
+				if fill and fill not in ('AUTO', 'FFFFFF', ''):
+					para_shading_fill = fill
 	except Exception:
 		pass
 
@@ -225,6 +268,17 @@ def _extract_paragraph_ir(paragraph):
 		'hangingIndentPt': None,
 		'borderBottom': para_border_bottom,
 	}
+	if para_shading_fill:
+		para_ir['shadingFill'] = para_shading_fill
+	else:
+		# Word often applies banner shading via run-level <w:shd> (rPr/shd) instead of
+		# paragraph-level shading. If every non-whitespace run in this paragraph shares
+		# the same shading fill, treat the whole paragraph as banner-shaded so downstream
+		# prompt logic can emit a banner <div style="background-color: ...">.
+		run_fills = {r.get('shadingFill') for r in runs if (r.get('text') or '').strip() and r.get('shadingFill')}
+		non_shaded_text = [r for r in runs if (r.get('text') or '').strip() and not r.get('shadingFill')]
+		if len(run_fills) == 1 and not non_shaded_text:
+			para_ir['shadingFill'] = next(iter(run_fills))
 	hanging = getattr(paragraph.paragraph_format, 'hanging_indent', None)
 	if hanging is not None:
 		try:
@@ -377,6 +431,20 @@ def _cell_valign(tcPr_elem):
 	return v if v in ('top', 'center', 'bottom') else None
 
 
+def _cell_shading_fill(tcPr_elem):
+	"""Return cell background fill as hex (no '#'), or None for auto/white/missing."""
+	if tcPr_elem is None:
+		return None
+	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+	shd = tcPr_elem.find(f'{{{ns}}}shd')
+	if shd is None:
+		return None
+	fill = (shd.get(f'{{{ns}}}fill') or '').strip().upper()
+	if not fill or fill in ('AUTO', 'FFFFFF'):
+		return None
+	return fill
+
+
 def _extract_table_ir(table):
 	ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 	tblPr = table._tbl.find(f'{{{ns}}}tblPr')
@@ -417,6 +485,7 @@ def _extract_table_ir(table):
 			cell_borders = _cell_border_summary(tcPr)
 			valign = _cell_valign(tcPr)
 			width_pct = _tcw_pct(tcPr, tbl_width)
+			cell_shading = _cell_shading_fill(tcPr)
 
 			cell_ir = {
 				'content': content,
@@ -428,6 +497,8 @@ def _extract_table_ir(table):
 				'header': False,
 				'borders': cell_borders,
 			}
+			if cell_shading:
+				cell_ir['shadingFill'] = cell_shading
 			cells_ir.append(cell_ir)
 		rows_ir.append({'cells': cells_ir})
 
@@ -469,6 +540,10 @@ def _resolve_list_types(doc, blocks):
 			num_to_abstract[m.group(1)] = m.group(2)
 		
 		abstract_fmt = {}
+		# Also capture bullet font + char so downstream can pick the right glyph
+		# (e.g. Wingdings U+F0FE = checkmark → {Symbol(ü)}; Wingdings U+F0A7 = square → {Symbol(§)}).
+		abstract_bullet_font = {}   # abs_id -> font name (Wingdings, Symbol, Courier New, ...)
+		abstract_bullet_char = {}   # abs_id -> raw bullet character (e.g. '\uf0fe')
 		for m in _re.finditer(r'<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>(.*?)</w:abstractNum>', numbering_xml, _re.DOTALL):
 			abs_id = m.group(1)
 			body = m.group(2)
@@ -481,6 +556,15 @@ def _resolve_list_types(doc, blocks):
 				txt_match = _re.search(r'<w:lvlText\s+w:val="([^"]*)"', lvl_body)
 				if txt_match and txt_match.group(1) in bullet_chars:
 					abstract_fmt[abs_id] = 'bullet'
+				# Bullet font lives in w:rPr > w:rFonts at this level
+				fnt_match = (
+					_re.search(r'<w:rFonts\s+[^/]*?w:ascii="([^"]+)"', lvl_body) or
+					_re.search(r'<w:rFonts\s+[^/]*?w:hAnsi="([^"]+)"', lvl_body)
+				)
+				if fnt_match:
+					abstract_bullet_font[abs_id] = fnt_match.group(1)
+				if txt_match:
+					abstract_bullet_char[abs_id] = txt_match.group(1)
 		
 		# Build a map from paragraph XML element to numId
 		from docx.oxml.ns import qn
@@ -518,6 +602,12 @@ def _resolve_list_types(doc, blocks):
 					b['listType'] = 'numbered'
 				else:
 					b['listType'] = 'bullet'
+				# Attach bullet font + raw char (used by generate-template to pick
+				# the right glyph: Wingdings/Symbol → {Symbol(x)}; Courier/Arial → literal)
+				if abs_id in abstract_bullet_font:
+					b['bulletFont'] = abstract_bullet_font[abs_id]
+				if abs_id in abstract_bullet_char:
+					b['bulletChar'] = abstract_bullet_char[abs_id]
 			else:
 				b['listType'] = 'bullet'
 	except Exception:

@@ -652,13 +652,17 @@ def format_ir_for_prompt(ir):
 			is_mostly_uppercase = len([c for c in cleaned_text if c.isupper()]) > len(cleaned_text) * 0.5
 			char_limit = 5000 if is_mostly_uppercase else 2000  # Increased: Claude has 200K context, we can include complete paragraphs
 			
-			# Extract formatting information (bold, underline, font size, alignment)
-			has_bold = any(r.get('bold', False) for r in runs)
-			has_underline = any(r.get('underline', False) for r in runs)
-			
-			# Check if PARTIAL bold (some runs bold, some not)
+			# Extract formatting information (bold, underline, font size, alignment).
+			# IMPORTANT: only count runs that have NON-WHITESPACE text as evidence of
+			# bold/underline. Word often leaves an isolated bold-whitespace run between
+			# regular non-bold runs as a formatting artifact, and previously this caused
+			# the whole paragraph to be flagged as BOLD when no actual text was bold.
 			bold_runs = [r for r in runs if r.get('bold', False) and r.get('text', '').strip()]
 			non_bold_runs = [r for r in runs if not r.get('bold', False) and r.get('text', '').strip()]
+			has_bold = len(bold_runs) > 0
+			has_underline = any(r.get('underline', False) and (r.get('text') or '').strip() for r in runs)
+			
+			# Check if PARTIAL bold (some runs bold, some not)
 			is_partial_bold = len(bold_runs) > 0 and len(non_bold_runs) > 0
 			
 			font_size = None
@@ -831,12 +835,25 @@ def format_ir_for_prompt(ir):
 			else:
 				border_hint = 'TABLE_BORDERS: none (no explicit borders set)'
 
+			# Detect a single-cell colored panel (most often a textbox-style
+			# callout or a banner heading). For those we want to preserve the
+			# per-paragraph structure of the cell so the AI doesn't collapse a
+			# multi-paragraph callout (e.g. TITLE + contact stack + standalone
+			# sentence) into one mashed Compress() pipe.
+			is_single_cell_panel = (
+				len(rows) == 1
+				and len(rows[0].get('cells', [])) == 1
+				and (rows[0]['cells'][0].get('shadingFill') is not None
+					or (tbl_borders and any(s and s != 'none' for s in tbl_borders.get('sides', {}).values())))
+			)
+
 			table_text = [border_hint]
 			for row_i, row in enumerate(rows):
 				cells = row.get('cells', [])
 				cell_texts = []
 				for c in cells:
 					cell_text = ''
+					para_list = []  # list of (paragraph_text, paragraph_meta) — used when we want to surface structure
 					if c.get('runs'):
 						cell_text = ''.join([r.get('text', '') for r in c.get('runs', [])])
 					elif c.get('content'):
@@ -845,6 +862,12 @@ def format_ir_for_prompt(ir):
 							para_text = ''.join([r.get('text', '') for r in para.get('runs', [])])
 							if para_text.strip():
 								parts.append(para_text.strip())
+								meta_bits = []
+								if para.get('align') == 'center':
+									meta_bits.append('center')
+								if any(r.get('bold') for r in para.get('runs', []) if (r.get('text') or '').strip()):
+									meta_bits.append('bold')
+								para_list.append((para_text.strip(), meta_bits))
 						cell_text = ' '.join(parts)
 					# Build cell hint including width, colspan, cell-level border override
 					cell_hint = cell_text.strip()[:200] if cell_text.strip() else '(empty)'
@@ -870,6 +893,15 @@ def format_ir_for_prompt(ir):
 					if cell_meta:
 						cell_hint = f'[{"; ".join(cell_meta)}] {cell_hint}'
 					cell_texts.append(cell_hint)
+					# For a single-cell colored panel with multiple paragraphs, ALSO emit each
+					# paragraph as its own PARA: line so the AI sees the paragraph boundaries.
+					# This is what tells the AI to keep a standalone sentence as its own <div>
+					# instead of folding it into the Compress() pipe.
+					if is_single_cell_panel and len(para_list) >= 2:
+						table_text.append('  PARAGRAPHS in panel cell (each one is a distinct content block — render as separate child <div>s or Compress() groups, never as one mashed line):')
+						for pi, (ptxt, pmeta) in enumerate(para_list):
+							meta_str = (f' [{",".join(pmeta)}]' if pmeta else '')
+							table_text.append(f'    PARA {pi+1}{meta_str}: {ptxt[:400]}')
 				if cell_texts:
 					table_text.append(f'  Row {row_i+1}: ' + ' | '.join(cell_texts))
 			if table_text:

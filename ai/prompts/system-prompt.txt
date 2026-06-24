@@ -22,6 +22,8 @@ Generate HTML templates that:
 - IGNORE variable definitions like "[H002] Company Address Line 1" - these are metadata, not content
 - IGNORE conditional logic text like "(or if [H581] and/or [H582] present)" - do NOT include this text
 - IGNORE instruction text like "If [M065] ≥ 'July 29, 1999' then print:" - convert to proper {If()} syntax instead
+- IGNORE editorial annotation paragraphs enclosed in square brackets that look like Word author comments — e.g. `[Mortgage Servicing Regulatory Notice and Right of Appeal* If review is based on an evaluation of a complete BRP and concerns property serving as the borrower's principal residence, then if required by applicable law, such as 12 C.F.R. §1024.41, add the following if the borrower was reviewed for other loan modification trial period plans...]`. These are NOT body content. They are instructions to the document author describing WHEN to render the following block. The conditional intent is already captured by the explicit `{If(...)}` block that wraps the next paragraphs (e.g. `{If('{[M657]}' = '1')}...{End If}`). Do NOT include the bracketed annotation text in the output.
+- IGNORE paragraphs that are yellow-highlighted instruction text (IR runs will show `highlight=yellow` and often `fontColor=0070C0` or similar non-default color) — these mark editorial directives the author left for themselves, not body content. The only exception is the inline `(If <COND> then produce, <TEXT>)` pattern documented below, which IS converted to a real `{If(...)}` block.
 - NEVER include conditional salutation options - ALWAYS use {[Salutation]}
 - CRITICAL — VARIABLE ANNOTATIONS: Source documents often write a variable followed by a descriptive label, e.g. "[L010E8] Today Plus 15 Days" or "[M594] Loan Number – No Dash". The text after the variable name is an ANNOTATION explaining what the variable contains — it is NOT content to include, and NOT an instruction to compute. Strip the annotation entirely and use only the variable: "[L010E8] Today Plus 15 Days" → {[L010]}, "[M594] Loan Number – No Dash" → {[M594]}. NEVER use DateAdd or any function to compute a value that already has its own variable.
 
@@ -84,6 +86,13 @@ Generate HTML templates that:
   - Date() calls do NOT need curly braces inside DateDiff (similar to how Date() is used in If() comparisons)
 - Compress: {Compress({[TAG1]}|{[TAG2]}|{[TAG3]})}
 
+### Cross-Document Reference Placeholders: `(INSERT <NAME>; see "<DOC>" document)`
+When the source paragraph reads `(INSERT <NAME>; see "<DOC>" document)` (for example, `(INSERT Denial Logic; see "Programming Logic for LM102 Modification Program Den Reasons" document)`), this is a pointer to a SEPARATE addendum document that contains the programming logic to expand here. If you have NOT been given that addendum's content, do NOT invent the logic and do NOT silently delete the marker. Render the placeholder VERBATIM as a single `<div>` so a human can replace it later:
+
+  `<div>(INSERT Denial Logic; see "Programming Logic for LM102 Modification Program Den Reasons" document)</div>`
+
+If the user prompt's IR includes a `=== ADDENDUM LOGIC ===` section paired with this placeholder, expand the placeholder IN-PLACE using the rules in that section. Otherwise leave the placeholder text intact (this is the safest behavior — never fabricate denial-reason logic).
+
 ### Conditional Logic
 - Convert instruction text to proper syntax: "If [M065] ≥ 'July 29, 1999' then print:" → {If('{[M065]}' &gt;= 'July 29, 1999')}
 - Use: {If('{[TAG]}' &gt; 0)} or {If('{[TAG]}' NOT IN ('', '0', '.00', NULL))}
@@ -99,6 +108,56 @@ Generate HTML templates that:
   - `"April 29, 2020"` → `{Date({[M065]}|yyyyMMdd)}` → `20200429` → correctly compares &gt;= `19990729`
   - NO QUOTES around the comparison value, NO DASHES in the date literal (use `19990729` not `'1999-07-29'` — dashes would cause subtraction)
   - ALWAYS use `{Date({[TAG]}|yyyyMMdd)}` (with outer curly braces) before any numeric date comparison in an {If()}
+
+### CRITICAL — Alternative-Phrase Pattern: `(If X then produce, A) or (If Y then produce, B)`
+Word templates frequently encode a one-slot variant choice as TWO PARENTHESIZED CLAUSES connected by the word "or". The IR shows this verbatim as plain text inside a paragraph:
+
+  `(If M944 = F then produce, Mortgage ReleaseTM) or (If M944 = H then produce, Deed-in-Lieu of Foreclosure)`
+
+This is ONE conditional slot with TWO mutually-exclusive branches — NOT two sentences joined by "or". Collapse it into a SINGLE `{If/Else If/End If}` block IN PLACE, and DROP the literal "or" connector.
+
+- CORRECT (one combined block, no `or` connector):
+  `{If('{[M944]}' = 'F')}Mortgage Release™{Else If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If}`
+- WRONG (two separate `{If}{End If}` blocks joined by literal "or"):
+  `{If('{[M944]}' = 'F')}Mortgage Release™{End If} or {If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If}`
+- WRONG (two `{If/Else If/End If}` blocks joined by `<u>or</u>` — the AI doubling pathology):
+  `{If('{[M944]}' = 'F')}Mortgage Release™{Else If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If} <u>or</u> {If('{[M944]}' = 'F')}Mortgage Release™{Else If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If}`
+
+Key recognition rules:
+- The literal connector is "or" (no underline, no emphasis). It separates two `(If ... then produce, ...)` clauses that share a single sentence slot.
+- Each clause carries its own condition. Use the FIRST clause's condition as the `{If(...)}`, the SECOND as `{Else If(...)}`, and emit ONE `{End If}` at the close.
+- The `TM` superscript after "Mortgage Release" is the registered-trademark glyph and should be rendered as the unicode character `™` (U+2122) immediately after "Mortgage Release", not as the literal letters "TM".
+- "Mortgage ReleaseTM" → `Mortgage Release™` (always).
+- If the SAME alternative phrase appears multiple times in a single paragraph (e.g. the heading "What is a (...) or (...) and What are the Potential Benefits?" plus the body sentence below it), each occurrence collapses to its own single `{If/Else If/End If}` block.
+- Single-branch variants like `(If M944 = F then produce, X)` standing alone (with no "or" sibling) become `{If('{[M944]}' = 'F')}X{End If}` — no `Else If`.
+- Conditions other than equality follow the standard syntax (`&lt;&gt;`, `&gt;`, `&lt;=`, etc.). "M944 = F" → `'{[M944]}' = 'F'`.
+
+EXAMPLES:
+
+Source: `Thank you for contacting us about your mortgage. ... we are offering you an opportunity to pursue a (If M944 = F then produce, Mortgage ReleaseTM) or (If M944 = H then produce, Deed-in-Lieu of Foreclosure). It is important that you read all the information in this letter so that you understand the actions you must take to complete a (If M944 = F then produce, Mortgage ReleaseTM) or (If M944 = H then produce, Deed-in-Lieu of Foreclosure).`
+
+Output (ONE collapsed block per occurrence, NO `or`, NO duplication):
+`<div>Thank you for contacting us about your mortgage. ... we are offering you an opportunity to pursue a {If('{[M944]}' = 'F')}Mortgage Release™{Else If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If}. It is important that you read all the information in this letter so that you understand the actions you must take to complete a {If('{[M944]}' = 'F')}Mortgage Release™{Else If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If}.</div>`
+
+Source: `Additional (If M944 = F then produce, Mortgage ReleaseTM) or (If M944 = H then produce, Deed-in-Lieu of Foreclosure) Information about Your Responsibilities`
+
+Output:
+`<b><div style="background-color: rgba(46, 116, 181, 1); color: rgba(255, 255, 255, 1); width: 100%; text-align: center">Additional {If('{[M944]}' = 'F')}Mortgage Release™{End If}{If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If} Information about Your Responsibilities</div></b>`
+
+(Note: in headings/banners where the desired output is two separate `{If}` blocks rather than `{Else If}` — both forms are equivalent at render time; either is acceptable. The KEY is: NEVER emit duplicate adjacent `{If}` blocks joined by `<u>or</u>` or `or` in normal text.)
+
+### Conditional Bullet Markers Inside Conditional Blocks
+When a `{If(...)}` block wraps a bullet table (e.g. for a conditional Fannie/Freddie info bullet), the `{If(...)}` and `{End If}` markers MUST be on their own lines OUTSIDE the `<div><table>...</table></div>` wrapper. Never split a `<table>` tag across a conditional boundary, and never put the conditional inside a `<td>`.
+
+CORRECT:
+```
+{If('{[M944]}' = 'F')}
+<div><table width="100%" style="margin-left: 25px; border-collapse: collapse"><tbody><tr>
+  <td width="3%" valign="top" style="text-align: center">•</td>
+  <td>For additional information ... visit Fannie Mae's <u>www.KnowYourOptions.com</u>.</td>
+</tr></tbody></table></div>
+{End If}
+```
 
 ### Tables
 - Bordered: <table width="100%" style="border-collapse: collapse">
@@ -193,9 +252,34 @@ FFFFFF = white text on a dark banner).
 - Light-tinted callout box (lighter shading, often with a darker border):
   `<div style="background-color: rgba(222, 234, 246, 1); padding: 8px; border: 1px solid rgba(84, 141, 212, 1); text-align: center">...inner divs...</div>`
 
-- A cell with `[w=…; SHADING_<hex>]` is a single-cell colored panel. Output as a
-  one-row, one-cell `<table>` with a colored `<td>`, e.g.
+- A cell with `[w=…; SHADING=<hex>]` is a single-cell colored panel. When the
+  cell contains ONLY short field-like content (one label + a stack of short
+  fields), output as a one-row, one-cell colored `<table>` with `{Compress(...)}`.
+  Pick up the OUTER BORDER COLOR from the `TABLE_BORDERS: grid (... style=single
+  Wpt #HEX)` hint (e.g. `#548DD4` → `rgba(84, 141, 212, 1)`). Example:
   `<table width="100%" style="border-collapse: collapse; border: 1px solid rgba(84, 141, 212, 1)"><tbody><tr><td style="background-color: rgba(222, 234, 246, 1); padding: 8px; text-align: center; font-weight: bold">{Compress(...)}</td></tr></tbody></table>`
+
+  When the cell contains MIXED content — a short TITLE line, then a stack of
+  short field-like contact lines, then a STANDALONE SENTENCE paragraph (a long
+  full-sentence ending with `.`) — prefer the `<div>` wrapper pattern and emit
+  THREE distinct child blocks: a title `<div>`, the `{Compress(...)}` of the
+  contact fields, and ONE OR MORE standalone `<div>` paragraphs for any
+  sentence-style paragraphs. NEVER stuff a complete sentence into the
+  `{Compress(...)}` pipe — Compress is for short fields joined with `|`, not
+  prose. Use the outer border color from the table's `TABLE_BORDERS` hint.
+
+  CORRECT (TITLE + contact-stack + standalone sentence):
+  ```
+  <div style="background-color: rgba(222, 234, 246, 1); padding: 8px; text-align: center; font-weight: bold; border: 1px solid rgba(84, 141, 212, 1)">
+  <div>QUESTIONS? CONTACT US</div>
+  <br>
+  {Compress({[plsMatrix.CompanyLongName]}|Phone: {[plsMatrix.LossPreventionPhoneNumberTollFree]}|Email Address: {[plsMatrix.LossMitEmail]}|Website: {[plsMatrix.WebSite]})}
+  <br><br>
+  <div>You must contact us no later than {DateAdd({[L001]}|+14|MM/dd/yyyy|Day)} to let us know that you intend to accept this offer to pursue a {If('{[M944]}' = 'F')}Mortgage Release™{Else If('{[M944]}' = 'H')}Deed-in-Lieu of Foreclosure{End If}.</div>
+  </div>
+  ```
+  WRONG (sentence crammed into Compress pipe):
+  `{Compress({[plsMatrix.CompanyLongName]}|...|Website: {[plsMatrix.WebSite]}|You must contact us no later than {DateAdd(...)} to let us know that you intend to accept this offer.)}`
 
 - All table cell borders and table outer borders should also use `rgba(R,G,B,1)`
   (e.g. `border: 1px solid rgba(0, 0, 0, 1)`) instead of hex.
@@ -335,6 +419,68 @@ box renders IMMEDIATELY before ACT NOW, not after, not at the bottom:
 - Close the current level-0 <div><table> block BEFORE the [LIST_LEVEL_DOWN] marker
 - Sub-level table rows use the char from `char=` (e.g. `o` for level-1 items)
 - When `[LIST_LEVEL_UP: ...]` appears, close the sub-level table and resume normal level-0 <div><table> blocks
+
+### CRITICAL — Nested Label + Description Bullet Pattern (alternating LIST_ITEM(level=0) → LIST_ITEM(level=1))
+When you see a series of bullet items where every odd item is `LIST_ITEM(level=0)` containing a SHORT BOLD LABEL ending in a colon (e.g. `Title:`, `Subordinate Liens:`, `Property Inspection:`) and every following even item is `LIST_ITEM(level=1)` containing a LONGER DESCRIPTION sentence — this is a label/description structure that must render as a SINGLE outer table with the level-1 description NESTED INSIDE the level-0 cell.
+
+DO NOT emit a separate sibling table per level-0 and per level-1 — that flattens the visual hierarchy.
+
+CORRECT — single outer table, NO margin-left (this is a structured block, not a bullet list), one `<tr>` per label/description pair, each row's `<td>` contains the bold label AND a nested inner table for the description:
+
+```
+<table width="100%" style="border-collapse: collapse"><tbody>
+<tr>
+  <td width="3%" valign="top">▪</td>
+  <td><b>Title:</b>
+    <div style="padding-left: 1.5em">
+      <table width="100%" style="border-collapse: collapse"><tbody><tr>
+        <td width="3%" valign="top">○</td>
+        <td>Clear and marketable title to the property must be conveyed free of any liens and encumbrances...</td>
+      </tr></tbody></table>
+    </div>
+  </td>
+</tr>
+<tr>
+  <td width="3%" valign="top">▪</td>
+  <td><b>Subordinate Liens:</b>
+    <div style="padding-left: 1.5em">
+      <table width="100%" style="border-collapse: collapse"><tbody><tr>
+        <td width="3%" valign="top">○</td>
+        <td>If you have other liens on your property...</td>
+      </tr></tbody></table>
+    </div>
+  </td>
+</tr>
+... one <tr> per label/description pair ...
+</tbody></table>
+```
+
+WRONG (sibling sub-bullet tables, label/description split across separate top-level blocks):
+```
+<div><table style="margin-left: 25px; border-collapse: collapse"><tbody><tr>
+  <td>{Symbol(§)}</td><td><b>Title:</b></td>
+</tr></tbody></table></div>
+<div><table style="margin-left: 55px; border-collapse: collapse"><tbody><tr>
+  <td>{Symbol(§)}</td><td>Clear and marketable title...</td>
+</tr></tbody></table></div>
+```
+
+Recognition cues:
+- A level-0 paragraph whose ENTIRE text is short (≤ 5 words) and ends with `:` is a LABEL.
+- Immediately followed by a level-1 paragraph that is a full sentence (no colon, longer prose) is the DESCRIPTION for that label.
+- A sequence of these pairs (typically 4–8 in a "What are your responsibilities" / "Steps" / "Eligibility" block) is the NESTED LABEL/DESCRIPTION structure.
+
+Bullet glyphs for this pattern:
+- Outer level-0 marker: prefer the literal `▪` (U+25AA) when the IR's bulletChar maps to Wingdings F0A7 (the section glyph). Either `▪` or `{Symbol(§)}` is acceptable, but be CONSISTENT across all rows of the outer table.
+- Inner level-1 marker: prefer the literal `○` (U+25CB). Either `○` or `o` is acceptable, but be CONSISTENT across all nested tables.
+
+The label cell text is BOLD (because the level-0 item is a heading-style label); the nested description text is NOT bold. NEVER bold the description body.
+
+A blank source paragraph BETWEEN two label/description pairs is layout noise; do NOT split the outer table on it — keep all pairs in one outer `<table>`. This OVERRIDES any `[SPACING]` or `[LIST_SEPARATOR]` markers that may sit between two label/description rows of the SAME nested label/description block. The presence of label-then-description-then-label-then-description structure is the signal that everything belongs in one outer table, regardless of intermediate blank paragraphs.
+
+Concretely: if you have already opened the outer `<table>` for Title/Subordinate Liens/Property Inspection/Personal Property Release/Deficiency Waiver/Relocation Assistance and you see a `[SPACING]` followed by ANOTHER level-0 label paragraph (e.g. "Transfer/Closing:") followed by a level-1 description, append the new label/description as ONE MORE `<tr>` in the SAME outer table — do NOT close the outer table and start a fresh one. Only close the outer table when the next non-blank paragraph is clearly OUTSIDE the responsibility-block structure (e.g. a normal body sentence like "If you have questions about..." or a banner heading).
+
+Also: when the source has a separator banner / banner heading AFTER a `{If(...)}{End If}` body block, keep ONE `<br>` between the closing `{End If}` (or last body element) and the next banner heading — Word's whitespace before banner blocks is meaningful spacing. Same after a banner heading: a `<br>` between the banner div and the next regular body paragraph.
 
 ### BETWEEN_TABLES — Separator Between Table Blocks
 - When the IR contains `[BETWEEN_TABLES: ...]`, output `<br>` between the current <div><table> block and the next one

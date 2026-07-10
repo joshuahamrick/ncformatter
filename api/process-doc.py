@@ -215,6 +215,7 @@ def _detect_list_info(paragraph):
 
 
 def _extract_paragraph_ir(paragraph):
+	from docx.oxml.ns import qn
 	runs = _extract_runs(paragraph)
 	full_text = ''.join(r.get('text') or '' for r in runs)
 
@@ -228,10 +229,24 @@ def _extract_paragraph_ir(paragraph):
 
 	is_list, level, marker = _detect_list_info(paragraph)
 
-	# Detect paragraph border (bottom border = horizontal rule separator)
-	# and paragraph shading fill (background-color for banner divs).
+	# Detect paragraph border (bottom border = horizontal rule separator),
+	# paragraph shading fill (background-color for banner divs), and page-break
+	# markers.
+	#
+	# Word encodes page breaks two ways:
+	#   1. pPr/w:pageBreakBefore  — the paragraph itself starts on a new page.
+	#      Downstream: emit <hr> BEFORE this paragraph → pageBreakBefore=True.
+	#   2. run-level w:br w:type="page"  — the break lives inside a run, and
+	#      everything AFTER the break renders on the next page. In practice
+	#      Word almost always places this in the LAST run of the previous
+	#      paragraph, so the paragraph that follows in body order is what
+	#      visually starts the new page. We record pageBreakAfter=True on
+	#      THIS paragraph, and _build_ir_document promotes that flag to
+	#      pageBreakBefore=True on the next block after all blocks are built.
 	para_border_bottom = None
 	para_shading_fill = None
+	page_break_before = False
+	page_break_after = False
 	try:
 		pPr_elem = paragraph._p.find(qn('w:pPr'))
 		if pPr_elem is not None:
@@ -248,6 +263,22 @@ def _extract_paragraph_ir(paragraph):
 				fill = (shd_el.get(qn('w:fill')) or '').strip().upper()
 				if fill and fill not in ('AUTO', 'FFFFFF', ''):
 					para_shading_fill = fill
+			# Page break before this paragraph: <w:pageBreakBefore/>
+			pbb = pPr_elem.find(qn('w:pageBreakBefore'))
+			if pbb is not None:
+				val = pbb.get(qn('w:val'))
+				# Present with no val, or truthy val → active page-break-before
+				if val is None or val.lower() in ('true', '1', 'on'):
+					page_break_before = True
+		# Detect a run-level page break anywhere in this paragraph.
+		for r_elem in paragraph._p.iter(qn('w:r')):
+			for br_elem in r_elem.iter(qn('w:br')):
+				br_type = br_elem.get(qn('w:type')) or ''
+				if br_type.lower() == 'page':
+					page_break_after = True
+					break
+			if page_break_after:
+				break
 	except Exception:
 		pass
 
@@ -268,6 +299,10 @@ def _extract_paragraph_ir(paragraph):
 		'hangingIndentPt': None,
 		'borderBottom': para_border_bottom,
 	}
+	if page_break_before:
+		para_ir['pageBreakBefore'] = True
+	if page_break_after:
+		para_ir['pageBreakAfter'] = True
 	if para_shading_fill:
 		para_ir['shadingFill'] = para_shading_fill
 	else:
@@ -856,6 +891,22 @@ def _build_ir_document(doc):
 					body_elem_to_block_index[id(element)] = len(blocks)
 					blocks.append(_extract_table_ir(tbl))
 					break
+
+	# Promote each `pageBreakAfter` flag onto the NEXT block as `pageBreakBefore`.
+	# Word encodes a page break as `<w:br w:type="page"/>` inside the LAST run of
+	# the paragraph that ends the current page — the paragraph that visually
+	# starts the new page is the following body block. The downstream prompt
+	# instructions treat `pageBreakBefore=True` as "emit <br>\n<hr>" immediately
+	# before this block, which gives the on-screen HTML the same page boundary
+	# the printed document has.
+	for i in range(len(blocks) - 1):
+		if isinstance(blocks[i], dict) and blocks[i].get('pageBreakAfter'):
+			nxt = blocks[i + 1]
+			if isinstance(nxt, dict):
+				nxt['pageBreakBefore'] = True
+			# Clear the raw pageBreakAfter marker so it doesn't confuse consumers
+			# that only understand pageBreakBefore.
+			blocks[i].pop('pageBreakAfter', None)
 
 	# Resolve textbox anchors to block indices and surrounding-paragraph
 	# snippets so downstream rendering can place each box at its true source

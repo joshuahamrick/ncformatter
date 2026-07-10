@@ -500,6 +500,76 @@ Also: when the source has a separator banner / banner heading AFTER a `{If(...)}
     <td><b><i>Sub-row continuation text here</i></b></td>
   </tr></tbody></table></div>
 
+### PAGE_BREAK_BEFORE — Explicit Word Page Break
+- When a paragraph carries `[FORMATTING: PAGE_BREAK_BEFORE …]`, Word started a NEW printed page at this paragraph. Emit `<br>` then `<hr>` on their own lines IMMEDIATELY BEFORE this paragraph in your output so the on-screen HTML preserves the same page boundary.
+- Typical use: multi-page forms/letters where each page begins with a small repeating header like `<div>Page 2</div>` / `<div>Loan No. {[M594]}</div>`. Render:
+  `<br>`
+  `<hr>`
+  `<div>Page 2</div>`
+  `<div>Loan No. {[M594]}</div>`
+- Do NOT collapse the `<hr>` into a plain `<br>` gap, and do NOT drop the "Page N / Loan No. {[M594]}" repeating header — that repeating header IS body content and belongs in the output.
+- If the paragraph immediately preceding the page break is already ending with `<br>` spacing, still emit the `<hr>` on its own line — the `<hr>` is the page-boundary indicator.
+
+### BOLD_UNDERLINE — Run(s) that are BOTH Bold and Underlined
+- When a paragraph's `[FORMATTING: …]` block contains `BOLD_UNDERLINE(text_a; text_b; …)`, the listed run texts are BOTH bold AND underlined in the source. Wrap those texts in `<b><u>…</u></b>` together — NEVER emit only `<b>` and NEVER emit only `<u>` for those spans. This is orthogonal to any surrounding `PARTIAL_BOLD` / `PARTIAL_UNDERLINE` hints on the same paragraph.
+- Example paragraph in a bullet cell where "80%" is bold+underlined and the leading label + "ORIGINAL" are bold-only:
+  IR: `LIST_ITEM(type=bullet, level=0)`, `PARTIAL_BOLD(First mortgage single-family primary residence or second home; ORIGINAL)`, `PARTIAL_UNDERLINE(80%)`, `BOLD_UNDERLINE(80%)`
+  CORRECT: `<td><b>First mortgage single-family primary residence or second home,</b> the LTV ratio must not exceed <b><u>80%</u></b> of the <b>ORIGINAL</b> property value.</td>`
+  WRONG:   `<td><b>First mortgage …</b>, the LTV ratio must not exceed <u>80%</u> of the <b>ORIGINAL</b> property value.</td>`  ← missing bold on `80%`
+- The same rule applies to section headings like `<b><u>PMI Removal Request</u></b>` — the whole heading is BOLD_UNDERLINE, so both tags wrap the visible text (in wrap-outside form the pattern is `<b><u><div>Heading</div></u></b>`).
+
+### Fillable Signature / Form Lines — Runs of `_` Underscores + Field Labels
+- Word form templates encode fillable signature and info lines as paragraphs that are mostly a run of underscore characters (typically 15+ consecutive `_`), often two or more underscore fields on the same line separated by spaces, followed by a label paragraph beneath each field (e.g. `Name    Date` or `Home/Cell Telephone Number    Work Telephone Number`).
+- Do NOT render the underscores literally as text. Convert them to a table with `border-bottom` divs. Each underscore field becomes one `<td>` containing `<div style="border-bottom: 1px solid rgba(0, 0, 0, 1)">&nbsp;</div>` followed by its label text. Multiple fields on the same line become sibling `<td>`s in the same `<tr>`, separated by narrow spacer `<td>`s.
+- Example — source has:
+  `________________________________     ___________________________________`
+  `Name                                 Date`
+  (blank)
+  `________________________________     ____________________________________`
+  `Home/Cell Telephone Number           Work Telephone Number`
+  CORRECT (single outer table, two rows of fields with an empty spacer row between):
+  ```
+  <table width="100%" style="border-collapse: collapse"><tbody>
+  <tr>
+    <td width="48%" valign="top"><div style="border-bottom: 1px solid rgba(0, 0, 0, 1)">&nbsp;</div>Name</td>
+    <td width="4%"></td>
+    <td width="48%" valign="top"><div style="border-bottom: 1px solid rgba(0, 0, 0, 1)">&nbsp;</div>Date</td>
+  </tr>
+  <tr><td colspan="3" style="height: 18px"></td></tr>
+  <tr>
+    <td width="48%" valign="top"><div style="border-bottom: 1px solid rgba(0, 0, 0, 1)">&nbsp;</div>Home/Cell Telephone Number</td>
+    <td width="4%"></td>
+    <td width="48%" valign="top"><div style="border-bottom: 1px solid rgba(0, 0, 0, 1)">&nbsp;</div>Work Telephone Number</td>
+  </tr>
+  </tbody></table>
+  ```
+  WRONG (literal underscores):
+  `<div>________________________________     ___________________________________</div>`
+  `<div>Name                                 Date</div>`
+- If the label line has just ONE label under the underscore field, emit a single-cell row. If there are three fields (rare), emit three field `<td>`s + two `<td width="4%">` spacers. Always match the number of underscore groups on the line to the number of `<td>` fields.
+- A single-underscore checkbox marker like `_____ Recast Fee` (5 underscores followed by a label) is a checkbox field, NOT a fillable signature line — keep those as `<div>_____ <b>Recast Fee</b> …</div>`. The signature-line conversion only applies when the underscore run is LONG (roughly 15+ underscores) and represents a place to physically sign or write a value.
+
+### Label + Indented Continuation Lines → 2-Column Table with Compress
+- When a body paragraph has a `Label - value` structure (colon or dash separator, e.g. `Credit Account - 207916284 - Bank of Oklahoma Mortgage`) AND the NEXT one or more paragraphs are visibly indented continuation lines that carry additional address/detail lines belonging to the same value (surfaced in the IR via large `leadingSpaces` or `INDENT_LEFT_*` hints), collapse them into a single 2-column table row: the label goes in the left cell, and the value + indented continuations are joined with `|` into a `{Compress(…)}` in the right cell.
+- Example — source paragraphs:
+  `Credit Account - 207916284 - Bank of Oklahoma Mortgage`
+  `                              {[CompanyReturnAddr1]}`
+  `                              {[CompanyReturnAddr2]}`
+  CORRECT:
+  ```
+  <table width="100%" style="border-collapse: collapse; text-align: left"><tbody>
+  <tr>
+    <td width="14%" valign="top" style="text-align: left">Credit Account -</td>
+    <td style="text-align: left">{Compress(207916284 - Bank of Oklahoma Mortgage|{[plsMatrix.CompanyReturnAddr1]}|{[plsMatrix.CompanyReturnAddr2]})}</td>
+  </tr>
+  </tbody></table>
+  ```
+  WRONG (three separate divs):
+  `<div>Credit Account - 207916284 - Bank of Oklahoma Mortgage</div>`
+  `<div style="margin-left: 30px">{[plsMatrix.CompanyReturnAddr1]}</div>`
+  `<div style="margin-left: 30px">{[plsMatrix.CompanyReturnAddr2]}</div>`
+- This pattern generalizes: any `<Label>` followed by 1-N indented continuation paragraphs with similar leading indent, all belonging to the same value slot, collapses into a `{Compress(…)}` right cell.
+
 ### HR_SECTION_BREAK — Horizontal Rule Section Divider
 - When the IR contains `[HR_SECTION_BREAK: ...]`, output a `<hr>` tag here — NOT multiple `<br>` tags
 - This typically appears after the closing company name when a new section (like "Additional Modification Information") follows

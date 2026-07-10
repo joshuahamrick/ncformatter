@@ -661,7 +661,16 @@ def format_ir_for_prompt(ir):
 			non_bold_runs = [r for r in runs if not r.get('bold', False) and r.get('text', '').strip()]
 			has_bold = len(bold_runs) > 0
 			has_underline = any(r.get('underline', False) and (r.get('text') or '').strip() for r in runs)
-			
+
+			# Runs that carry BOTH bold and underline are almost always intentional
+			# emphasis (e.g. `<b><u>80%</u></b>` in a bulleted eligibility criterion,
+			# or `<b><u>Section Heading</u></b>`). Surface these separately so the AI
+			# never renders bold-only or underline-only when the source has both.
+			bold_underline_runs = [
+				r for r in runs
+				if r.get('bold', False) and r.get('underline', False) and r.get('text', '').strip()
+			]
+
 			# Check if PARTIAL bold (some runs bold, some not)
 			is_partial_bold = len(bold_runs) > 0 and len(non_bold_runs) > 0
 			
@@ -706,6 +715,15 @@ def format_ir_for_prompt(ir):
 					formatting_hints.append(f"PARTIAL_UNDERLINE({'; '.join(underline_texts)})")
 				else:
 					formatting_hints.append("UNDERLINE")
+
+			# Whenever specific run(s) carry BOTH bold AND underline, list them
+			# explicitly so the AI knows to wrap them in `<b><u>...</u></b>`
+			# together — not just `<b>` or just `<u>`. This is what preserves
+			# `<b><u>80%</u></b>` in eligibility bullets and `<b><u>Section</u></b>`
+			# section headings.
+			if bold_underline_runs:
+				bu_texts = [r.get('text', '').strip()[:50] for r in bold_underline_runs[:5]]
+				formatting_hints.append(f"BOLD_UNDERLINE({'; '.join(bu_texts)})")
 			
 			# Check for hyperlinks - these are dynamic variables (plsMatrix)
 			has_hyperlink = any(r.get('isHyperlink', False) for r in runs)
@@ -727,6 +745,15 @@ def format_ir_for_prompt(ir):
 			# Add paragraph bottom border hint (signals horizontal rule separator)
 			if block.get('borderBottom'):
 				formatting_hints.append("BORDER_BOTTOM — this paragraph has a bottom border; render as <hr> if empty, or follow with <hr> if it has text")
+
+			# Explicit page-break-before hint. Word's <w:pageBreakBefore/> or a
+			# run-level <w:br w:type="page"/> signals the source starts a new
+			# printed page here. Downstream we render this as a horizontal rule
+			# ABOVE this paragraph so the on-screen HTML also visually delimits
+			# the page. (Common example: "Page 2 / Loan No. XYZ" repeating
+			# headers on multi-page letters and forms.)
+			if block.get('pageBreakBefore'):
+				formatting_hints.append("PAGE_BREAK_BEFORE — this paragraph starts a NEW page in the source; render '<br>\\n<hr>' IMMEDIATELY BEFORE this paragraph so the on-screen HTML shows the same page boundary")
 
 			# Add list item indicator with type (CRITICAL for bullet/numbered detection)
 			if block.get('isListItem'):
@@ -1020,10 +1047,40 @@ def format_ir_for_prompt(ir):
 
 	result_lines = []
 	mailing_addr_indices = set()
+	# Collect every paragraph line that references a borrower-mailing-address M-code.
+	# These variables also appear later in the document in unrelated form fields
+	# (e.g. a "Borrower Name(s): {[M558]}" cell at the bottom of a signature/wiring
+	# page), where they must NOT collapse into {[mailingAddress]}. So we treat only
+	# the FIRST CONTIGUOUS CLUSTER — the top-of-letter address block — as mailing
+	# address; later occurrences fall through to normal per-block rendering.
+	#
+	# ADDITIONAL GUARD: also require that the cluster sits ABOVE the Loan Number
+	# line (the top-of-letter address always precedes "Loan Number: {[M594]}").
+	# When the source doc's top address block was already stripped by upstream
+	# metadata filters (Word annotations like "(Mortgagor Name)" trigger skip
+	# patterns above), the ONLY remaining M-code lines are unrelated fields on
+	# later pages, and we must NOT collapse them.
+	candidate_addr_indices = []
 	for i, line in enumerate(formatted):
-		# Detect mailing address M-code lines (M558–M566 are borrower mailing address fields)
 		if re.search(r'\bM55[89]\b|\bM56[0-6]\b', line):
-			mailing_addr_indices.add(i)
+			candidate_addr_indices.append(i)
+	if candidate_addr_indices and loan_number_idx is not None:
+		# Keep only candidates that appear BEFORE the Loan Number line — that
+		# is the semantic boundary of the top-of-letter address block.
+		candidate_addr_indices = [i for i in candidate_addr_indices if i < loan_number_idx]
+	if candidate_addr_indices:
+		# Start with the earliest candidate, then walk forward greedily including any
+		# indices that are within a small gap (blank/separator lines allowed between
+		# consecutive address lines). Stop as soon as we hit a gap wider than 5
+		# non-address lines — subsequent M-code lines are unrelated fields.
+		mailing_addr_indices.add(candidate_addr_indices[0])
+		prev = candidate_addr_indices[0]
+		for idx in candidate_addr_indices[1:]:
+			if idx - prev <= 5:
+				mailing_addr_indices.add(idx)
+				prev = idx
+			else:
+				break
 
 	# Detect which address variables exist in the RAW IR blocks (not the filtered list,
 	# because M583/M568 may have been filtered as metadata but still need to be in Compress)

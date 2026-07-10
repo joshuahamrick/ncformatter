@@ -72,6 +72,24 @@ SSN_PATTERN = re.compile(
     r'(?!\d)'
 )
 
+# Keywords that make a nearby 9-digit run OBVIOUSLY an SSN (not an ABA
+# routing / bank account / wire number). Case-insensitive. Used to gate the
+# unformatted 9-digit branch of SSN_PATTERN which otherwise fires on things
+# like ABA routing numbers (`103900036`) or servicer account IDs
+# (`207916284 - Bank of Oklahoma Mortgage`) that appear inside wire-transfer
+# instructions of legitimate templates.
+SSN_CONTEXT_KEYWORDS = re.compile(
+    r'\b(?:ssn|social\s+security|taxpayer|tin|itin)\b',
+    re.IGNORECASE,
+)
+
+# Keywords that make a nearby 9-digit run OBVIOUSLY NOT an SSN. If any of
+# these appears within a ~60-char window of the match, drop the finding.
+SSN_NEGATIVE_CONTEXT = re.compile(
+    r'\b(?:aba(?:\s+number)?|routing|swift|iban|wire|credit\s+account|account\s*(?:no|number|#)|receiving\s+bank|for\s+credit\s+to|loan\s*(?:no|number|#))\b',
+    re.IGNORECASE,
+)
+
 ACCOUNT_NUMBER_PATTERN = re.compile(
     r'(?<!\d)\d{8,17}(?!\d)'
 )
@@ -200,13 +218,35 @@ def scan_text_for_pii(text):
 
     cleaned = _strip_template_vars(text)
 
-    # 1. SSN detection (always BLOCKED)
-    ssn_matches = SSN_PATTERN.findall(cleaned)
-    for m in ssn_matches:
-        digits_only = re.sub(r'\D', '', m)
+    # 1. SSN detection (BLOCKED when strongly signalled).
+    #
+    # The raw pattern matches both formatted `XXX-XX-XXXX` and any bare
+    # 9-digit run. Bare 9-digit runs are extremely common in template
+    # documents that carry ABA routing numbers, bank account numbers, wire
+    # instructions, and internal servicer identifiers — treating those as
+    # SSNs blocks the AI service for legitimate templates. So for each
+    # candidate we require either
+    #   - a formatted SSN shape (`NNN-NN-NNNN`) with no wire/routing
+    #     negative-context keyword near the match, OR
+    #   - a bare 9-digit shape combined with an explicit SSN keyword
+    #     (SSN, Social Security, TIN, ITIN, taxpayer) within ~60 chars.
+    for m in SSN_PATTERN.finditer(cleaned):
+        raw = m.group(0)
+        digits_only = re.sub(r'\D', '', raw)
         if digits_only.startswith('000') or digits_only[3:5] == '00' or digits_only[5:] == '0000':
             continue
-        result.add_finding('SSN', f'Possible Social Security Number detected: {m[:3]}-**-****')
+        is_formatted = '-' in raw or ' ' in raw
+        span_start = max(0, m.start() - 60)
+        span_end = min(len(cleaned), m.end() + 60)
+        window = cleaned[span_start:span_end]
+        if SSN_NEGATIVE_CONTEXT.search(window):
+            # ABA/routing/wire/account context — not an SSN.
+            continue
+        if not is_formatted and not SSN_CONTEXT_KEYWORDS.search(window):
+            # Bare 9 digits with no SSN keyword nearby — almost certainly
+            # not an SSN in a template document.
+            continue
+        result.add_finding('SSN', f'Possible Social Security Number detected: {raw[:3]}-**-****')
 
     # 2. Date of birth (BLOCKED)
     if DOB_PATTERN.search(cleaned):
@@ -247,9 +287,16 @@ def scan_text_for_pii(text):
             severity='WARNING'
         )
 
-    # 5. Bare dollar amounts not inside Money()/Math() (WARNING)
+    # 5. Bare dollar amounts not inside Money()/Math() (WARNING).
+    #
+    # Only warn when there is meaningful DIVERSITY in the amounts. Templates
+    # frequently mention a single flat fee (e.g. "$300.00 Recast fee")
+    # multiple times as a constant reference — that is not customer data.
+    # Real customer financial data typically appears as several DIFFERENT
+    # bare amounts.
     bare_dollars = BARE_DOLLAR_PATTERN.findall(cleaned)
-    if len(bare_dollars) >= 3:
+    unique_dollars = {d.strip() for d in bare_dollars}
+    if len(bare_dollars) >= 3 and len(unique_dollars) >= 3:
         result.add_finding(
             'FINANCIAL_DATA',
             f'{len(bare_dollars)} bare dollar amounts detected outside template functions',

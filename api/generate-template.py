@@ -29,8 +29,107 @@ except ImportError:
 		log_audit_event = None
 
 # Import normalization (we'll create a Python version)
-def normalize_html(html):
-	"""Minimal normalization - just clean up, let AI do the formatting"""
+_COMPANY_IDENTITY_VARS = (
+	'CompanyLongName', 'CompanyShortName', 'DBA', 'ServicingName',
+)
+
+
+def _enforce_company_vars_from_ir(html, ir):
+	"""Deterministically enforce that each prose paragraph in the AI output uses
+	the SAME company-identity variable that the source IR block used.
+
+	Claude occasionally substitutes `{[DBA]}` → `{[plsMatrix.CompanyLongName]}`
+	(or vice versa), even when both variables appear in the same document. The
+	template author picked each variable intentionally (DBA = doing-business-as
+	name; CompanyLongName = full legal name), so any silent swap is wrong.
+
+	Strategy: for every IR paragraph that contains exactly ONE company-identity
+	variable, find the AI-rendered paragraph most similar to it, and if that
+	paragraph uses a DIFFERENT company-identity variable in the same slot,
+	replace it back with the IR's choice. We match on non-variable prose words
+	so variable substitution itself doesn't break the alignment.
+	"""
+	if not ir or not isinstance(ir, dict):
+		return html
+
+	company_re = re.compile(
+		r'\{\[(?:plsMatrix\.)?(' + '|'.join(_COMPANY_IDENTITY_VARS) + r')\]\}'
+	)
+	# Anything wrapped in {[...]} or {Insert(...)} or {Money(...)} — strip for
+	# similarity comparison. We keep only the surrounding prose.
+	tag_re = re.compile(r'\{[^{}]*\}')
+	word_re = re.compile(r"[A-Za-z']{4,}")
+
+	# Collect IR paragraphs that reference exactly one company var.
+	ir_entries = []  # (word_set, ir_var_name)
+	for block in ir.get('blocks', []) or []:
+		if block.get('type') != 'paragraph':
+			continue
+		runs = block.get('runs', []) or []
+		text = ''.join((r.get('text') or '') for r in runs)
+		if not text.strip():
+			continue
+		vars_found = company_re.findall(text)
+		if len(set(vars_found)) != 1:
+			continue  # zero or ambiguous — skip
+		prose = tag_re.sub(' ', text).lower()
+		words = frozenset(word_re.findall(prose))
+		if len(words) < 4:
+			continue  # not enough signal to match reliably
+		ir_entries.append((words, vars_found[0]))
+
+	if not ir_entries:
+		return html
+
+	def _fix_prose(prose_html):
+		out_vars = company_re.findall(prose_html)
+		if len(set(out_vars)) != 1:
+			return prose_html  # nothing (or ambiguous) to correct
+		out_var = out_vars[0]
+		prose_only = tag_re.sub(' ', prose_html).lower()
+		words = set(word_re.findall(prose_only))
+		if len(words) < 4:
+			return prose_html
+		best_score = 0
+		best_var = None
+		for ir_words, ir_var in ir_entries:
+			overlap = len(words & ir_words)
+			if overlap > best_score:
+				best_score = overlap
+				best_var = ir_var
+		# Require a strong match (>=4 shared prose words) before rewriting.
+		if best_var is None or best_score < 4 or best_var == out_var:
+			return prose_html
+		replacement = '{[plsMatrix.' + best_var + ']}'
+		return company_re.sub(lambda _m: replacement, prose_html)
+
+	def _replace_block(match):
+		tag = match.group(1)
+		attrs = match.group(2)
+		inner = match.group(3)
+		return '<' + tag + attrs + '>' + _fix_prose(inner) + '</' + tag + '>'
+
+	# Apply per <div>, per table cell, per bullet-cell — anywhere prose lives.
+	# Skip elements that contain another element of the same kind (nested divs)
+	# to avoid double-scoring; we rely on the innermost match being applied
+	# because Python's re is greedy from left but our non-greedy pattern
+	# picks the shortest enclosed content.
+	html = re.sub(
+		r'<(div|td|li|p)([^>]*)>([^<]*(?:<(?!/?\1\b)[^<]*)*)</\1>',
+		_replace_block,
+		html,
+	)
+	return html
+
+
+def normalize_html(html, ir=None):
+	"""Minimal normalization - just clean up, let AI do the formatting.
+
+	If ``ir`` is provided, an additional post-processing pass enforces that
+	company-identity variables in prose paragraphs match the specific variable
+	chosen by the template author in the source document (DBA vs
+	CompanyLongName vs CompanyShortName vs ServicingName).
+	"""
 	if not html or not isinstance(html, str):
 		return ''
 	
@@ -128,6 +227,9 @@ def normalize_html(html):
 		'CompanyReturnAddr3', 'CompanyReturnAddr4',
 		'MortgageeClauseLine1', 'MortgageeClauseLine2', 'MortgageeClauseLine3',
 		'MortgageeClauseLine4', 'MortgageeClauseLine5',
+		# Company-identity variables — must retain the specific name the source
+		# author chose, not silently rewritten to `CompanyLongName`.
+		'DBA', 'CompanyLongName', 'CompanyShortName',
 	]
 	for _var in COMPANY_VARS_NEEDING_PREFIX:
 		normalized = normalized.replace('{[' + _var + ']}', '{[plsMatrix.' + _var + ']}')
@@ -205,6 +307,15 @@ def normalize_html(html):
 		normalized,
 		flags=re.IGNORECASE | re.DOTALL,
 	)
+
+	# Final deterministic pass: pin every paragraph's company-identity variable
+	# to whatever the source IR chose (DBA, CompanyLongName, CompanyShortName,
+	# ServicingName). Prevents the AI from silently swapping one for another.
+	if ir is not None:
+		try:
+			normalized = _enforce_company_vars_from_ir(normalized, ir)
+		except Exception as _err:
+			print(f"company-var enforcement skipped: {_err}")
 
 	return normalized.strip()
 
@@ -560,8 +671,22 @@ def format_ir_for_prompt(ir):
 							segments.append(seg_text)
 					# If we found multiple segments, mark them
 					if len(segments) > 1:
-						# Rebuild text with [BR] markers between segments
-						text = ' [BR] '.join(segments)
+						# Suppress the split when the pattern is a short bold label
+						# followed by an inline description — i.e., a "**Label** description"
+						# bullet that renders on ONE visual line in Word. Common in
+						# self-service payment lists, feature bullets, glossaries, etc.
+						# Signal: exactly two segments AND the first (bold) segment is
+						# short (<=80 chars) and doesn't end with sentence punctuation.
+						first_run_is_bold = content_runs[0].get('bold', False)
+						is_label_desc_pair = (
+							len(segments) == 2
+							and first_run_is_bold
+							and len(segments[0]) <= 80
+							and not segments[0].rstrip().endswith(('.', '!', '?'))
+						)
+						if not is_label_desc_pair:
+							# Rebuild text with [BR] markers between segments
+							text = ' [BR] '.join(segments)
 
 			# This looks like actual content - include it
 			# CRITICAL: Remove metadata descriptions in parentheses BEFORE including in prompt
@@ -620,6 +745,20 @@ def format_ir_for_prompt(ir):
 			# But be careful - only remove if it looks like metadata, not actual content
 			# Pattern: (Capitalized Description) after a variable tag or in a calculation
 			cleaned_text = re.sub(r'\s*\([A-Z][^)]*(?:Balance|Date|Address|Number|Line|Code|Indicator|Name)[^)]*\)', '', cleaned_text)
+			# Also strip Word-metadata annotations that describe a variable using
+			# business terms (Payment / Amount / Rate / Term / Type / Description /
+			# Percentage / Fee / Count). These parentheticals ONLY appear as
+			# template-author annotations right after a variable reference
+			# (e.g. `{[M029]} (Total Monthly Payment)`, `{[T045]} (Trial Payment
+			# Amount)`, `{[T020]} (Interest Rate)`). They are never intended for
+			# the customer-facing output. Require the parenthetical to immediately
+			# follow a variable tag or `)` token so we don't accidentally strip a
+			# body sentence that happens to end with these words.
+			cleaned_text = re.sub(
+				r'(\}|\])\s*\([A-Z][A-Za-z0-9 /\-\.]{0,80}?(?:Payment|Amount|Rate|Term|Type|Description|Percentage|Fee|Count)\)',
+				r'\1',
+				cleaned_text,
+			)
 			
 			# Strip known date offset annotations inline: "[L010E8] Today Plus 15 Days" → "[L010E8]"
 			cleaned_text = re.sub(
@@ -1699,6 +1838,12 @@ Read the ENTIRE Document Content once before generating ANY HTML. Answer these q
    - Bad: `<div>I understand that by canceling my escrow account, Triad Financial Services will no longer...</div>`
    - Good: `<div>I understand that by canceling my escrow account, {[plsMatrix.CompanyLongName]} will no longer...</div>`
    - Rule: When you see the servicer/company name (like "Triad Financial Services", "NewCourse", or any company name that matches the document producer) used in body text paragraphs, replace it with `{[plsMatrix.CompanyLongName]}`. Company names in document body are ALWAYS dynamic variables.
+
+❌ **CRITICAL — WRONG**: Substituting one company variable for another (either direction)
+   - Bad (source paragraph has `{[DBA]}`): `<div>For your convenience, {[plsMatrix.CompanyLongName]} offers...</div>`
+   - Bad (source paragraph has `{[CompanyLongName]}`): `<div>When processing your payment to {[plsMatrix.DBA]}, we discovered...</div>`
+   - Good: Whatever variable the IR block shows, emit THAT exact variable (adding the `plsMatrix.` prefix only if missing).
+   - Rule: Company-identity variables — `{[DBA]}`, `{[ServicingName]}`, `{[CompanyShortName]}`, `{[CompanyLongName]}` — refer to DIFFERENT strings (DBA = doing-business-as name, CompanyLongName = full legal name, etc.). They are NOT interchangeable. **On every paragraph, use the EXACT variable name that appears in that paragraph's IR text.** If one paragraph says `{[CompanyLongName]}` and the next says `{[DBA]}`, output both distinctly — do NOT normalize them to be the same variable, and do NOT propagate one variable to other paragraphs where a different one was chosen. The earlier rule about replacing LITERAL string names with `{[plsMatrix.CompanyLongName]}` applies ONLY to hardcoded English text (e.g., "Bank of Kansas") — never to any already-templated `{[Var]}` in the IR.
 
 ❌ **WRONG**: Merging multiple consecutive short centered paragraphs into one div
    - Bad: `<div style="text-align: center">You may fax the form to {[plsMatrix.TaxFax]} or email a copy to {[plsMatrix.TaxEmail]}</div>`
@@ -2806,7 +2951,7 @@ class handler(BaseHTTPRequestHandler):
 				html = html.replace('```', '').strip()
 			
 			# Normalize HTML
-			html = normalize_html(html)
+			html = normalize_html(html, ir=ir)
 			
 			# Extract notes if any (look for patterns like "Note:" or "Uncertain:")
 			notes = []

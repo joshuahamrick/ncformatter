@@ -54,12 +54,37 @@ TEMPLATE_PATTERNS = [
 
 COMPILED_TEMPLATE_PATTERNS = [re.compile(p) for p in TEMPLATE_PATTERNS]
 
+# Many source templates use descriptive bracket placeholders rather than the
+# coded formats above — e.g. [BorrowerName], [LoanNumber], [TrialPymtAmt1],
+# [Company Long Name], [SPOC/Loss Mit Phone]. The leading capital keeps prose
+# asides such as "[sic]" or "[see enclosed]" out, and a single bracketed word
+# is weak evidence anyway, so these count toward template detection only when
+# several DISTINCT ones appear.
+GENERIC_PLACEHOLDER_PATTERN = re.compile(
+    r"\[[A-Z][A-Za-z0-9 ._/&#'()\-]{1,48}\]"
+)
+
+# Number of distinct descriptive placeholders required before a document is
+# accepted as a template on that evidence alone.
+GENERIC_PLACEHOLDER_MIN_DISTINCT = 3
+
+
+def _generic_placeholders(text):
+    """Return the set of distinct descriptive bracket placeholders in text."""
+    return {m.group(0) for m in GENERIC_PLACEHOLDER_PATTERN.finditer(text)}
+
+
+def _has_generic_placeholders(text):
+    return len(_generic_placeholders(text)) >= GENERIC_PLACEHOLDER_MIN_DISTINCT
+
 
 def _strip_template_vars(text):
     """Remove all template variable tokens so we can scan the remaining text for real PII."""
     cleaned = text
     for pattern in COMPILED_TEMPLATE_PATTERNS:
         cleaned = pattern.sub('', cleaned)
+    if _has_generic_placeholders(cleaned):
+        cleaned = GENERIC_PLACEHOLDER_PATTERN.sub('', cleaned)
     return cleaned
 
 
@@ -215,6 +240,9 @@ def scan_text_for_pii(text):
         if pattern.search(text):
             result.has_template_vars = True
             break
+
+    if not result.has_template_vars and _has_generic_placeholders(text):
+        result.has_template_vars = True
 
     cleaned = _strip_template_vars(text)
 

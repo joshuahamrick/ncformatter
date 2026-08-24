@@ -156,7 +156,7 @@ Return ONLY the complete updated HTML:"""
 						max_tokens=max_tokens,
 						system=APPLY_SYSTEM_PROMPT,
 						messages=[{'role': 'user', 'content': user_message}],
-						temperature=0,
+						extra_body={'temperature': 0},
 					)
 			except Exception as api_err:
 				print(f'Anthropic API error: {api_err}')

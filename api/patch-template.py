@@ -320,7 +320,7 @@ Return ONLY the modified HTML with proper newlines and formatting:"""
 						max_tokens=max_tokens,
 						system=system_prompt,
 						messages=patch_messages,
-						temperature=0,
+						extra_body={'temperature': 0},
 					)
 				print(f"Anthropic API call successful, response length: {len(response.content[0].text)}")
 			except Exception as api_error:

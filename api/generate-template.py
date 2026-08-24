@@ -2933,7 +2933,7 @@ class handler(BaseHTTPRequestHandler):
 						max_tokens=max_tokens,
 						system=full_system_prompt,
 						messages=messages,
-						temperature=0,
+						extra_body={'temperature': 0},
 					)
 				
 				html = response.content[0].text.strip()

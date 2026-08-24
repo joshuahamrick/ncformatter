@@ -384,7 +384,7 @@ TASK:
 						max_tokens=8192,
 						system=ANALYZE_SYSTEM_PROMPT,
 						messages=api_messages,
-						temperature=0,
+						extra_body={'temperature': 0},
 					)
 			except Exception as api_err:
 				print(f'Anthropic API error: {api_err}')

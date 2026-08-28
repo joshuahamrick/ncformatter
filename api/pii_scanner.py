@@ -132,12 +132,105 @@ US_ADDRESS_PATTERN = re.compile(
     re.IGNORECASE
 )
 
+US_STATE_ABBREVS = (
+    r'AL|AK|AZ|AR|CA|CO|CT|DC|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|'
+    r'MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|'
+    r'VA|WA|WV|WI|WY'
+)
+
 CITY_STATE_ZIP_PATTERN = re.compile(
     r'[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?,?\s+'               # city name
-    r'(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)'
+    r'(?:' + US_STATE_ABBREVS + r')'
     r'\s+\d{5}(?:-\d{4})?',
     re.IGNORECASE
 )
+
+# Street and city/state/ZIP must belong to the SAME address block. Matching a
+# street in one section and a ZIP hundreds of characters later (common in
+# multi-state disclosure templates) is not a customer mailing address.
+ADDRESS_PAIR_MAX_GAP = 120
+ADDRESS_PAIR_OVERLAP = 20
+AGENCY_CONTEXT_BEFORE = 350
+AGENCY_CONTEXT_AFTER = 80
+
+# Mortgage templates routinely embed public regulator / agency office addresses
+# (FTC ECOA notice, state banking divisions, AG consumer-protection units).
+# Those are not customer PII. Skip a paired address when this context appears
+# in the surrounding window.
+AGENCY_ADDRESS_CONTEXT = re.compile(
+    r'(?:'
+    r'federal\s+trade\s+commission|'
+    r'equal\s+credit\s+opportunity|'
+    r'consumer\s+financial\s+protection|'
+    r'attorney\s+general|'
+    r'consumer\s+protection|'
+    r'consumer\s+affairs|'
+    r'division\s+of\s+(?:banking|financial|consumer|institutions)|'
+    r'department\s+of\s+(?:banking|financial|commerce|insurance|securities|savings|housing)|'
+    r'housing\s+and\s+urban|'
+    r'commissioner\s+of|'
+    r'office\s+of\s+the\s+commissioner|'
+    r'financial\s+institutions|'
+    r'banking\s+and\s+financial|'
+    r'securities\s+(?:department|commission|division)|'
+    r'department\s+of\s+savings\s+and\s+mortgage|'
+    r'file\s+a\s+complaint|'
+    r'complaints?\s+(?:about|may\s+be\s+submitted|against)|'
+    r'using\s+the\s+following\s+address|'
+    r'comptroller\s+of\s+the\s+currency|'
+    r'internal\s+revenue'
+    r')',
+    re.IGNORECASE,
+)
+
+
+def _context_window(text, start, end):
+    ws = max(0, start - AGENCY_CONTEXT_BEFORE)
+    we = min(len(text), end + AGENCY_CONTEXT_AFTER)
+    return text[ws:we]
+
+
+def _is_agency_address_context(text, start, end):
+    return bool(AGENCY_ADDRESS_CONTEXT.search(_context_window(text, start, end)))
+
+
+def _paired_customer_addresses(text):
+    """Street + city/state/ZIP pairs that look like customer mailing addresses.
+
+    Government / regulator office addresses that appear in disclosure boilerplate
+    are excluded. Unpaired street-only or ZIP-only hits are not returned.
+    """
+    streets = list(US_ADDRESS_PATTERN.finditer(text))
+    cities = list(CITY_STATE_ZIP_PATTERN.finditer(text))
+    used_cities = set()
+    customer = []
+    for sm in streets:
+        partner = None
+        for i, cm in enumerate(cities):
+            if i in used_cities:
+                continue
+            gap = cm.start() - sm.end()
+            if -ADDRESS_PAIR_OVERLAP <= gap <= ADDRESS_PAIR_MAX_GAP:
+                partner = (i, cm)
+                break
+        if partner is None:
+            continue
+        i, cm = partner
+        used_cities.add(i)
+        if _is_agency_address_context(text, sm.start(), cm.end()):
+            continue
+        customer.append((sm.group(), cm.group()))
+    return customer
+
+
+def _ungrouped_city_state_zips(text):
+    """City/state/ZIP hits that are not part of an agency address block."""
+    leftover = []
+    for cm in CITY_STATE_ZIP_PATTERN.finditer(text):
+        if _is_agency_address_context(text, cm.start(), cm.end()):
+            continue
+        leftover.append(cm.group())
+    return leftover
 
 # Real dollar amounts (bare $1,234.56 NOT inside a Money()/Math() wrapper)
 BARE_DOLLAR_PATTERN = re.compile(
@@ -281,13 +374,19 @@ def scan_text_for_pii(text):
         result.add_finding('DOB', 'Date of birth pattern detected')
 
     # 3. Real mailing address detection (BLOCKED)
-    if US_ADDRESS_PATTERN.search(cleaned) and CITY_STATE_ZIP_PATTERN.search(cleaned):
+    #
+    # Require a street and city/state/ZIP in the SAME address block, and ignore
+    # public regulator/agency office addresses that disclosure templates must
+    # print (FTC, state banking divisions, AG consumer-protection units, etc.).
+    # A street in one section plus a ZIP in another is not customer PII.
+    customer_addrs = _paired_customer_addresses(cleaned)
+    if customer_addrs:
         result.add_finding(
             'ADDRESS',
             'Real US mailing address pattern detected (street + city/state/zip)',
             severity='BLOCKED'
         )
-    elif CITY_STATE_ZIP_PATTERN.search(cleaned):
+    elif _ungrouped_city_state_zips(cleaned):
         result.add_finding(
             'ADDRESS',
             'City/State/ZIP pattern detected outside template variables',

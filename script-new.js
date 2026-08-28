@@ -209,10 +209,35 @@ class WordFormatter {
         const genericPlaceholderPattern = /\[[A-Z][A-Za-z0-9 ._/&#'()\-]{1,48}\]/g;
         const GENERIC_PLACEHOLDER_MIN_DISTINCT = 3;
         const ssnPattern = /\b\d{3}[-\s]\d{2}[-\s]\d{4}\b/;
-        const addressPattern = /\b\d{1,6}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3}\s+(?:St|Street|Ave|Avenue|Blvd|Dr|Drive|Ln|Lane|Rd|Road|Ct|Way|Pl|Cir|Pkwy)\b/i;
-        const cityStateZip = /[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?,?\s+(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\s+\d{5}/i;
+        const addressPattern = /\b\d{1,6}\s+(?:[NSEW]\.?\s+)?[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,3}\s+(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Ln|Lane|Rd|Road|Ct|Court|Way|Pl|Place|Cir|Circle|Pkwy|Parkway)\b/gi;
+        const cityStateZip = /[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?,?\s+(?:AL|AK|AZ|AR|CA|CO|CT|DC|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\s+\d{5}(?:-\d{4})?/gi;
+        const agencyAddressContext = /federal\s+trade\s+commission|equal\s+credit\s+opportunity|consumer\s+financial\s+protection|attorney\s+general|consumer\s+protection|consumer\s+affairs|division\s+of\s+(?:banking|financial|consumer|institutions)|department\s+of\s+(?:banking|financial|commerce|insurance|securities|savings|housing)|housing\s+and\s+urban|commissioner\s+of|office\s+of\s+the\s+commissioner|financial\s+institutions|banking\s+and\s+financial|securities\s+(?:department|commission|division)|department\s+of\s+savings\s+and\s+mortgage|file\s+a\s+complaint|complaints?\s+(?:about|may\s+be\s+submitted|against)|using\s+the\s+following\s+address|comptroller\s+of\s+the\s+currency|internal\s+revenue/i;
         const salutationName = /Dear\s+(?!\{|\[)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/;
         const dobPattern = /(?:DOB|Date\s+of\s+Birth|Birth\s*Date)\s*:?\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/i;
+
+        const hasCustomerMailingAddress = (text) => {
+            // Street + city/state/ZIP must be the same address block. Public
+            // regulator/agency office addresses in disclosure boilerplate are
+            // not customer PII (mirrors api/pii_scanner.py).
+            const streets = [...text.matchAll(addressPattern)];
+            const cities = [...text.matchAll(cityStateZip)];
+            const usedCities = new Set();
+            for (const sm of streets) {
+                const streetEnd = sm.index + sm[0].length;
+                for (let i = 0; i < cities.length; i++) {
+                    if (usedCities.has(i)) continue;
+                    const cm = cities[i];
+                    const gap = cm.index - streetEnd;
+                    if (gap < -20 || gap > 120) continue;
+                    usedCities.add(i);
+                    const wStart = Math.max(0, sm.index - 350);
+                    const wEnd = Math.min(text.length, cm.index + cm[0].length + 80);
+                    if (agencyAddressContext.test(text.slice(wStart, wEnd))) continue;
+                    return true;
+                }
+            }
+            return false;
+        };
 
         let hasTemplateVars = false;
         let totalText = '';
@@ -243,7 +268,7 @@ class WordFormatter {
             shouldBlock = true;
         }
 
-        if (addressPattern.test(totalText) && cityStateZip.test(totalText)) {
+        if (hasCustomerMailingAddress(totalText)) {
             findings.push('Real US mailing address detected (street + city/state/zip).');
             shouldBlock = true;
         }

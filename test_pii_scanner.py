@@ -65,6 +65,44 @@ Dear Jonathan Whitfield,
 [sic] The amount [see enclosed] is past due as of [note].
 """ + ("Additional boilerplate paragraph text to exceed the length gate. " * 6)
 
+# Disclosure template: public regulator/agency office addresses are NOT customer PII.
+# Mirrors First United Bank Trust Disclosures V18 (FTC ECOA + state banking/AG units).
+DISCLOSURE_TEMPLATE = """
+Important Disclosures
+Federal law requires us to advise you that {[CompanyLongName]} (NMLS ID {[NMLID]})
+as the servicer of your loan, is responsible for collecting your payments.
+Equal Credit Opportunity Act:
+The Equal Credit Opportunity Act prohibits creditors from discriminating against
+credit applicants. Send comments to:
+Federal Trade Commission
+Equal Credit Opportunity
+600 Pennsylvania Avenue, NW
+Washington, DC 20580
+1-877-FTC-HELP
+Hawaii Property Owners - {[CompanyLongName]} is licensed by the Division of Financial
+Institutions. A borrower may file a complaint about {[CompanyLongName]} with the
+Commissioner using the following address: Division of Financial Institutions
+Department of Commerce and Consumer Affairs King Kalakaua Building 335 Merchant
+Street, Rm. 221, Honolulu, HI 96813
+West Virginia Property Owners - The activities of collection agencies in West
+Virginia are regulated by the Attorney General's Consumer Protection Division,
+812 Quarrier Street, Charleston, WV 25301.
+Montana Property Owners - A borrower may file a complaint about {[CompanyLongName]}
+with the Department: Division of Banking and Financial Institutions, 301 South
+Park, Suite 316, PO Box 200546, Helena, MT 59620 Phone: (406) 841-2920
+"""
+
+# Template that also contains a real customer mailing address — still blocked.
+TEMPLATE_WITH_CUSTOMER_ADDRESS = """
+{[L001]}
+Dear {[Salutation]},
+Please mail correspondence to the borrower at:
+482 Maple Grove Drive
+Tulsa, OK 74133
+Sincerely,
+{[plsMatrix.CompanyLongName]}
+"""
+
 
 print("Descriptive-placeholder template (LM093 style):")
 r = pii_scanner.scan_text_for_pii(DESCRIPTIVE_TEMPLATE)
@@ -88,11 +126,28 @@ r = pii_scanner.scan_text_for_pii(MERGED_WITH_STRAY_BRACKETS)
 check("not recognised as a template", not r.has_template_vars)
 check("blocked", r.severity == 'BLOCKED', r.findings)
 
+print("Disclosure template with agency office addresses:")
+r = pii_scanner.scan_text_for_pii(DISCLOSURE_TEMPLATE)
+check("recognised as a template", r.has_template_vars)
+check("not blocked", r.severity != 'BLOCKED', r.findings)
+check("no ADDRESS block", not any(f['category'] == 'ADDRESS' and f['severity'] == 'BLOCKED' for f in r.findings), r.findings)
+
+print("Template that also contains a customer mailing address:")
+r = pii_scanner.scan_text_for_pii(TEMPLATE_WITH_CUSTOMER_ADDRESS)
+check("recognised as a template", r.has_template_vars)
+check("blocked on ADDRESS", r.severity == 'BLOCKED', r.findings)
+check("ADDRESS finding", any(f['category'] == 'ADDRESS' for f in r.findings), r.findings)
+
 print("IR-level gate:")
 ir = {'blocks': [{'type': 'paragraph', 'runs': [{'text': line}]}
                  for line in DESCRIPTIVE_TEMPLATE.strip().split('\n')]}
 r = pii_scanner.scan_ir_for_pii(ir)
 check("descriptive template passes the IR gate", r.severity == 'CLEAR', r.findings)
+
+ir = {'blocks': [{'type': 'paragraph', 'runs': [{'text': line}]}
+                 for line in DISCLOSURE_TEMPLATE.strip().split('\n')]}
+r = pii_scanner.scan_ir_for_pii(ir)
+check("disclosure template passes the IR gate", r.severity != 'BLOCKED', r.findings)
 
 ir = {'blocks': [{'type': 'paragraph', 'runs': [{'text': line}]}
                  for line in MERGED_LETTER.strip().split('\n')]}
